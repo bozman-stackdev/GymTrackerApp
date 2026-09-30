@@ -54,7 +54,16 @@ export function goToExercise(data: AppData, index: number): AppData {
  * Records a set. When this set completes the exercise's planned sets, the workout moves on
  * to the next unfinished exercise automatically (one less tap between exercises).
  */
+/** Limits for a single set; anything outside is a typo, not a set. */
+export const SET_LIMITS = { maxReps: 100, maxWeightKg: 1000 };
+
+export function isValidSet({ reps, weightKg }: Omit<SetLog, 'loggedAt'>): boolean {
+  return Number.isInteger(reps) && reps > 0 && reps <= SET_LIMITS.maxReps
+    && Number.isFinite(weightKg) && weightKg >= 0 && weightKg <= SET_LIMITS.maxWeightKg;
+}
+
 export function logSet(data: AppData, entryIndex: number, set: Omit<SetLog, 'loggedAt'>, now = new Date()): AppData {
+  if (!isValidSet(set) || !data.activeWorkout?.session.entries[entryIndex]) return data;
   const logged = updateActive(data, (s) => ({
     ...s,
     entries: s.entries.map((e, i) => (i === entryIndex ? { ...e, sets: [...e.sets, { ...set, loggedAt: now.toISOString() }] } : e)),

@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Screen } from '../components/Screen';
 import { saveProfile } from '../data/actions';
-import { createEmptyData, createSampleData } from '../data/seed';
+import { createStarterData, createSampleData } from '../data/seed';
+import { backupFileName, downloadText, readBackupFile, serializeBackup } from '../data/backup';
 import { useStore } from '../data/store';
+import { validateProfile } from '../data/validate';
 import { useProgress } from '../data/useProgress';
 import { AchievementList, LevelBar, PersonalBestList, streakText } from '../components/ProgressWidgets';
 import { ACHIEVEMENTS } from '../logic/game/achievements';
@@ -20,12 +22,33 @@ export function ProfileScreen() {
   const change = <K extends keyof Profile>(key: K, value: Profile[K]) => { setP({ ...p, [key]: value }); setSaved(false); };
   const num = (v: string) => (v === '' ? null : Number(v));
 
-  const bmi = p.heightCm && p.weightKg ? p.weightKg / (p.heightCm / 100) ** 2 : null;
+  const errors = validateProfile(p);
+  const valid = Object.keys(errors).length === 0;
+  const bmi = valid && p.heightCm && p.weightKg ? p.weightKg / (p.heightCm / 100) ** 2 : null;
+  const restoreInput = useRef<HTMLInputElement>(null);
+  const [dataMessage, setDataMessage] = useState<string | null>(null);
+
+  const exportBackup = () => {
+    downloadText(backupFileName(), serializeBackup(data));
+    setDataMessage('Backup saved. Keep the file somewhere safe (e.g. cloud drive).');
+  };
+  const restore = async (file: File | undefined) => {
+    if (!file) return;
+    try {
+      const backup = await readBackupFile(file);
+      if (!confirm(`Replace ALL data on this phone with this backup (${backup.sessions.length} workouts)?`)) return;
+      replace(backup);
+      setP(backup.profile);
+      setDataMessage(`Restored ${backup.sessions.length} workouts.`);
+    } catch (err) {
+      setDataMessage(err instanceof Error ? err.message : 'Could not read that file.');
+    }
+  };
 
   const reset = (sample: boolean) => {
     const msg = sample ? 'Replace ALL your data with sample data?' : 'Delete ALL your data (history, routines, profile)?';
     if (!confirm(msg)) return;
-    const fresh = sample ? createSampleData() : createEmptyData();
+    const fresh = sample ? createSampleData() : createStarterData();
     replace(fresh);
     setP(fresh.profile);
   };
@@ -35,7 +58,7 @@ export function ProfileScreen() {
       <h2>Progress</h2>
       <div className="card stack" data-testid="progress">
         <LevelBar level={progress.level} />
-        <div className="row small" style={{ justifyContent: 'space-between' }}>
+        <div className="row small between">
           <span>{streakText(progress.streakWeeks)}</span>
           <span data-testid="challenges-count">🎯 {progress.stats.challengesCompleted} challenges</span>
         </div>
@@ -52,36 +75,47 @@ export function ProfileScreen() {
       <h2>About you</h2>
       <label className="field">
         Name
-        <input className="input" value={p.name} onChange={(e) => change('name', e.target.value)} />
+        <input className="input" value={p.name} maxLength={60} aria-invalid={!!errors.name} onChange={(e) => change('name', e.target.value)} />
+        {errors.name && <span className="field-error">{errors.name}</span>}
       </label>
-      <div className="row">
-        <NumberField label="Age" value={p.age} onChange={(v) => change('age', num(v))} />
-        <NumberField label="Height (cm)" value={p.heightCm} onChange={(v) => change('heightCm', num(v))} />
-        <NumberField label="Weight (kg)" value={p.weightKg} onChange={(v) => change('weightKg', num(v))} decimal />
+      <div className="row" style={{ alignItems: 'flex-start' }}>
+        <NumberField label="Age" value={p.age} error={errors.age} onChange={(v) => change('age', num(v))} />
+        <NumberField label="Height (cm)" value={p.heightCm} error={errors.heightCm} onChange={(v) => change('heightCm', num(v))} />
+        <NumberField label="Weight (kg)" value={p.weightKg} error={errors.weightKg} onChange={(v) => change('weightKg', num(v))} decimal />
       </div>
-      {bmi && <p className="muted small" style={{ margin: 0 }}>BMI {bmi.toFixed(1)}</p>}
+      {bmi && <p className="muted small flush">BMI {bmi.toFixed(1)}</p>}
 
       <Chips label="Sex" options={SEXES} value={p.sex} onChange={(v) => change('sex', v)} />
       <Chips label="Experience" options={EXPERIENCE} value={p.experience} onChange={(v) => change('experience', v)} />
       <Chips label="Goal" options={GOALS} value={p.goal} onChange={(v) => change('goal', v)} />
 
-      <button className="btn primary huge" onClick={() => { update((d) => saveProfile(d, p)); setSaved(true); }}>
+      <button className="btn primary huge" disabled={!valid} onClick={() => { update((d) => saveProfile(d, { ...p, name: p.name.trim() })); setSaved(true); }}>
         {saved ? '✓ Saved' : 'Save'}
       </button>
 
       <h2>Data</h2>
-      <p className="muted small" style={{ margin: 0 }}>Everything is stored only on this device, in this browser.</p>
-      <button className="btn block" onClick={() => reset(true)}>Load sample data</button>
-      <button className="btn block danger" onClick={() => reset(false)}>Start fresh (delete all)</button>
+      <p className="muted small flush">
+        Everything is stored only on this phone, in this browser. Export a backup now and then, or before changing phones.
+        On iPhone, add the app to your Home Screen: Safari may clear data of websites you haven't opened for a week.
+      </p>
+      <button className="btn block" onClick={exportBackup}>Export backup</button>
+      <input ref={restoreInput} type="file" accept="application/json,.json" hidden data-testid="profile-restore-input" onChange={(e) => restore(e.target.files?.[0])} />
+      <button className="btn block" onClick={() => restoreInput.current?.click()}>Restore backup</button>
+      {dataMessage && <p className="small center" role="status">{dataMessage}</p>}
+      <button className="btn block ghost" onClick={() => reset(true)}>Load sample data</button>
+      <button className="btn block ghost danger" onClick={() => reset(false)}>Start fresh (delete all)</button>
     </Screen>
   );
 }
 
-function NumberField({ label, value, onChange, decimal }: { label: string; value: number | null; onChange: (v: string) => void; decimal?: boolean }) {
+function NumberField({ label, value, error, onChange, decimal }: {
+  label: string; value: number | null; error?: string; onChange: (v: string) => void; decimal?: boolean;
+}) {
   return (
     <label className="field grow">
       {label}
-      <input className="input" inputMode={decimal ? 'decimal' : 'numeric'} type="number" value={value ?? ''} onChange={(e) => onChange(e.target.value)} />
+      <input className="input" inputMode={decimal ? 'decimal' : 'numeric'} type="number" value={value ?? ''} aria-invalid={!!error} onChange={(e) => onChange(e.target.value)} />
+      {error && <span className="field-error">{error}</span>}
     </label>
   );
 }
@@ -92,7 +126,7 @@ function Chips<T extends string>({ label, options, value, onChange }: { label: s
       <span className="muted small">{label}</span>
       <div className="chips">
         {options.map(([v, text]) => (
-          <button key={v || 'none'} className={`chip${value === v ? ' on' : ''}`} onClick={() => onChange(v)}>{text}</button>
+          <button key={v || 'none'} className={`chip${value === v ? ' on' : ''}`} aria-pressed={value === v} onClick={() => onChange(v)}>{text}</button>
         ))}
       </div>
     </div>

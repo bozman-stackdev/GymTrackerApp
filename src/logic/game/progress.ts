@@ -72,7 +72,8 @@ export function buildProgress(
   const streak = new WeeklyStreak(config);
   const bySession = new Map<string, SessionProgress>();
   const achievements: Progress['achievements'] = [];
-  const prior: WorkoutSession[] = [];
+  // Earlier workouts per exercise: each exercise is scored against its own history only (keeps the replay fast).
+  const priorByExercise = new Map<string, WorkoutSession[]>();
   let totalXp = 0;
   let lastWorkoutXpDay = '';
 
@@ -89,7 +90,7 @@ export function buildProgress(
 
     const results = session.entries
       .filter((e) => byId.has(e.exerciseId) && e.sets.length > 0)
-      .map((e) => scoreExercise(byId.get(e.exerciseId)!, e.sets, prior));
+      .map((e) => scoreExercise(byId.get(e.exerciseId)!, e.sets, priorByExercise.get(e.exerciseId) ?? []));
 
     for (const r of results) {
       if (isSuccess(r.outcome)) {
@@ -120,7 +121,10 @@ export function buildProgress(
     const xp = events.reduce((sum, e) => sum + e.xp, 0);
     totalXp += xp;
     bySession.set(session.id, { sessionId: session.id, results, events, xp, unlocked, streakWeeks: stats.streakWeeks });
-    prior.push(session);
+    for (const e of session.entries) {
+      if (!priorByExercise.has(e.exerciseId)) priorByExercise.set(e.exerciseId, []);
+      priorByExercise.get(e.exerciseId)!.push(session);
+    }
   }
 
   return {
@@ -150,4 +154,31 @@ function bestSets(sessions: WorkoutSession[], exercises: Exercise[]): PersonalBe
     }
     return best ? [best] : [];
   });
+}
+
+export interface LiveSession {
+  results: ExerciseResult[];
+  /** Streak including the workout in progress. */
+  streakWeeks: number;
+}
+
+/**
+ * Scores the workout in progress against finished history, for instant feedback after each set.
+ * Much cheaper than buildProgress(): finished workouts aren't replayed, so logging stays instant with years of data.
+ */
+export function scoreLiveSession(
+  session: WorkoutSession,
+  finished: WorkoutSession[],
+  exercises: Exercise[],
+  now: Date = new Date(),
+  config: GameConfig = GAME_CONFIG,
+): LiveSession {
+  const byId = new Map(exercises.map((e) => [e.id, e]));
+  const results = session.entries
+    .filter((e) => byId.has(e.exerciseId) && e.sets.length > 0)
+    .map((e) => scoreExercise(byId.get(e.exerciseId)!, e.sets, finished));
+  const streak = new WeeklyStreak(config);
+  for (const s of finished) if (s.finishedAt) streak.add(s.startedAt);
+  if (session.entries.some((e) => e.sets.length > 0)) streak.add(session.startedAt);
+  return { results, streakWeeks: streak.current(now) };
 }

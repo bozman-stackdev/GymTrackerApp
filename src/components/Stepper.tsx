@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 
 /** Big −/+ control with a tappable number in the middle for typing an exact value. */
-export function Stepper({ label, value, step, min = 0, decimals = false, suffix, onChange }: {
+export function Stepper({ label, value, step, min = 0, max = Infinity, decimals = false, suffix, onChange }: {
   label: string;
   value: number;
   step: number;
   min?: number;
+  max?: number;
   decimals?: boolean;
   suffix?: string;
   onChange: (value: number) => void;
@@ -14,13 +15,14 @@ export function Stepper({ label, value, step, min = 0, decimals = false, suffix,
   const [text, setText] = useState(String(value));
   useEffect(() => setText(String(value)), [value]);
 
-  const set = (v: number) => onChange(Math.max(min, Math.round(v * 100) / 100));
+  // Clamp to the allowed range, so a typo (e.g. 800 instead of 80) can't go beyond it.
+  const set = (v: number) => onChange(Math.min(max, Math.max(min, Math.round(v * 100) / 100)));
 
   return (
     <div>
       <div className="stepper-label">{label}{suffix ? ` (${suffix})` : ''}</div>
       <div className="stepper">
-        <button type="button" aria-label={`Less ${label}`} onClick={() => set(value - step)}>−</button>
+        <button type="button" aria-label={`Less ${label}`} disabled={value <= min} onClick={() => set(value - step)}>−</button>
         <input
           aria-label={label}
           inputMode={decimals ? 'decimal' : 'numeric'}
@@ -33,7 +35,7 @@ export function Stepper({ label, value, step, min = 0, decimals = false, suffix,
           }}
           onBlur={() => setText(String(value))}
         />
-        <button type="button" aria-label={`More ${label}`} onClick={() => set(value + step)}>+</button>
+        <button type="button" aria-label={`More ${label}`} disabled={value >= max} onClick={() => set(value + step)}>+</button>
       </div>
     </div>
   );

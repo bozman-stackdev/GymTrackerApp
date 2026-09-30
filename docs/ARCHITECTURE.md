@@ -121,3 +121,33 @@ so the rep pad stays on screen.
 **D28. Your decisions after Phase 3A:** no XP unless you progress, so "matched last session" is 0 XP but still shown as
 positive. A streak week needs 2 workouts (`GAME_CONFIG.streak.minWorkoutsPerWeek`). A hit "repeat" challenge pays
 `xp.repeatChallenge` (10) instead of 25. `challengeXp()` in `progress.ts` is used by both the summary and the live reward bar.
+
+## Phase 5 - Polish, robustness, mobile readiness (2026-09-30)
+
+**D29. Storage behind a `DataStore` interface** (`load`/`save`/`subscribe`), with localStorage as the implementation.
+`StoreProvider` takes an optional store. `load()` distinguishes first run, ok, and unreadable (a raw backup copy is kept).
+Save failures surface as a banner (`saveError`) instead of `alert()`. The `storage` event keeps several tabs in sync.
+`navigator.storage.persist()` is requested on first save.
+
+**D30. Validation in one module (`data/validate.ts`):** `parseAppData` checks structure and value ranges on every load and
+import, and rebuilds the object with known fields only. `validateProfile` and `validateExercise` drive form errors.
+`logSet` ignores impossible sets (`isValidSet`, `SET_LIMITS`). Steppers clamp to min/max.
+
+**D31. First run:** a welcome screen with *Start my own* (starter routines, no history), *Try with sample data*
+(`isSample: true` → banner with "Start my own") or *Restore a backup*. The sample is no longer forced on real users.
+
+**D32. Backup:** export/restore JSON (`data/backup.ts`) from Profile and the welcome screen; validated before replacing.
+
+**D33. Offline + installable:** vite-plugin-pwa precaches the app (service worker, `autoUpdate`), plus a web manifest and
+icons (`public/`, `scripts/make-icons.mjs`). Covered by `e2e/offline.spec.ts` against the production build.
+
+**D34. ErrorBoundary** around the app: a calm crash screen with Reload and "Export a backup first" (reads raw storage).
+
+**D35. Live scoring split from the full replay:** `scoreLiveSession` scores only the workout in progress (~2 ms per set
+with 4 years of history). `buildProgress` (full replay, memoised on history) scores each exercise against its own
+history only. `useProgress()` / `useLiveSession()` in `data/useProgress.ts`.
+
+**D36. Structure and quality:** big screens split into folders (`screens/workout|history|exercises`). History is grouped by
+the same weeks the streak uses. Accessibility: focus-visible outlines, 44px targets, aria-pressed chips, labelled
+controls, contrast fixes (`--danger`, `--accent-text`), and axe checks in light and dark mode (`e2e/a11y.spec.ts`).
+There's a CI workflow (`ci.yml`) for typecheck, unit tests and e2e on every push. Roadmap and product review: `docs/ROADMAP.md`.

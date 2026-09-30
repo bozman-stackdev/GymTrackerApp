@@ -122,9 +122,10 @@ export function createSampleData(now = new Date()): AppData {
     });
   });
 
-  return { version: 1, profile: SAMPLE_PROFILE, exercises, routines: SAMPLE_ROUTINES, sessions, activeWorkout: null };
+  return { version: 1, profile: SAMPLE_PROFILE, exercises, routines: SAMPLE_ROUTINES, sessions, activeWorkout: null, isSample: true };
 }
 
-export function createEmptyData(): AppData {
-  return { version: 1, profile: EMPTY_PROFILE, exercises: SAMPLE_EXERCISES, routines: [], sessions: [], activeWorkout: null };
+/** A real user's starting point: the exercise library and three editable starter routines, no history. */
+export function createStarterData(): AppData {
+  return { version: 1, profile: EMPTY_PROFILE, exercises: SAMPLE_EXERCISES, routines: SAMPLE_ROUTINES, sessions: [], activeWorkout: null };
 }

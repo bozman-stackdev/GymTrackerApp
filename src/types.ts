@@ -78,4 +78,6 @@ export interface AppData {
   routines: Routine[];
   sessions: WorkoutSession[];
   activeWorkout: ActiveWorkout | null;
+  /** True while the user is exploring the demo data (shows a banner with a way out). */
+  isSample?: boolean;
 }

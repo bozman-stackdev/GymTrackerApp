@@ -10,11 +10,11 @@ export const streakText = (weeks: number) => (weeks > 0 ? `🔥 ${weeks}-week st
 export function LevelBar({ level }: { level: LevelInfo }) {
   return (
     <div data-testid="level">
-      <div className="row small" style={{ justifyContent: 'space-between' }}>
+      <div className="row small between">
         <strong>Level {level.level}</strong>
         <span className="muted">{level.xp} / {level.nextLevelXp} XP</span>
       </div>
-      <div className="bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(level.progress * 100)}>
+      <div className="bar" role="progressbar" aria-label={`Progress to level ${level.level + 1}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(level.progress * 100)}>
         <div className="bar-fill" style={{ width: `${Math.round(level.progress * 100)}%` }} />
       </div>
       <div className="muted small">{level.nextLevelXp - level.xp} XP to level {level.level + 1}</div>

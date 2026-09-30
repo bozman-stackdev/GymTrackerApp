@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Screen } from '../components/Screen';
 import { startWorkout } from '../data/actions';
+import { createStarterData } from '../data/seed';
 import { useStore } from '../data/store';
 import { useProgress } from '../data/useProgress';
 import { streakText } from '../components/ProgressWidgets';
@@ -9,7 +10,7 @@ import type { Routine } from '../types';
 
 /** Start screen: one tap on a routine starts the workout. */
 export function HomeScreen() {
-  const { data, update } = useStore();
+  const { data, update, replace } = useStore();
   const navigate = useNavigate();
   const active = data.activeWorkout;
   const progress = useProgress();
@@ -19,6 +20,10 @@ export function HomeScreen() {
   // "Next up" (done longest ago) first, so it's one tap away.
   const routines = routinesByNextUp(data.routines, data.sessions);
 
+  const startOwn = () => {
+    if (confirm('Clear the sample data and start with your own (empty history, starter routines)?')) replace(createStarterData());
+  };
+
   const start = (routine?: Routine) => {
     if (active && !confirm('A workout is already in progress. Discard it and start a new one?')) return;
     update((d) => startWorkout(d, routine));
@@ -27,6 +32,12 @@ export function HomeScreen() {
 
   return (
     <Screen title={data.profile.name ? `Hi ${data.profile.name}` : 'Train'}>
+      {data.isSample && (
+        <div className="sample-banner" data-testid="sample-banner">
+          <span className="grow">You're exploring sample data.</span>
+          <button className="btn ghost" onClick={startOwn}>Start my own</button>
+        </div>
+      )}
       {active && (
         <Link to="/workout" className="banner">
           <span>Resume {active.session.name}</span>
@@ -48,14 +59,14 @@ export function HomeScreen() {
               <button className={`list-item grow${nextUp ? ' next-up' : ''}`} onClick={() => start(r)}>
                 <div className="grow">
                   {nextUp && <div className="small next-up-label">Next up</div>}
-                  <div className="title" style={{ fontSize: 20 }}>{r.name}</div>
+                  <div className="title routine-name">{r.name}</div>
                   <div className="muted small">
                     {r.items.length} exercises{last ? ` · last ${relativeDay(last)}` : ''}
                   </div>
                 </div>
-                <span style={{ fontSize: 24 }} aria-hidden>▶</span>
+                <span className="play" aria-hidden>▶</span>
               </button>
-              <Link to={`/routines/${r.id}`} className="icon-btn" aria-label={`Edit ${r.name}`} style={{ display: 'grid', placeItems: 'center' }}>
+              <Link to={`/routines/${r.id}`} className="icon-btn" aria-label={`Edit ${r.name}`}>
                 ✎
               </Link>
             </div>

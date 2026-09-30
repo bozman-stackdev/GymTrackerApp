@@ -11,5 +11,9 @@ export default defineConfig({
     baseURL: 'http://localhost:5173',
     launchOptions: existsSync(localChromium) ? { executablePath: localChromium } : {},
   },
-  webServer: { command: 'npm run dev -- --port 5173 --strictPort', url: 'http://localhost:5173', reuseExistingServer: true },
+  webServer: [
+    { command: 'npm run dev -- --port 5173 --strictPort', url: 'http://localhost:5173', reuseExistingServer: true },
+    // The production build (with the offline service worker) for e2e/offline.spec.ts.
+    { command: 'npm run build && npx vite preview --port 4173 --strictPort', url: 'http://localhost:4173', reuseExistingServer: true },
+  ],
 });

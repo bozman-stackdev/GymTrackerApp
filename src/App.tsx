@@ -1,43 +1,61 @@
 import { useEffect } from 'react';
 import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { TabBar } from './components/TabBar';
-import { StoreProvider, useStore } from './data/store';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { StoreProvider, useAppState, useStore } from './data/store';
+import { WelcomeScreen } from './screens/WelcomeScreen';
 import { AddExerciseScreen } from './screens/AddExerciseScreen';
-import { ExerciseFormScreen, ExerciseScreen, ExercisesScreen } from './screens/ExercisesScreen';
-import { HistoryScreen, SessionScreen } from './screens/HistoryScreen';
+import { ExerciseFormScreen } from './screens/exercises/ExerciseFormScreen';
+import { ExerciseScreen } from './screens/exercises/ExerciseScreen';
+import { ExercisesScreen } from './screens/exercises/ExercisesScreen';
+import { HistoryScreen } from './screens/history/HistoryScreen';
+import { SessionScreen } from './screens/history/SessionScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
 import { RoutineScreen } from './screens/RoutineScreen';
 import { ScanScreen } from './screens/ScanScreen';
-import { WorkoutScreen } from './screens/WorkoutScreen';
+import { WorkoutScreen } from './screens/workout/WorkoutScreen';
 
 // HashRouter works on any static host (and inside a native wrapper) without server config.
 export function App() {
   return (
-    <StoreProvider>
-      <HashRouter>
-        <div className="app">
-          <ResumeWorkoutOnLaunch />
-          <Routes>
-            <Route path="/" element={<HomeScreen />} />
-            <Route path="/workout" element={<WorkoutScreen />} />
-            <Route path="/workout/add" element={<AddExerciseScreen />} />
-            <Route path="/scan" element={<ScanScreen />} />
-            <Route path="/history" element={<HistoryScreen />} />
-            <Route path="/history/:id" element={<SessionScreen />} />
-            <Route path="/exercises" element={<ExercisesScreen />} />
-            <Route path="/exercises/new" element={<ExerciseFormScreen />} />
-            <Route path="/exercises/:id" element={<ExerciseScreen />} />
-            <Route path="/exercises/:id/edit" element={<ExerciseFormScreen />} />
-            <Route path="/routines/new" element={<RoutineScreen />} />
-            <Route path="/routines/:id" element={<RoutineScreen />} />
-            <Route path="/profile" element={<ProfileScreen />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-          <TabBarUnlessTraining />
-        </div>
-      </HashRouter>
-    </StoreProvider>
+    <ErrorBoundary>
+      <StoreProvider>
+        <HashRouter>
+          <div className="app">
+            <Shell />
+          </div>
+        </HashRouter>
+      </StoreProvider>
+    </ErrorBoundary>
+  );
+}
+
+function Shell() {
+  const { data, saveError } = useAppState();
+  if (!data) return <WelcomeScreen />;
+  return (
+    <>
+      {saveError && <div className="alert save-alert" role="alert">⚠️ Not saved: {saveError}</div>}
+      <ResumeWorkoutOnLaunch />
+      <Routes>
+        <Route path="/" element={<HomeScreen />} />
+        <Route path="/workout" element={<WorkoutScreen />} />
+        <Route path="/workout/add" element={<AddExerciseScreen />} />
+        <Route path="/scan" element={<ScanScreen />} />
+        <Route path="/history" element={<HistoryScreen />} />
+        <Route path="/history/:id" element={<SessionScreen />} />
+        <Route path="/exercises" element={<ExercisesScreen />} />
+        <Route path="/exercises/new" element={<ExerciseFormScreen />} />
+        <Route path="/exercises/:id" element={<ExerciseScreen />} />
+        <Route path="/exercises/:id/edit" element={<ExerciseFormScreen />} />
+        <Route path="/routines/new" element={<RoutineScreen />} />
+        <Route path="/routines/:id" element={<RoutineScreen />} />
+        <Route path="/profile" element={<ProfileScreen />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+      <TabBarUnlessTraining />
+    </>
   );
 }
 

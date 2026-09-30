@@ -1,10 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
 
-// Every test starts from the sample data (fresh browser context = empty localStorage).
+// Every test starts from the sample data (fresh browser context = empty storage → welcome screen → sample).
 test.beforeEach(async ({ page }) => {
   page.on('dialog', (d) => d.accept()); // confirm() prompts
   page.on('pageerror', (e) => { throw e; });
   await page.goto('/');
+  await page.getByRole('button', { name: 'Try with sample data' }).click();
+  await expect(page.getByTestId('sample-banner')).toBeVisible();
 });
 
 async function expectNoHorizontalScroll(page: Page) {

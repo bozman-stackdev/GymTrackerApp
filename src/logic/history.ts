@@ -46,6 +46,14 @@ export function volumeKg(sets: SetLog[]): number {
   return sets.reduce((sum, s) => sum + s.reps * s.weightKg, 0);
 }
 
+export function sessionVolumeKg(session: WorkoutSession): number {
+  return session.entries.reduce((sum, e) => sum + volumeKg(e.sets), 0);
+}
+
+export function sessionSetCount(session: WorkoutSession): number {
+  return session.entries.reduce((n, e) => n + e.sets.length, 0);
+}
+
 export function formatKg(kg: number): string {
   return `${Number(kg.toFixed(2))} kg`;
 }

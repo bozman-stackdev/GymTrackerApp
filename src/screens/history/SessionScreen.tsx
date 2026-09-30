@@ -1,57 +1,17 @@
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
-import { Screen } from '../components/Screen';
-import { formatDuration } from '../components/useNow';
-import { deleteSession } from '../data/actions';
-import { useExerciseLookup, useStore } from '../data/store';
-import { formatDate, formatSets, formatTarget, volumeKg } from '../logic/history';
-import { useProgress } from '../data/useProgress';
-import { LevelBar, streakText } from '../components/ProgressWidgets';
-import { ACHIEVEMENTS } from '../logic/game/achievements';
-import { challengeFor, type Challenge, type Outcome } from '../logic/game/challenge';
-import type { Progress, SessionProgress, XpEvent } from '../logic/game/progress';
-import type { WorkoutSession } from '../types';
+import { LevelBar, streakText } from '../../components/ProgressWidgets';
+import { Screen } from '../../components/Screen';
+import { formatDuration } from '../../components/useNow';
+import { deleteSession } from '../../data/actions';
+import { useExerciseLookup, useStore } from '../../data/store';
+import { useProgress } from '../../data/useProgress';
+import { ACHIEVEMENTS } from '../../logic/game/achievements';
+import { challengeFor, type Challenge, type Outcome } from '../../logic/game/challenge';
+import type { Progress, SessionProgress, XpEvent } from '../../logic/game/progress';
+import { formatDate, formatSets, formatTarget, sessionVolumeKg } from '../../logic/history';
+import type { WorkoutSession } from '../../types';
 
-const sessionVolume = (s: WorkoutSession) => s.entries.reduce((sum, e) => sum + volumeKg(e.sets), 0);
-const sessionSets = (s: WorkoutSession) => s.entries.reduce((sum, e) => sum + e.sets.length, 0);
-
-export function HistoryScreen() {
-  const { data } = useStore();
-  const sessions = [...data.sessions].sort((a, b) => b.startedAt.localeCompare(a.startedAt));
-  const last7 = sessions.filter((s) => Date.now() - Date.parse(s.startedAt) < 7 * 86_400_000).length;
-
-  return (
-    <Screen title="History">
-      <div className="row">
-        <Stat label="This week" value={String(last7)} />
-        <Stat label="Total workouts" value={String(sessions.length)} />
-      </div>
-      <div className="list">
-        {sessions.map((s) => (
-          <Link key={s.id} to={`/history/${s.id}`} className="list-item">
-            <div className="grow">
-              <div className="title">{s.name}</div>
-              <div className="muted small">
-                {formatDate(s.startedAt)} · {sessionSets(s)} sets · {Math.round(sessionVolume(s)).toLocaleString()} kg
-              </div>
-            </div>
-            <span className="muted" aria-hidden>›</span>
-          </Link>
-        ))}
-        {sessions.length === 0 && <p className="muted center">No workouts yet. Your finished workouts show up here.</p>}
-      </div>
-    </Screen>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="card grow center">
-      <div style={{ fontSize: 32, fontWeight: 800 }}>{value}</div>
-      <div className="muted small">{label}</div>
-    </div>
-  );
-}
-
+/** One finished workout: what you did, what it earned, and what's next. Also the "workout complete" screen. */
 export function SessionScreen() {
   const { id } = useParams();
   const { data, update } = useStore();
@@ -73,10 +33,10 @@ export function SessionScreen() {
 
   return (
     <Screen title={session.name} back>
-      <p className="muted" style={{ margin: 0 }}>
+      <p className="muted flush">
         {formatDate(session.startedAt)}
         {session.finishedAt && ` · ${formatDuration(Date.parse(session.finishedAt) - Date.parse(session.startedAt))}`}
-        {` · ${Math.round(sessionVolume(session)).toLocaleString()} kg lifted`}
+        {` · ${Math.round(sessionVolumeKg(session)).toLocaleString()} kg lifted`}
       </p>
 
       {scored && <WorkoutRewards scored={scored} progress={isLatest ? progress : undefined} />}
@@ -129,7 +89,7 @@ function WorkoutRewards({ scored, progress }: { scored: SessionProgress; progres
   const getExercise = useExerciseLookup();
   return (
     <div className="card stack" data-testid="rewards">
-      <div className="row" style={{ justifyContent: 'space-between' }}>
+      <div className="row between">
         <strong>Workout rewards</strong>
         <strong className="xp" data-testid="session-xp">+{scored.xp} XP</strong>
       </div>

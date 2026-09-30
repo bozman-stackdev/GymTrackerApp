@@ -10,7 +10,7 @@ import { ACHIEVEMENTS } from './achievements';
 import { challengeFor, evaluate, personalBestIndex, type Challenge } from './challenge';
 import { GAME_CONFIG } from './config';
 import { levelFor, xpForLevel } from './levels';
-import { buildProgress } from './progress';
+import { buildProgress, scoreLiveSession } from './progress';
 import { WeeklyStreak, weekIndex } from './streak';
 
 const press: Exercise = { id: 'press', name: 'Press', muscleGroup: 'chest', equipment: 'machine', repRange: [8, 12], weightStepKg: 5 };
@@ -236,5 +236,32 @@ describe('sample data', () => {
       expect(p.achievements.length).toBeLessThan(ACHIEVEMENTS.length); // something left to aim for
       expect(p.personalBests.length).toBeGreaterThan(5);
     }
+  });
+});
+
+describe('live scoring during a workout', () => {
+  it('gives exactly the same results as the full replay', () => {
+    const d = createSampleData(new Date('2026-10-07T12:00:00'));
+    const last = d.sessions.at(-1)!;
+    const full = buildProgress(d.sessions, d.exercises).bySession.get(last.id)!;
+    const live = scoreLiveSession({ ...last, finishedAt: undefined }, d.sessions.slice(0, -1), d.exercises);
+    expect(live.results).toEqual(full.results);
+  });
+
+  it('stays fast with years of history (logging a set must feel instant)', () => {
+    const d = createSampleData();
+    const sessions = Array.from({ length: 600 }, (_, i) => { // ~4 years at 3 workouts/week
+      const s = d.sessions[i % d.sessions.length];
+      const at = new Date(Date.now() - (600 - i) * 2.4 * 86_400_000).toISOString();
+      return { ...s, id: `x${i}`, startedAt: at, finishedAt: at };
+    });
+    const t0 = performance.now();
+    scoreLiveSession({ ...d.sessions[0], id: 'live', finishedAt: undefined }, sessions, d.exercises);
+    const live = performance.now() - t0;
+    const t1 = performance.now();
+    buildProgress(sessions, d.exercises);
+    const full = performance.now() - t1;
+    expect(live).toBeLessThan(100);
+    expect(full).toBeLessThan(1500); // generous: CI machines vary
   });
 });
