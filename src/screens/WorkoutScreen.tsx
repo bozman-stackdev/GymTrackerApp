@@ -9,7 +9,7 @@ import { useProgress } from '../data/useProgress';
 import { streakText } from '../components/ProgressWidgets';
 import { challengeFor, isSuccess, scoreExercise, type Challenge } from '../logic/game/challenge';
 import { GAME_CONFIG } from '../logic/game/config';
-import type { Progress } from '../logic/game/progress';
+import { challengeXp, type Progress } from '../logic/game/progress';
 import { formatKg, formatSets, formatTarget, lastPerformance, workingWeight } from '../logic/history';
 import { PROGRESSION_DISCLAIMER, plannedSet, recommend } from '../logic/progression';
 import type { Exercise, WorkoutSession } from '../types';
@@ -143,7 +143,7 @@ function LastSetBar({ session, progress, onUndo }: { session: WorkoutSession; pr
     );
   }
 
-  const xp = (challengeDone ? GAME_CONFIG.xp.challenge : 0) + (personalBest ? GAME_CONFIG.xp.personalBest : 0);
+  const xp = (challengeDone && result?.challenge ? challengeXp(result.challenge) : 0) + (personalBest ? GAME_CONFIG.xp.personalBest : 0);
   // Next challenge, as if today were finished - only shown when the engine has one.
   const next = challengeDone ? challengeFor(exercise, [...data.sessions, { ...session, finishedAt: loggedAt }]) : null;
   return (

@@ -119,5 +119,5 @@ so the rep pad stays on screen.
 `formatTarget()` in `logic/history.ts` is shared by the workout and summary screens.
 
 **D28. Your decisions after Phase 3A:** no XP unless you progress, so "matched last session" is 0 XP but still shown as
-positive. A streak week needs 2 workouts (`GAME_CONFIG.streak.minWorkoutsPerWeek`). A hit "repeat" challenge still
-pays the challenge XP, because it is the target the engine set.
+positive. A streak week needs 2 workouts (`GAME_CONFIG.streak.minWorkoutsPerWeek`). A hit "repeat" challenge pays
+`xp.repeatChallenge` (10) instead of 25. `challengeXp()` in `progress.ts` is used by both the summary and the live reward bar.

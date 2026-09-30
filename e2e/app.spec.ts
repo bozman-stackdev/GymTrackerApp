@@ -150,6 +150,16 @@ test("Today's Challenge: hit it → instant reward → summary → progress on p
   await expectNoHorizontalScroll(page);
 });
 
+test('a "repeat" challenge pays 10 XP when hit', async ({ page }) => {
+  await page.getByRole('button', { name: /^Push/ }).click();
+  await page.locator('.ex-chip', { hasText: 'Triceps' }).click();
+  await expect(page.getByTestId('challenge')).toContainText("Today's challenge · repeat");
+  await expect(page.getByTestId('challenge')).toContainText('20 kg × 15');
+  await page.locator('.rep-btn.target').click();
+  await expect(page.getByTestId('reward')).toHaveText('✓ CHALLENGE COMPLETE');
+  await expect(page.getByTestId('last-set')).toContainText('+10 XP');
+});
+
 test('finishing every exercise shows a one-tap Finish, and reopening the app resumes the workout', async ({ page }) => {
   await page.getByRole('button', { name: /Pull/ }).click();
   await page.goto('/'); // "reopen" the app on the home screen

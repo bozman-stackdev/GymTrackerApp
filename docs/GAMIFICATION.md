@@ -21,7 +21,7 @@ The challenge is the progression engine's suggestion as one target: `challengeFo
 |---|---|---|
 | add a rep (R6) | `more-reps` | TODAY'S CHALLENGE · 60 kg × 9 |
 | add weight (R2) | `more-weight` | TODAY'S CHALLENGE · 65 kg × 8 |
-| stay after one strong session (R3), or after a dip (R5) | `repeat` | TODAY'S CHALLENGE · REPEAT · 60 kg × 12 |
+| stay after one strong session (R3), or after a dip (R5) | `repeat` | TODAY'S CHALLENGE · REPEAT · 60 kg × 12 (10 XP) |
 | go lighter (R4) | `lighter` | TODAY'S CHALLENGE · 55 kg × 8 |
 | first time / building history (R0, R1) | none | "Match last time" (no challenge yet) |
 
@@ -29,7 +29,7 @@ Result per exercise (`evaluate`), from the best set at (or above) the target wei
 
 | Result | When | Reward |
 |---|---|---|
-| `hit` | a set reaches the target reps | +25 XP, "✓ CHALLENGE COMPLETE" |
+| `hit` | a set reaches the target reps | +25 XP, "✓ CHALLENGE COMPLETE" (+10 XP for a *repeat* challenge) |
 | `exceeded` | more reps than the target | +25 XP (the same: no bonus for overdoing it) |
 | `matched` | not the target, but as good as last session | no XP (XP is only for progress); positive note "✓ Matched last session" |
 | `missed` | neither | nothing taken away; "same target next time" |
@@ -42,6 +42,7 @@ No separate Start button: the rep pad records the set in one tap, and the reward
 |---|---|
 | Workout (≥ 3 sets, max once per day) | 10 |
 | Challenge hit or beaten | 25 |
+| "Repeat" challenge hit (stay at the same weight × reps) | 10 |
 | Personal best | 50 |
 | Consistency milestone (every 4 streak weeks) | 50 |
 | Matched last session | 0 (by decision: no XP unless you progress) |

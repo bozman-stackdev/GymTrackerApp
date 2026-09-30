@@ -102,6 +102,15 @@ describe('challenge completion', () => {
     expect(scored.events.some((e) => e.type === 'matched' || e.type === 'challenge')).toBe(false);
   });
 
+  it('hitting a "repeat" challenge pays the smaller repeat XP', () => {
+    const topOnce: Row[] = [['2026-06-01', 60, [10, 10, 9]], ['2026-06-08', 60, [11, 11, 10]], ['2026-06-15', 60, [12, 12, 12]]];
+    expect(challengeFor(press, history(topOnce))).toMatchObject({ kind: 'repeat', weightKg: 60, reps: 12 });
+    const p = buildProgress(history([...topOnce, ['2026-06-22', 60, [12, 12, 12]]]), exercises);
+    expect(p.bySession.get('s3')!.events).toContainEqual({ type: 'challenge', xp: XP.repeatChallenge, exerciseId: 'press' });
+    expect(XP.repeatChallenge).toBe(10);
+    expect(XP.repeatChallenge).toBeLessThan(XP.challenge);
+  });
+
   it('repeating last session counts as a hit when the target equals last best set', () => {
     // Last session 11, 10, 10 → challenge 60 × 11 (weakest set + 1 = best set): doing 11 again completes it.
     expect(evaluate(challenge, sets(60, [11, 10, 10]))).toBe('hit');

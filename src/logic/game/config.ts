@@ -10,6 +10,8 @@ export const GAME_CONFIG = {
     workout: 10,
     /** Hitting (or beating) Today's Challenge on an exercise. Beating it pays the same - no incentive to overdo it. */
     challenge: 25,
+    /** Hitting a "repeat" challenge (the engine said stay at the same weight × reps): less, as it isn't new progress. */
+    repeatChallenge: 10,
     /** Matching last session when the challenge wasn't hit: positive feedback, but no XP (XP is for progress). */
     matched: 0,
     /** New personal best (only at or below the suggested weight - see challenge.ts). */

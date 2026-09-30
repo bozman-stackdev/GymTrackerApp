@@ -7,7 +7,7 @@
  */
 import type { Exercise, SetLog, WorkoutSession } from '../../types';
 import { ACHIEVEMENTS, type GameStats } from './achievements';
-import { isSuccess, pbScore, scoreExercise, type ExerciseResult } from './challenge';
+import { isSuccess, pbScore, scoreExercise, type Challenge, type ExerciseResult } from './challenge';
 import { GAME_CONFIG, type GameConfig } from './config';
 import { levelFor, type LevelInfo } from './levels';
 import { WeeklyStreak, weekIndex } from './streak';
@@ -49,6 +49,11 @@ export interface Progress {
 
 const localDay = (iso: string) => new Date(iso).toDateString();
 
+/** XP for completing a challenge: a "repeat" target pays less than one that asks for progress. */
+export function challengeXp(challenge: Challenge, config: GameConfig = GAME_CONFIG): number {
+  return challenge.kind === 'repeat' ? config.xp.repeatChallenge : config.xp.challenge;
+}
+
 /**
  * @param sessions finished workouts; may also include the workout in progress (pass it with a `finishedAt`) to
  *                 preview what it has earned so far.
@@ -88,7 +93,7 @@ export function buildProgress(
 
     for (const r of results) {
       if (isSuccess(r.outcome)) {
-        events.push({ type: 'challenge', xp: config.xp.challenge, exerciseId: r.exerciseId });
+        events.push({ type: 'challenge', xp: challengeXp(r.challenge!, config), exerciseId: r.exerciseId });
         stats.challengesCompleted++;
         if (r.challenge?.kind === 'more-weight') stats.weightIncreases++;
       } else if (r.outcome === 'matched' && config.xp.matched > 0) {
