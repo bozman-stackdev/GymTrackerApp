@@ -112,6 +112,17 @@ describe('storage', () => {
     expect(loadData(storage)).toEqual(changed);
   });
 
+  it('drops machine photos saved by earlier versions', () => {
+    const storage = memoryStorage();
+    const old = createSampleData();
+    (old.exercises[0] as { photo?: string }).photo = 'data:image/jpeg;base64,AAAA';
+    storage.setItem('gymtracker:data', JSON.stringify(old));
+    const loaded = loadData(storage);
+    expect(JSON.stringify(loaded)).not.toContain('data:image');
+    expect(loaded.exercises).toHaveLength(old.exercises.length); // nothing else lost
+    expect(loaded.sessions).toEqual(old.sessions);
+  });
+
   it('keeps a backup instead of losing unreadable data', () => {
     const storage = memoryStorage();
     storage.setItem('gymtracker:data', '{not json');

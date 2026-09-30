@@ -47,7 +47,6 @@ export function ExerciseScreen() {
 
   return (
     <Screen title={exercise.name} back action={<Link to={`/exercises/${exercise.id}/edit`} className="icon-btn" aria-label="Edit exercise" style={{ display: 'grid', placeItems: 'center' }}>✎</Link>}>
-      {exercise.photo && <img className="photo-preview" src={exercise.photo} alt={`Your photo of ${exercise.name}`} />}
       <div className="chips">
         <span className="tag">{exercise.muscleGroup}</span>
         <span className="tag">{exercise.equipment}</span>
@@ -100,7 +99,7 @@ export function ExerciseFormScreen() {
 
   const save = () => {
     const exercise = { ...form, name: form.name.trim(), repRange: [Math.min(min, max), Math.max(min, max)] as [number, number] };
-    // ?start=1 (from a workout or the photo flow): start tracking the new exercise straight away.
+    // ?start=1 (from a workout or the scan flow): start tracking the new exercise straight away.
     const startNow = !existing && params.get('start') === '1';
     update((d) => (startNow ? startExercise(saveExercise(d, exercise), exercise.id) : saveExercise(d, exercise)));
     navigate(startNow ? '/workout' : `/exercises/${exercise.id}`, { replace: true });

@@ -14,8 +14,6 @@ export interface Exercise {
   /** Smallest sensible weight jump in kg. 0 = bodyweight (reps-only progression). */
   weightStepKg: number;
   isCustom?: boolean;
-  /** Small JPEG data URL of the user's own photo of the machine (optional). */
-  photo?: string;
 }
 
 export interface RoutineItem {

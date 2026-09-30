@@ -143,7 +143,7 @@ test('scan: photo → "What are you using?" → Start → tracking (best guess i
   await expect(page.getByTestId('sets-today').locator('.slot.done')).toHaveCount(1);
 });
 
-test('scan during a workout adds to it; "Other" lets you pick anything; photo is saved', async ({ page }) => {
+test('scan during a workout adds to it; "Other" lets you pick anything; the photo is not kept', async ({ page }) => {
   await page.getByRole('button', { name: /^Push/ }).click();
   await page.getByRole('link', { name: 'Add exercise' }).click();
   await page.getByRole('link', { name: /Scan a machine/ }).click();
@@ -157,8 +157,11 @@ test('scan during a workout adds to it; "Other" lets you pick anything; photo is
 
   await expect(page.getByRole('heading', { name: 'Leg Press' })).toBeVisible();
   await expect(page.locator('.ex-chip')).toHaveCount(7); // 5 Push + Leg Press + "add"
+  // The photo was only used to pick the exercise: nothing image-like is stored.
+  const stored = await page.evaluate(() => JSON.stringify({ ...localStorage }));
+  expect(stored).not.toMatch(/data:image|blob:|"photo"/);
   await page.goto('/#/exercises/leg-press');
-  await expect(page.getByRole('img', { name: /Your photo of Leg Press/ })).toBeVisible();
+  await expect(page.locator('img')).toHaveCount(0); // no photo shown (the trend chart is an SVG, not a photo)
 });
 
 test('scan → not listed → create exercise → tracking', async ({ page }) => {

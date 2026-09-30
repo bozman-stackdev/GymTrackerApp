@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { Exercise } from '../types';
 
-/** Searchable exercise list. Reused for adding to a workout, building routines and the photo flow. */
+/** Searchable exercise list. Reused for adding to a workout, building routines and the scan flow. */
 export function ExercisePicker({ exercises, onPick, exclude = [] }: {
   exercises: Exercise[];
   onPick: (exercise: Exercise) => void;
@@ -32,7 +32,6 @@ export function ExercisePicker({ exercises, onPick, exclude = [] }: {
 export function ExerciseRow({ exercise, detail, onClick }: { exercise: Exercise; detail?: string; onClick: () => void }) {
   return (
     <button className="list-item" onClick={onClick}>
-      {exercise.photo && <img className="thumb" src={exercise.photo} alt="" />}
       <div className="grow">
         <div className="title">{exercise.name}</div>
         <div className="muted small">{detail ?? `${exercise.muscleGroup} · ${exercise.equipment}`}</div>

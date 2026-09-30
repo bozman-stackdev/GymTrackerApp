@@ -2,10 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ExercisePicker } from '../components/ExercisePicker';
 import { Screen } from '../components/Screen';
-import { saveExercise, startExercise } from '../data/actions';
+import { startExercise } from '../data/actions';
 import { useStore } from '../data/store';
 import { likelyExerciseIds } from '../logic/history';
-import { toThumbnail } from '../services/image';
 import { recognizer, type RecognitionResult } from '../services/recognition';
 import type { Exercise } from '../types';
 
@@ -13,6 +12,7 @@ type Step = 'capture' | 'analysing' | 'choose' | 'other';
 
 /**
  * "Take a photo" → "What are you using?" → pick → Start → tracking.
+ * The photo is only used to suggest exercises: it stays in memory on this screen and is never stored.
  * Recognition is behind services/recognition, so this screen doesn't care whether it's the demo or a real AI service.
  */
 export function ScanScreen() {
@@ -22,18 +22,15 @@ export function ScanScreen() {
   const library = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState<Step>('capture');
-  const [photo, setPhoto] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [result, setResult] = useState<RecognitionResult | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [savePhoto, setSavePhoto] = useState(true);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
 
   const onPhoto = async (file: File | undefined) => {
     if (!file) return;
-    setPhoto(file);
     setPreviewUrl(URL.createObjectURL(file));
     setFailed(false);
     setStep('analysing');
@@ -49,12 +46,8 @@ export function ScanScreen() {
     }
   };
 
-  const start = async (exercise: Exercise) => {
-    let thumb: string | undefined;
-    if (savePhoto && photo) {
-      try { thumb = await toThumbnail(photo); } catch { /* start anyway, without the photo */ }
-    }
-    update((d) => startExercise(thumb ? saveExercise(d, { ...exercise, photo: thumb }) : d, exercise.id));
+  const start = (exercise: Exercise) => {
+    update((d) => startExercise(d, exercise.id));
     navigate('/workout', { replace: true });
   };
 
@@ -87,7 +80,6 @@ export function ScanScreen() {
           <div className="options" role="radiogroup" aria-label="Suggested exercises">
             {options.map((e) => (
               <button key={e.id} role="radio" aria-checked={e.id === selectedId} className={`option${e.id === selectedId ? ' on' : ''}`} onClick={() => setSelectedId(e.id)}>
-                {e.photo && <img className="thumb" src={e.photo} alt="" />}
                 <span className="grow">{e.name}</span>
                 <span className="option-check" aria-hidden>{e.id === selectedId ? '✓' : ''}</span>
               </button>
@@ -100,13 +92,7 @@ export function ScanScreen() {
           <button className="btn primary huge" disabled={!selected} onClick={() => selected && start(selected)}>
             Start{selected ? ` ${selected.name}` : ''}
           </button>
-          <div className="row">
-            <label className="row small muted grow">
-              <input type="checkbox" checked={savePhoto} onChange={(e) => setSavePhoto(e.target.checked)} style={{ width: 22, height: 22 }} />
-              Save photo
-            </label>
-            <button className="btn ghost" onClick={retake}>Retake</button>
-          </div>
+          <button className="btn ghost block" onClick={retake}>Retake photo</button>
         </>
       )}
 

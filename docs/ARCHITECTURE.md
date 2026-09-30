@@ -10,12 +10,12 @@ enough for this size. HashRouter works on any static host and inside a native we
 
 **D2. Layers: `types` → `logic` / `data/actions` (pure TS) → `data/store` (React) → `screens`.**
 Everything under `logic/`, `data/actions.ts`, `data/seed.ts`, `services/` and `types.ts` has no React or browser
-dependency (except `storage.ts` and `toThumbnail`), so it can be reused unchanged in a React Native / Capacitor app.
+dependency (except `storage.ts` and `services/image.ts`), so it can be reused unchanged in a React Native / Capacitor app.
 
 **D3. Storage: one JSON document in `localStorage` (`gymtracker:data`), with a `version` field.**
 Simple and plenty for years of workouts (~1 KB per session). Only `storage.ts` touches it. When the shape changes,
 bump `AppData.version` and add a migration in `migrate()`. Unreadable data is backed up under a separate key instead
-of being overwritten. Limit: ~5 MB per origin - photos are stored as ~15 KB thumbnails to stay well within it.
+of being overwritten. Limit: ~5 MB per origin, far more than workout data needs (photos are not stored, see D23).
 
 **D4. All state changes are pure functions `(AppData, …) => AppData` in `actions.ts`.**
 Screens call `update(d => logSet(d, …))`. Easy to unit test, and the same functions can later back a sync layer.
@@ -95,3 +95,7 @@ screen falls back to the manual list.
 is passed to the recognizer. The demo uses it; a real service may ignore it or use it to break ties.
 `routinesByNextUp` moved to `logic/history.ts` and is shared with the home screen. Image resizing moved to
 `services/image.ts`. No data-model changes.
+
+**D23. Photos are never stored** (your decision after Phase 4). A scan photo only lives in memory on the scan screen, and
+only for choosing the exercise. The `Exercise.photo` field was removed, and `migrate()` deletes photos saved by earlier
+versions when the app loads. A real recognition service would receive the photo only for that one request.

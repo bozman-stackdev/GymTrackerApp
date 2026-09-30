@@ -10,7 +10,7 @@ Train → **📷 Scan machine** → **Take a photo** (or *Choose from photos*) �
 - *Start* adds the exercise to the workout in progress, or starts a new workout with it (`startExercise` in `data/actions.ts`).
 - *Other…* shows the full searchable list. Tapping an exercise there starts it; *Create new exercise* starts the new one.
 - If recognition fails, the app goes straight to the manual list. The user is never stuck.
-- The photo is saved as a small thumbnail on the exercise (can be switched off per scan).
+- **The photo is not stored.** It's only used to suggest exercises, lives in memory on the scan screen, and is gone once you tap Start or leave.
 - Also reachable from *Add exercise* during a workout and from the Exercises tab.
 
 ## Today: demo recognizer (`mock.ts`)
@@ -50,6 +50,5 @@ return it from `pickRecognizer()` in `index.ts`.
 Nothing in the screens needs to change for either option.
 
 ## Ideas for later
-- Log (photo, suggestions, what the user picked) to measure accuracy and build training data. This needs consent.
+- Log only which suggestion the user picked (not the photo) to measure accuracy.
 - Offer "Create *Hack Squat*?" when the service names a machine the user doesn't have yet.
-- Use the saved exercise photos as reference images for matching.

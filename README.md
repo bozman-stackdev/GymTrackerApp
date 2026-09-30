@@ -63,7 +63,7 @@ src/
     history.ts              Helpers: exercise history, last performance, formatting, volume, e1RM
   services/
     recognition/            Photo → exercise suggestions: contract, demo, backend adapter (docs/RECOGNITION.md)
-    image.ts                Photo resizing / thumbnails
+    image.ts                Photo resizing before recognition (photos are never stored)
   components/               Reusable UI: Screen, TabBar, Stepper, ExercisePicker, RecommendationCard, TrendChart
   screens/                  One file per screen (Home, Workout, AddExercise, Scan, History, Exercises, Routine, Profile)
   App.tsx                   Routes

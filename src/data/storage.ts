@@ -23,14 +23,16 @@ export function saveData(data: AppData, storage: Storage = localStorage): void {
   try {
     storage.setItem(KEY, JSON.stringify(data));
   } catch (err) {
-    // Most likely the ~5 MB quota is full (e.g. too many photos).
+    // Most likely the ~5 MB browser quota is full.
     console.error('Could not save data', err);
-    alert('Could not save - browser storage is full. Try removing exercise photos.');
+    alert('Could not save - browser storage is full.');
   }
 }
 
 /** Upgrade older saved shapes to the current one. Add a case whenever AppData.version changes. */
 function migrate(data: AppData): AppData {
   if (data.version !== 1) throw new Error(`Unknown data version ${String(data.version)}`);
+  // Earlier versions could save machine photos on exercises. Photos are no longer kept: drop them to free space.
+  data.exercises = data.exercises.map(({ photo: _photo, ...e }: AppData['exercises'][number] & { photo?: string }) => e);
   return data;
 }

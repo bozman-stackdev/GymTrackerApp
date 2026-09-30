@@ -1,4 +1,4 @@
-/** Browser image helpers (canvas-based). */
+/** Browser image helpers (canvas-based). Used to shrink photos before sending them for recognition. */
 
 /** Scales a photo down so its longest side is at most `maxSize` px, as JPEG. */
 export async function resizeImage(photo: Blob, maxSize: number, quality = 0.8): Promise<Blob> {
@@ -14,13 +14,3 @@ export async function resizeImage(photo: Blob, maxSize: number, quality = 0.8): 
   );
 }
 
-/** Small JPEG data URL (~10-20 KB) that fits comfortably in local storage. */
-export async function toThumbnail(photo: Blob, maxSize = 240): Promise<string> {
-  const small = await resizeImage(photo, maxSize, 0.7);
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(small);
-  });
-}

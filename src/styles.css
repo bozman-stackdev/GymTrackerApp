@@ -77,7 +77,6 @@ h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .06em; color: v
   background: var(--surface); border: 1px solid var(--border); text-align: left; width: 100%; cursor: pointer;
 }
 .list-item .title { font-weight: 600; }
-.thumb { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; flex: none; }
 .tag { font-size: 13px; padding: 2px 8px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); }
 
 /* ---------- Forms ---------- */
@@ -209,7 +208,6 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; 
 .option.other { font-weight: 400; color: var(--text-2); min-height: 56px; }
 .demo-note { margin: 0; }
 
-.photo-preview { width: 100%; max-height: 28vh; object-fit: cover; border-radius: var(--radius); }
 .banner { background: var(--accent); color: var(--accent-ink); border-radius: var(--radius); padding: 16px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; min-height: var(--tap); }
 .list-item.next-up { border: 2px solid var(--accent); min-height: 88px; }
 .next-up-label { color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
