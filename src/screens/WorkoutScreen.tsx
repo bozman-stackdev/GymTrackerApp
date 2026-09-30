@@ -6,7 +6,7 @@ import { useWakeLock } from '../components/useWakeLock';
 import { discardWorkout, finishWorkout, goToExercise, logSet, undoLastSet } from '../data/actions';
 import { useExerciseLookup, useStore } from '../data/store';
 import { formatKg, formatSets, lastPerformance, workingWeight } from '../logic/history';
-import { plannedSet, recommend } from '../logic/progression';
+import { PROGRESSION_DISCLAIMER, plannedSet, recommend } from '../logic/progression';
 import type { Exercise, WorkoutSession } from '../types';
 
 /**
@@ -135,6 +135,7 @@ function SetLogger({ exercise, entryIndex }: { exercise: Exercise; entryIndex: n
   const plan = plannedSet(rec, entry.sets, last);
 
   const [weight, setWeight] = useState(plan.weightKg);
+  const [showWhy, setShowWhy] = useState(false);
   const usesWeight = exercise.weightStepKg > 0;
   const needsWeight = usesWeight && weight <= 0;
   const setsDone = entry.sets.length;
@@ -152,10 +153,9 @@ function SetLogger({ exercise, entryIndex }: { exercise: Exercise; entryIndex: n
     navigator.vibrate?.(30);
   };
 
-  const hint =
-    rec.kind === 'increase-weight' || rec.kind === 'increase-reps' || rec.kind === 'decrease-weight' ? rec.title
-    : rec.kind === 'first-time' ? `First time – pick a weight for ${exercise.repRange[0]}–${exercise.repRange[1]} reps`
-    : null;
+  // One calm line; the explanation is one tap away so the rep pad stays on screen.
+  const hint = rec.kind === 'first-time' ? `First time – pick a weight for ${exercise.repRange[0]}–${exercise.repRange[1]} reps` : rec.title;
+  const waiting = rec.kind === 'first-time' || rec.kind === 'not-enough-data';
 
   return (
     <section className="stack logger">
@@ -164,7 +164,14 @@ function SetLogger({ exercise, entryIndex }: { exercise: Exercise; entryIndex: n
         <p className="muted last-session" data-testid="last-time">
           Last session: <strong>{last ? formatSets(last.sets) : '—'}</strong>
         </p>
-        {hint && <p className="target" data-testid="recommendation">{hint}</p>}
+        <button className={`rec-line${waiting ? ' wait' : ''}`} data-testid="recommendation" aria-expanded={showWhy} onClick={() => setShowWhy(!showWhy)}>
+          {hint} <span className="why">{showWhy ? 'Hide' : 'Why?'}</span>
+        </button>
+        {showWhy && (
+          <p className="muted small why-text" data-testid="recommendation-reason">
+            {rec.reason} <span className="disclaimer">{PROGRESSION_DISCLAIMER}</span>
+          </p>
+        )}
       </div>
 
       <div className="slots" data-testid="sets-today" aria-label="Sets this workout">

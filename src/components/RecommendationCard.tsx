@@ -1,9 +1,10 @@
-import type { Recommendation } from '../logic/progression';
+import { PROGRESSION_DISCLAIMER, type Recommendation } from '../logic/progression';
 
 const ICONS: Record<Recommendation['kind'], string> = {
   'increase-weight': '⬆️',
   'increase-reps': '➕',
   'decrease-weight': '⬇️',
+  hold: '⏸️',
   'not-enough-data': '⏳',
   'first-time': '👋',
 };
@@ -15,6 +16,7 @@ export function RecommendationCard({ rec }: { rec: Recommendation }) {
     <div className={`card hint ${tone}`} data-testid="recommendation">
       <div className="title">{ICONS[rec.kind]} {rec.title}</div>
       <div className="muted small">{rec.reason}</div>
+      <div className="muted disclaimer">{PROGRESSION_DISCLAIMER}</div>
     </div>
   );
 }

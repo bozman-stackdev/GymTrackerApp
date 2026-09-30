@@ -69,14 +69,9 @@ e2e/app.spec.ts             End-to-end tests of the main user flows
 docs/ARCHITECTURE.md        Architecture decisions log - read before changing structure
 ```
 
-## Progression rules (in `src/logic/progression.ts`)
+## Progression suggestions
 
-Checked in order, per exercise, using only *finished* workouts:
-
-0. **Fewer than 3 sessions or less than 14 days of history** → no advice; the app pre-fills exactly what you did last time.
-1. **Every working set reached the top of the rep range** (e.g. 12 of 8–12) → add one weight step (per exercise, e.g. 5 kg), reps back to the bottom of the range.
-2. **Below the bottom of the range at the same weight for 2 sessions in a row** → drop one weight step.
-3. **Otherwise** → same weight, aim for one more rep than your weakest set (capped at the top of the range).
-
-"Working sets" = sets at the heaviest weight of that session, so warm-ups are ignored. Bodyweight exercises progress by reps only.
-All thresholds are in `PROGRESSION_RULES`; each suggestion includes a plain-language reason.
+The app suggests when to add reps or weight, using only your own history, and never after just one or two sessions
+(it needs at least 3 sessions over 14 days). Weight goes up only after you hit the top of the rep range in 2 sessions in a row.
+Every suggestion explains why (tap **Why?** on the workout screen). Rules, settings and example scenarios are in
+**[docs/PROGRESSION.md](docs/PROGRESSION.md)**. Run `npm run test:scenarios` to see them checked.

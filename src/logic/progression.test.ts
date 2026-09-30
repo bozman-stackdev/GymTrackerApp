@@ -1,14 +1,20 @@
+/**
+ * Example scenarios for the progression engine - read these to see how it behaves.
+ * Exercise used: a machine press, rep range 8–12, weight step 5 kg (unless stated otherwise).
+ * Each history row is [days ago, weight kg, reps per set], oldest first.
+ */
 import { describe, expect, it } from 'vitest';
 import { createSampleData } from '../data/seed';
 import type { Exercise, WorkoutSession } from '../types';
 import { lastPerformance } from './history';
-import { plannedSet, recommend } from './progression';
+import { PROGRESSION_CONFIG, plannedSet, recommend } from './progression';
 
 const press: Exercise = { id: 'press', name: 'Press', muscleGroup: 'chest', equipment: 'machine', repRange: [8, 12], weightStepKg: 5 };
 const dips: Exercise = { ...press, id: 'dips', equipment: 'bodyweight', weightStepKg: 0 };
 
-/** Build finished sessions: each item is [daysAgo, weightKg, reps per set]. */
-function sessions(exerciseId: string, rows: [number, number, number[]][]): WorkoutSession[] {
+type Row = [daysAgo: number, weightKg: number, reps: number[]];
+
+function history(rows: Row[], exerciseId = 'press'): WorkoutSession[] {
   const now = Date.parse('2026-06-30T18:00:00Z');
   return rows.map(([daysAgo, weightKg, reps], i) => {
     const at = new Date(now - daysAgo * 86_400_000).toISOString();
@@ -19,92 +25,109 @@ function sessions(exerciseId: string, rows: [number, number, number[]][]): Worko
   });
 }
 
-/** Three sessions over three weeks: enough history for real recommendations. */
-const enough = (last: [number, number[]], prev: [number, number[]] = [40, [10, 10, 9]]) =>
-  sessions('press', [[21, 40, [9, 9, 8]], [14, prev[0], prev[1]], [0, last[0], last[1]]]);
+interface Scenario {
+  name: string;
+  rows: Row[];
+  exercise?: Exercise;
+  rule: string;
+  title: string;
+  /** Text the explanation must contain. */
+  why?: string;
+}
 
-describe('recommend', () => {
-  it('handles a brand new exercise', () => {
-    expect(recommend(press, []).kind).toBe('first-time');
-  });
+const scenarios: Scenario[] = [
+  // --- Patience: no advice from one or two sessions -------------------------------------------
+  { name: 'brand new exercise', rows: [], rule: 'R0', title: 'First time' },
+  { name: 'one session', rows: [[3, 60, [10, 10, 9]]], rule: 'R1', title: 'Match last time', why: '2 more sessions' },
+  { name: 'two sessions, even perfect ones', rows: [[10, 60, [12, 12, 12]], [3, 60, [12, 12, 12]]], rule: 'R1', title: 'Match last time', why: '1 more session' },
+  { name: 'three sessions crammed into one week', rows: [[6, 60, [10, 10, 10]], [4, 60, [11, 11, 10]], [2, 60, [12, 12, 12]]], rule: 'R1', title: 'Match last time', why: 'more days of history' },
 
-  it('waits for enough sessions', () => {
-    const rec = recommend(press, sessions('press', [[20, 40, [12, 12, 12]], [10, 40, [12, 12, 12]]]));
-    expect(rec.kind).toBe('not-enough-data');
-    expect(rec.reason).toContain('1 more session');
-    expect(rec.weightKg).toBe(40);
-  });
+  // --- Normal progress: add reps first -------------------------------------------------------
+  { name: 'steady progress inside the range', rows: [[21, 60, [9, 9, 8]], [14, 60, [10, 10, 9]], [7, 60, [11, 10, 10]]], rule: 'R6', title: 'Try 60 kg × 11', why: 'Add a rep to your weakest set' },
+  { name: 'never targets above the top of the range', rows: [[21, 60, [10, 10, 9]], [14, 60, [11, 11, 10]], [7, 60, [12, 12, 11]]], rule: 'R6', title: 'Try 60 kg × 12' },
+  { name: 'counts good sessions at this weight', rows: [[28, 60, [8, 8, 8]], [21, 60, [9, 9, 8]], [14, 60, [10, 9, 9]], [7, 60, [10, 10, 9]]], rule: 'R6', title: 'Try 60 kg × 10', why: '4 good sessions' },
 
-  it('waits for enough days even with many sessions', () => {
-    const rec = recommend(press, sessions('press', [[6, 40, [12, 12]], [4, 40, [12, 12]], [2, 40, [12, 12]], [0, 40, [12, 12]]]));
-    expect(rec.kind).toBe('not-enough-data');
-    expect(rec.reason).toContain('day');
-  });
+  // --- Consistency before adding weight --------------------------------------------------------
+  { name: 'top of the range once: confirm it first', rows: [[21, 60, [10, 10, 9]], [14, 60, [11, 11, 10]], [7, 60, [12, 12, 12]]], rule: 'R3', title: 'Stay at 60 kg × 12', why: 'another strong session' },
+  { name: 'top of the range twice in a row: add weight', rows: [[21, 60, [11, 11, 10]], [14, 60, [12, 12, 12]], [7, 60, [12, 12, 12]]], rule: 'R2', title: 'Try 65 kg × 8', why: 'completed 60 kg × 12+ on every set in your last 2 sessions' },
+  { name: 'three strong sessions are mentioned too', rows: [[21, 60, [12, 12, 12]], [14, 60, [12, 12, 12]], [7, 60, [13, 12, 12]]], rule: 'R2', title: 'Try 65 kg × 8', why: 'last 3 sessions' },
+  { name: 'a missed rep on the last set breaks the streak', rows: [[21, 60, [11, 11, 10]], [14, 60, [12, 12, 12]], [7, 60, [12, 12, 11]]], rule: 'R6', title: 'Try 60 kg × 12' },
+  { name: 'a streak at a lighter weight does not count', rows: [[21, 55, [12, 12, 12]], [14, 55, [12, 12, 12]], [7, 60, [12, 12, 12]]], rule: 'R3', title: 'Stay at 60 kg × 12' },
+  { name: 'right after a weight increase: build reps again', rows: [[21, 60, [12, 12, 12]], [14, 60, [12, 12, 12]], [7, 65, [8, 8, 7]]], rule: 'R6', title: 'Try 65 kg × 8' },
 
-  it('adds weight when every set hit the top of the range', () => {
-    const rec = recommend(press, enough([40, [12, 12, 12]]));
-    expect(rec).toMatchObject({ kind: 'increase-weight', weightKg: 45, reps: 8 });
-    expect(rec.reason).toContain('12, 12, 12');
-  });
+  // --- Too heavy --------------------------------------------------------------------------------
+  { name: 'last set just short (normal fatigue) is not "too heavy"', rows: [[21, 65, [9, 8, 7]], [14, 65, [8, 8, 7]], [7, 65, [8, 8, 7]]], rule: 'R6', title: 'Try 65 kg × 8' },
+  { name: 'one bad day is not "too heavy"', rows: [[21, 65, [9, 9, 8]], [14, 65, [10, 9, 9]], [7, 65, [7, 6, 6]]], rule: 'R6', title: 'Try 65 kg × 8' },
+  { name: 'no set reached the range twice: go lighter', rows: [[21, 70, [8, 7, 7]], [14, 70, [7, 7, 6]], [7, 70, [7, 6, 6]]], rule: 'R4', title: 'Try 65 kg × 8', why: 'No set reached 8 reps at 70 kg in your last 2 sessions' },
 
-  it('adds reps when not every set hit the top', () => {
-    expect(recommend(press, enough([40, [12, 11, 10]]))).toMatchObject({ kind: 'increase-reps', weightKg: 40, reps: 11 });
-  });
+  // --- Recent performance vs earlier ------------------------------------------------------------
+  {
+    name: 'clear dip in the last two sessions: stay, don\'t push',
+    rows: [[35, 60, [11, 11, 10]], [28, 60, [11, 11, 11]], [21, 60, [12, 11, 11]], [14, 60, [8, 8, 8]], [7, 60, [8, 8, 8]]],
+    rule: 'R5', title: 'Stay at 60 kg × 8', why: '% below the ones before',
+  },
+  {
+    name: 'a one-rep wobble is not a dip',
+    rows: [[35, 60, [10, 10, 9]], [28, 60, [11, 10, 10]], [21, 60, [11, 11, 10]], [14, 60, [10, 10, 10]], [7, 60, [10, 10, 9]]],
+    rule: 'R6', title: 'Try 60 kg × 10',
+  },
 
-  it('never targets more reps than the top of the range', () => {
-    expect(recommend(press, enough([40, [12, 12, 11]])).reps).toBe(12);
-  });
+  // --- Bodyweight ---------------------------------------------------------------------------------
+  { name: 'bodyweight: reps only, even at the top', exercise: dips, rows: [[21, 0, [11, 11, 10]], [14, 0, [12, 12, 12]], [7, 0, [12, 12, 13]]], rule: 'R2', title: 'Try 13 reps' },
+];
 
-  it('only looks at working (heaviest) sets, ignoring warm-ups', () => {
-    const history = sessions('press', [[21, 40, [9]], [14, 40, [10]], [0, 40, [12, 12]]]);
-    history[2].entries[0].sets.unshift({ reps: 5, weightKg: 20, loggedAt: history[2].startedAt });
-    expect(recommend(press, history).kind).toBe('increase-weight');
-  });
-
-  it('drops weight after repeated sessions below the range at the same weight', () => {
-    expect(recommend(press, enough([50, [6, 6, 5]], [50, [7, 6, 6]]))).toMatchObject({ kind: 'decrease-weight', weightKg: 45 });
-  });
-
-  it('does not drop weight after a single bad day', () => {
-    expect(recommend(press, enough([50, [6, 6, 5]], [45, [9, 9, 8]])).kind).toBe('increase-reps');
-  });
-
-  it('progresses bodyweight exercises with reps only', () => {
-    const rec = recommend(dips, sessions('dips', [[21, 0, [10]], [14, 0, [11]], [0, 0, [12, 12]]]));
-    expect(rec).toMatchObject({ kind: 'increase-reps', weightKg: 0, reps: 13 });
-  });
-
-  it('ignores unfinished sessions', () => {
-    const history = enough([40, [12, 12, 12]]);
-    delete history[2].finishedAt; // e.g. the workout still in progress
-    const rec = recommend(press, history);
-    expect(rec.kind).toBe('not-enough-data'); // only 2 finished sessions remain
-    expect(rec.reason).not.toContain('12, 12, 12');
+describe('progression scenarios', () => {
+  it.each(scenarios)('$name → $rule "$title"', ({ rows, exercise = press, rule, title, why }) => {
+    const rec = recommend(exercise, history(rows, exercise.id));
+    expect({ rule: rec.rule, title: rec.title }).toEqual({ rule, title });
+    if (why) expect(rec.reason).toContain(why);
+    expect(rec.reason.length).toBeGreaterThan(20); // there is always an explanation
   });
 });
 
-describe('plannedSet', () => {
+describe('details', () => {
+  it('ignores warm-up sets (lighter than the working weight)', () => {
+    const h = history([[21, 60, [11, 11]], [14, 60, [12, 12]], [7, 60, [12, 12]]]);
+    h[2].entries[0].sets.unshift({ reps: 5, weightKg: 20, loggedAt: h[2].startedAt });
+    expect(recommend(press, h).rule).toBe('R2');
+  });
+
+  it('ignores a workout that is still in progress', () => {
+    const h = history([[21, 60, [11, 11]], [14, 60, [12, 12]], [0, 60, [12, 12]]]);
+    delete h[2].finishedAt;
+    expect(recommend(press, h).rule).toBe('R1'); // only 2 finished sessions
+  });
+
+  it('is configurable without touching the UI', () => {
+    const topOnce = history([[21, 60, [10, 10]], [14, 60, [11, 11]], [7, 60, [12, 12]]]);
+    expect(recommend(press, topOnce).rule).toBe('R3');
+    expect(recommend(press, topOnce, { ...PROGRESSION_CONFIG, sessionsAtTopBeforeIncrease: 1 }).rule).toBe('R2');
+    expect(recommend(press, topOnce, { ...PROGRESSION_CONFIG, minSessions: 5 }).rule).toBe('R1');
+  });
+});
+
+describe('plannedSet (what the workout screen pre-fills)', () => {
   it('copies last time set-by-set while there is not enough data', () => {
-    const history = sessions('press', [[3, 40, [10, 9, 8]]]);
-    const rec = recommend(press, history);
-    const last = lastPerformance(history, 'press');
+    const h = history([[3, 40, [10, 9, 8]]]);
+    const rec = recommend(press, h);
+    const last = lastPerformance(h, 'press');
     expect(plannedSet(rec, [], last)).toEqual({ weightKg: 40, reps: 10 });
     const today = [{ reps: 10, weightKg: 40, loggedAt: '' }, { reps: 9, weightKg: 40, loggedAt: '' }];
     expect(plannedSet(rec, today, last)).toEqual({ weightKg: 40, reps: 8 });
   });
 
-  it('keeps a weight the user changed today', () => {
-    const history = enough([40, [12, 12, 12]]);
-    const rec = recommend(press, history);
-    expect(plannedSet(rec, [], lastPerformance(history, 'press'))).toEqual({ weightKg: 45, reps: 8 });
-    expect(plannedSet(rec, [{ reps: 8, weightKg: 42.5, loggedAt: '' }], undefined).weightKg).toBe(42.5);
+  it('uses the recommendation, but keeps a weight the user changed today', () => {
+    const h = history([[21, 60, [11, 11, 10]], [14, 60, [12, 12, 12]], [7, 60, [12, 12, 12]]]);
+    const rec = recommend(press, h);
+    expect(plannedSet(rec, [], lastPerformance(h, 'press'))).toEqual({ weightKg: 65, reps: 8 });
+    expect(plannedSet(rec, [{ reps: 8, weightKg: 62.5, loggedAt: '' }], undefined).weightKg).toBe(62.5);
   });
 });
 
 describe('sample data', () => {
-  it('shows every kind of recommendation somewhere', () => {
+  it('demonstrates every rule somewhere', () => {
     const data = createSampleData(new Date('2026-06-30T12:00:00Z'));
-    const kinds = new Set(data.exercises.map((e) => recommend(e, data.sessions).kind));
-    expect([...kinds].sort()).toEqual(['decrease-weight', 'first-time', 'increase-reps', 'increase-weight', 'not-enough-data']);
+    const rules = new Set(data.exercises.map((e) => recommend(e, data.sessions).rule));
+    expect([...rules].sort()).toEqual(['R0', 'R1', 'R2', 'R3', 'R4', 'R5', 'R6']);
   });
 });

@@ -61,3 +61,20 @@ progress display and the navigation. The redirect-on-no-workout (and its `useRef
 Opening the app with a workout in progress goes straight to it (`ResumeWorkoutOnLaunch`). Home shows the routine
 done longest ago first as "Next up". A short-screen media query keeps the whole rep pad visible on phones like the iPhone SE.
 No data-model changes in this phase.
+
+## Phase 3 - Progression engine (2026-09-30)
+
+**D16. Two-step engine: `analyse()` (facts) → `recommend()` (ordered rules R0–R6).** Every recommendation carries
+`rule`, `title` and `reason`. Screens only display `title`/`reason`, so rules and thresholds change in one file.
+See `docs/PROGRESSION.md`.
+
+**D17. All thresholds live in `PROGRESSION_CONFIG`** and `recommend(exercise, sessions, config)` accepts an override,
+so per-user or per-exercise settings can be added later (e.g. stored in `AppData`) without changing the rules.
+No data-model change in this phase.
+
+**D18. Behaviour changes from Phase 1:** weight increases need consistency (top of range in 2 sessions in a row;
+after one, the advice is "stay"). "Too heavy" now means *no* set reached the range (a missed last set is normal fatigue).
+There's a new "recent dip" rule. The sample data follows the same rules and demonstrates all seven.
+
+**D19. On the workout screen, the explanation is behind a "Why?" tap** (one line by default). This keeps the rep pad
+on screen on small phones. The exercise page always shows the full explanation. Both show a short disclaimer.

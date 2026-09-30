@@ -23,8 +23,21 @@ test('open app -> routine -> set logged in 2 taps; auto-advance, undo, reload, f
   await expect(page.getByRole('heading', { name: 'Chest Press Machine' })).toBeVisible();
   await expect(page.getByTestId('last-time')).toHaveText(/^Last session: \d+ kg × /);
   const weight = await page.getByLabel('Weight', { exact: true }).inputValue();
+
+  // Suggestion: one line; the explanation is one tap away.
+  await expect(page.getByTestId('recommendation')).toContainText(`Try ${weight} kg ×`);
+  await expect(page.getByTestId('recommendation-reason')).toHaveCount(0);
+  await page.getByTestId('recommendation').click();
+  await expect(page.getByTestId('recommendation-reason')).toContainText('in your last 2 sessions');
+  await page.screenshot({ path: 'test-results/screens/2b-why.png' });
+  await page.getByTestId('recommendation').click();
   await page.screenshot({ path: 'test-results/screens/2-workout.png' });
   await expectNoHorizontalScroll(page);
+
+  // The highlighted rep button looks like the others (regression: a shared class name once left-aligned it).
+  const style = await page.locator('.rep-btn.target').evaluate((e) => [getComputedStyle(e).textAlign, e.getBoundingClientRect().height]);
+  const plain = await page.locator('.rep-btn:not(.target)').first().evaluate((e) => [getComputedStyle(e).textAlign, e.getBoundingClientRect().height]);
+  expect(style).toEqual(plain);
 
   // Tap 2: the highlighted rep target. That's the whole set.
   const target = await page.locator('.rep-btn.target').innerText();
@@ -123,7 +136,9 @@ test('exercise progress page shows recommendation, chart and history', async ({ 
   await page.getByRole('link', { name: 'Exercises' }).click();
   await page.getByPlaceholder('Search exercises').fill('shoulder press');
   await page.getByRole('button', { name: /Shoulder Press Machine/ }).click();
-  await expect(page.getByTestId('recommendation')).toContainText('Drop to');
+  await expect(page.getByTestId('recommendation')).toContainText('Try 35 kg × 8');
+  await expect(page.getByTestId('recommendation')).toContainText('No set reached 8 reps at 40 kg');
+  await expect(page.getByTestId('recommendation')).toContainText('not medical or coaching advice');
   await expect(page.locator('svg.chart')).toBeVisible();
   await page.screenshot({ path: 'test-results/screens/7-exercise.png', fullPage: true });
   await expectNoHorizontalScroll(page);
