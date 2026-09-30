@@ -10,8 +10,8 @@ export const GAME_CONFIG = {
     workout: 10,
     /** Hitting (or beating) Today's Challenge on an exercise. Beating it pays the same - no incentive to overdo it. */
     challenge: 25,
-    /** Matching last session when the challenge wasn't hit - repeating a performance is still good work. */
-    matched: 5,
+    /** Matching last session when the challenge wasn't hit: positive feedback, but no XP (XP is for progress). */
+    matched: 0,
     /** New personal best (only at or below the suggested weight - see challenge.ts). */
     personalBest: 50,
     /** Every `milestoneWeeks` weeks of streak. */
@@ -23,7 +23,7 @@ export const GAME_CONFIG = {
   xpPerLevelAfterList: 800,
   streak: {
     /** A week (Mon–Sun) counts towards the streak with at least this many workouts. More doesn't help. */
-    minWorkoutsPerWeek: 1,
+    minWorkoutsPerWeek: 2,
     /** Consistency milestone every N weeks of streak. */
     milestoneWeeks: 4,
   },

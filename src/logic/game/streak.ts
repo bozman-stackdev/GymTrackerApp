@@ -1,5 +1,5 @@
 /**
- * Weekly workout streak: consecutive weeks (Mon–Sun) with at least `minWorkoutsPerWeek` workouts.
+ * Weekly workout streak: consecutive weeks (Mon–Sun) with at least `minWorkoutsPerWeek` workouts (default 2).
  * Counting weeks (not days) rewards regular training without pushing anyone to train daily:
  * extra workouts in a week don't grow the streak, and the week in progress never breaks it.
  */

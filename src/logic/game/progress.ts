@@ -91,7 +91,7 @@ export function buildProgress(
         events.push({ type: 'challenge', xp: config.xp.challenge, exerciseId: r.exerciseId });
         stats.challengesCompleted++;
         if (r.challenge?.kind === 'more-weight') stats.weightIncreases++;
-      } else if (r.outcome === 'matched') {
+      } else if (r.outcome === 'matched' && config.xp.matched > 0) {
         events.push({ type: 'matched', xp: config.xp.matched, exerciseId: r.exerciseId });
       }
       if (r.personalBestSetIndex >= 0) {

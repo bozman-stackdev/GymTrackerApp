@@ -26,7 +26,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'five-sessions-exercise', icon: '🔁', title: '5 Sessions on the Same Exercise', description: 'Train one exercise in 5 workouts', test: (s) => s.maxSessionsOnOneExercise >= 5 },
   { id: 'personal-best', icon: '🏆', title: 'Personal Best', description: 'Set a personal best', test: (s) => s.personalBests >= 1 },
   {
-    id: 'consistency', icon: '📅', title: 'Consistency', description: `Train ${GAME_CONFIG.streak.milestoneWeeks} weeks in a row`,
+    id: 'consistency', icon: '📅', title: 'Consistency', description: `Train ${GAME_CONFIG.streak.minWorkoutsPerWeek}+ times a week for ${GAME_CONFIG.streak.milestoneWeeks} weeks in a row`,
     test: (s) => s.streakWeeks >= GAME_CONFIG.streak.milestoneWeeks,
   },
   { id: 'twenty-five-workouts', icon: '🥇', title: '25 Workouts', description: 'Finish 25 workouts', test: (s) => s.workouts >= 25 },

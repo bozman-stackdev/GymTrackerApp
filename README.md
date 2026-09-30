@@ -75,8 +75,8 @@ docs/ARCHITECTURE.md        Architecture decisions log - read before changing st
 ## Today's Challenge, XP and streaks
 
 Once an exercise has enough history, the workout screen shows **TODAY'S CHALLENGE** (e.g. *60 kg × 9*).
-Hit it and you get a brief **✓ CHALLENGE COMPLETE +25 XP**. Repeating a good performance counts too. XP builds levels,
-weekly streaks and achievements, which you can see on the workout summary and the Profile tab. Rewards never pay extra for
+Hit it and you get a brief **✓ CHALLENGE COMPLETE +25 XP**. XP is only for progress. XP builds levels,
+weekly streaks (2+ workouts a week) and achievements, which you can see on the workout summary and the Profile tab. Rewards never pay extra for
 lifting heavier than suggested. Details: **[docs/GAMIFICATION.md](docs/GAMIFICATION.md)**.
 
 ## Progression suggestions

@@ -96,7 +96,10 @@ describe('challenge completion', () => {
     const c = challengeFor(press, history(steady))!; // 60 kg × 11
     expect(evaluate(c, sets(60, [10, 10, 10]), exerciseHistory(history(steady), 'press').at(-1))).toBe('matched');
     const p = buildProgress(history([...steady, ['2026-06-22', 60, [10, 10, 10]]]), exercises);
-    expect(p.bySession.get('s3')!.events).toContainEqual({ type: 'matched', xp: XP.matched, exerciseId: 'press' });
+    const scored = p.bySession.get('s3')!;
+    expect(scored.results[0].outcome).toBe('matched'); // shown as positive feedback on the summary…
+    expect(XP.matched).toBe(0); // …but XP is only for progress
+    expect(scored.events.some((e) => e.type === 'matched' || e.type === 'challenge')).toBe(false);
   });
 
   it('repeating last session counts as a hit when the target equals last best set', () => {
@@ -155,30 +158,42 @@ describe('XP and levels', () => {
 });
 
 describe('streaks (weekly, never daily)', () => {
+  // Default: a week counts with at least 2 workouts.
+  const streakOf = (dates: string[]) => {
+    const st = new WeeklyStreak();
+    dates.forEach((d) => st.add(`${d}T18:00:00`));
+    return st;
+  };
+
+  it('needs the configured workouts per week', () => {
+    expect(GAME_CONFIG.streak.minWorkoutsPerWeek).toBe(2);
+    expect(streakOf(['2026-06-01', '2026-06-08', '2026-06-15']).current(new Date('2026-06-16T12:00:00'))).toBe(0); // 1 a week isn't enough
+  });
+
   it('counts consecutive weeks; extra workouts in a week do not help', () => {
-    const s = new WeeklyStreak();
-    ['2026-06-01', '2026-06-02', '2026-06-03', '2026-06-09', '2026-06-17'].forEach((d) => s.add(`${d}T18:00:00`));
-    expect(s.current(new Date('2026-06-18T12:00:00'))).toBe(3);
+    const st = streakOf(['2026-06-01', '2026-06-02', '2026-06-03', '2026-06-04', '2026-06-08', '2026-06-10', '2026-06-15', '2026-06-17']);
+    expect(st.current(new Date('2026-06-18T12:00:00'))).toBe(3); // 4 workouts in week 1 still count as one week
   });
 
   it('the week in progress does not break the streak', () => {
-    const s = new WeeklyStreak();
-    ['2026-06-01', '2026-06-08', '2026-06-15'].forEach((d) => s.add(`${d}T18:00:00`));
-    expect(s.current(new Date('2026-06-24T12:00:00'))).toBe(3); // Wednesday, nothing yet this week
+    const three = ['2026-06-01', '2026-06-03', '2026-06-08', '2026-06-10', '2026-06-15', '2026-06-17'];
+    expect(streakOf(three).current(new Date('2026-06-24T12:00:00'))).toBe(3); // Wednesday, nothing yet this week
+    expect(streakOf([...three, '2026-06-22']).current(new Date('2026-06-24T12:00:00'))).toBe(3); // 1 of 2 so far
+    expect(streakOf([...three, '2026-06-22', '2026-06-24']).current(new Date('2026-06-24T20:00:00'))).toBe(4);
   });
 
-  it('user misses a week: the streak restarts (quietly) and a gap to today shows 0', () => {
-    const s = new WeeklyStreak();
-    ['2026-06-01', '2026-06-08', '2026-06-22', '2026-06-29'].forEach((d) => s.add(`${d}T18:00:00`));
-    expect(s.endingAt(weekIndex('2026-06-29T18:00:00'))).toBe(2);
-    expect(s.current(new Date('2026-07-15T12:00:00'))).toBe(0);
+  it('user misses a week (or only trains once): the streak restarts quietly; a long gap shows 0', () => {
+    const st = streakOf(['2026-06-01', '2026-06-03', '2026-06-08', '2026-06-10', '2026-06-15', '2026-06-22', '2026-06-24', '2026-06-29', '2026-07-01']);
+    expect(st.endingAt(weekIndex('2026-06-29T18:00:00'))).toBe(2); // week of 06-15 had only one workout
+    expect(st.current(new Date('2026-07-22T12:00:00'))).toBe(0);
   });
 
   it('awards the consistency milestone once, when the streak reaches the configured weeks', () => {
-    const weeks: Row[] = ['2026-06-01', '2026-06-08', '2026-06-15', '2026-06-22', '2026-06-23'].map((d) => [d, 60, [10, 10, 10]]);
-    const p = buildProgress(history(weeks), exercises);
+    const dates = ['2026-06-01', '2026-06-03', '2026-06-08', '2026-06-10', '2026-06-15', '2026-06-17', '2026-06-22', '2026-06-24', '2026-06-26'];
+    const p = buildProgress(history(dates.map((d) => [d, 60, [10, 10, 10]] as Row)), exercises);
     const milestones = [...p.bySession.values()].map((s) => s.events.some((e) => e.type === 'consistency'));
-    expect(milestones).toEqual([false, false, false, true, false]);
+    expect(milestones).toEqual([false, false, false, false, false, false, false, true, false]); // 2nd workout of week 4
+    expect(p.achievements.find((a) => a.id === 'consistency')?.sessionId).toBe('s7');
   });
 });
 
@@ -188,9 +203,9 @@ describe('achievements', () => {
     const at = Object.fromEntries(p.achievements.map((a) => [a.id, a.sessionId]));
     expect(at['first-workout']).toBe('s0');
     expect(at['first-challenge']).toBe('s3');
-    expect(at['consistency']).toBe('s3'); // 4th week in a row
     expect(at['five-workouts']).toBeUndefined();
-    expect(p.bySession.get('s3')!.unlocked).toEqual(expect.arrayContaining(['first-challenge', 'consistency']));
+    expect(at['consistency']).toBeUndefined(); // one workout a week doesn't make a streak
+    expect(p.bySession.get('s3')!.unlocked).toEqual(['first-challenge']);
   });
 
   it('every achievement has a unique id and a description', () => {
@@ -200,15 +215,17 @@ describe('achievements', () => {
 });
 
 describe('sample data', () => {
-  it('shows a meaningful mid-way state out of the box', () => {
-    const now = new Date();
-    const d = createSampleData(now);
-    const p = buildProgress(d.sessions, d.exercises, now);
-    expect(p.stats.challengesCompleted).toBeGreaterThan(10);
-    expect(p.level.level).toBeGreaterThan(1);
-    expect(p.streakWeeks).toBeGreaterThanOrEqual(4);
-    expect(p.achievements.length).toBeGreaterThan(3);
-    expect(p.achievements.length).toBeLessThan(ACHIEVEMENTS.length); // something left to aim for
-    expect(p.personalBests.length).toBeGreaterThan(5);
+  it('shows a meaningful mid-way state out of the box, whatever the day of the week', () => {
+    for (let day = 5; day <= 11; day++) {
+      const now = new Date(2026, 9, day, 12); // Mon 5 Oct … Sun 11 Oct (sample dates are relative to "now")
+      const d = createSampleData(now);
+      const p = buildProgress(d.sessions, d.exercises, now);
+      expect(p.stats.challengesCompleted).toBeGreaterThan(10);
+      expect(p.level.level).toBeGreaterThan(1);
+      expect(p.streakWeeks).toBeGreaterThanOrEqual(4);
+      expect(p.achievements.length).toBeGreaterThan(3);
+      expect(p.achievements.length).toBeLessThan(ACHIEVEMENTS.length); // something left to aim for
+      expect(p.personalBests.length).toBeGreaterThan(5);
+    }
   });
 });

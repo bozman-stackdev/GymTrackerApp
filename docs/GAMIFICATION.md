@@ -31,7 +31,7 @@ Result per exercise (`evaluate`), from the best set at (or above) the target wei
 |---|---|---|
 | `hit` | a set reaches the target reps | +25 XP, "✓ CHALLENGE COMPLETE" |
 | `exceeded` | more reps than the target | +25 XP (the same: no bonus for overdoing it) |
-| `matched` | not the target, but as good as last session | +5 XP, "✓ Matched last session" |
+| `matched` | not the target, but as good as last session | no XP (XP is only for progress); positive note "✓ Matched last session" |
 | `missed` | neither | nothing taken away; "same target next time" |
 
 No separate Start button: the rep pad records the set in one tap, and the reward appears straight away.
@@ -42,16 +42,16 @@ No separate Start button: the rep pad records the set in one tap, and the reward
 |---|---|
 | Workout (≥ 3 sets, max once per day) | 10 |
 | Challenge hit or beaten | 25 |
-| Matched last session | 5 |
 | Personal best | 50 |
 | Consistency milestone (every 4 streak weeks) | 50 |
+| Matched last session | 0 (by decision: no XP unless you progress) |
 
 Levels: 1 → 0, 2 → 100, 3 → 250, 4 → 500, 5 → 800, 6 → 1200, 7 → 1700, 8 → 2300, 9 → 3000, then +800 per level.
 All values are in `GAME_CONFIG`.
 
 ## Streak (`streak.ts`)
 
-Consecutive **weeks** (Mon–Sun) with at least 1 workout. Extra workouts in a week don't grow it, so there's no reason to
+Consecutive **weeks** (Mon–Sun) with at least **2 workouts**. Extra workouts in a week don't grow it, so there's no reason to
 train more than your programme. The week in progress never breaks it. A missed week restarts it quietly.
 
 ## Personal bests
@@ -61,7 +61,7 @@ The heaviest weight done for a full set within the rep range (most reps for body
 ## Achievements (`achievements.ts`)
 
 First Workout · First Challenge Complete · 5 Workouts · 10 Challenges Complete · 5 Sessions on the Same Exercise ·
-Personal Best · Consistency (4 weeks in a row) · First Weight Increase · 25 Workouts.
+Personal Best · Consistency (2+ workouts a week, 4 weeks in a row) · First Weight Increase · 25 Workouts.
 They're shown on the workout summary when unlocked and on the Profile tab, never mid-set. Add one by adding a line.
 
 ## Safety rules (built in and tested)
