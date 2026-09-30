@@ -2,6 +2,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Screen } from '../components/Screen';
 import { startWorkout } from '../data/actions';
 import { useStore } from '../data/store';
+import { useProgress } from '../data/useProgress';
+import { streakText } from '../components/ProgressWidgets';
 import { relativeDay, routinesByNextUp } from '../logic/history';
 import type { Routine } from '../types';
 
@@ -10,6 +12,7 @@ export function HomeScreen() {
   const { data, update } = useStore();
   const navigate = useNavigate();
   const active = data.activeWorkout;
+  const progress = useProgress();
 
   const lastDone = (routineId: string) =>
     data.sessions.filter((s) => s.routineId === routineId).at(-1)?.startedAt;
@@ -30,6 +33,10 @@ export function HomeScreen() {
           <span aria-hidden>→</span>
         </Link>
       )}
+
+      <Link to="/profile" className="muted small home-progress" data-testid="home-progress">
+        Level {progress.level.level} · {streakText(progress.streakWeeks)}
+      </Link>
 
       <h2>Start a workout</h2>
       <div className="list">

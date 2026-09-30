@@ -5,7 +5,12 @@ import { formatDuration, useNow } from '../components/useNow';
 import { useWakeLock } from '../components/useWakeLock';
 import { discardWorkout, finishWorkout, goToExercise, logSet, undoLastSet } from '../data/actions';
 import { useExerciseLookup, useStore } from '../data/store';
-import { formatKg, formatSets, lastPerformance, workingWeight } from '../logic/history';
+import { useProgress } from '../data/useProgress';
+import { streakText } from '../components/ProgressWidgets';
+import { challengeFor, isSuccess, scoreExercise, type Challenge } from '../logic/game/challenge';
+import { GAME_CONFIG } from '../logic/game/config';
+import type { Progress } from '../logic/game/progress';
+import { formatKg, formatSets, formatTarget, lastPerformance, workingWeight } from '../logic/history';
 import { PROGRESSION_DISCLAIMER, plannedSet, recommend } from '../logic/progression';
 import type { Exercise, WorkoutSession } from '../types';
 
@@ -18,6 +23,7 @@ export function WorkoutScreen() {
   const { data, update } = useStore();
   const navigate = useNavigate();
   const getExercise = useExerciseLookup();
+  const progress = useProgress(true); // includes this workout, for instant feedback
   useWakeLock();
 
   const active = data.activeWorkout;
@@ -55,14 +61,14 @@ export function WorkoutScreen() {
       </header>
 
       <ExerciseStrip session={session} currentIndex={currentIndex} onSelect={(i) => update((d) => goToExercise(d, i))} />
-      <LastSetBar session={session} onUndo={(i) => update((d) => undoLastSet(d, i))} />
+      <LastSetBar session={session} progress={progress} onUndo={(i) => update((d) => undoLastSet(d, i))} />
 
       {allDone && (
         <button className="btn primary huge" onClick={() => finish(false)}>✓ Finish workout</button>
       )}
 
       {entry ? (
-        <SetLogger key={currentIndex} exercise={getExercise(entry.exerciseId)} entryIndex={currentIndex} />
+        <SetLogger key={currentIndex} exercise={getExercise(entry.exerciseId)} entryIndex={currentIndex} progress={progress} />
       ) : (
         <Link to="/workout/add" className="btn primary huge">+ Add exercise</Link>
       )}
@@ -101,38 +107,68 @@ function ExerciseStrip({ session, currentIndex, onSelect }: { session: WorkoutSe
   );
 }
 
-/** The most recent set of the whole workout, with rest time and undo. Derived from saved data, so it survives a reload. */
-function LastSetBar({ session, onUndo }: { session: WorkoutSession; onUndo: (entryIndex: number) => void }) {
+/**
+ * The most recent set of the whole workout, with rest time and undo. Derived from saved data, so it survives a reload.
+ * When that set completed Today's Challenge or was a personal best, it briefly becomes a small reward.
+ */
+function LastSetBar({ session, progress, onUndo }: { session: WorkoutSession; progress: Progress; onUndo: (entryIndex: number) => void }) {
+  const { data } = useStore();
   const getExercise = useExerciseLookup();
   const now = useNow();
-  let latest: { entryIndex: number; loggedAt: string; text: string } | undefined;
+  let latest: { entryIndex: number; setIndex: number; loggedAt: string } | undefined;
   session.entries.forEach((e, i) => {
     const s = e.sets.at(-1);
-    if (s && (!latest || s.loggedAt > latest.loggedAt)) {
-      latest = { entryIndex: i, loggedAt: s.loggedAt, text: `${s.weightKg > 0 ? `${formatKg(s.weightKg)} × ` : ''}${s.reps}` };
-    }
+    if (s && (!latest || s.loggedAt > latest.loggedAt)) latest = { entryIndex: i, setIndex: e.sets.length - 1, loggedAt: s.loggedAt };
   });
   if (!latest) return null;
-  const { entryIndex, loggedAt, text } = latest;
+  const { entryIndex, setIndex, loggedAt } = latest;
+  const entry = session.entries[entryIndex];
+  const exercise = getExercise(entry.exerciseId);
+  const set = entry.sets[setIndex];
+  const text = `${set.weightKg > 0 ? `${formatKg(set.weightKg)} × ` : ''}${set.reps}`;
+  const rest = <span className="muted small" aria-label="Rest time">{formatDuration(now - Date.parse(loggedAt))}</span>;
+  const undo = <button className="btn ghost" onClick={() => onUndo(entryIndex)}>Undo</button>;
 
+  const result = progress.bySession.get(session.id)?.results.find((r) => r.exerciseId === entry.exerciseId);
+  const challengeDone = result?.challengeSetIndex === setIndex;
+  const personalBest = result?.personalBestSetIndex === setIndex;
+
+  if (!challengeDone && !personalBest) {
+    return (
+      <div className="last-bar" data-testid="last-set" aria-live="polite">
+        <span className="last-bar-text">✓ <strong>{text}</strong> <span className="muted">{exercise.name}</span></span>
+        {rest}
+        {undo}
+      </div>
+    );
+  }
+
+  const xp = (challengeDone ? GAME_CONFIG.xp.challenge : 0) + (personalBest ? GAME_CONFIG.xp.personalBest : 0);
+  // Next challenge, as if today were finished - only shown when the engine has one.
+  const next = challengeDone ? challengeFor(exercise, [...data.sessions, { ...session, finishedAt: loggedAt }]) : null;
   return (
-    <div className="last-bar" data-testid="last-set" aria-live="polite">
-      <span className="last-bar-text">
-        ✓ <strong>{text}</strong> <span className="muted">{getExercise(session.entries[entryIndex].exerciseId).name}</span>
-      </span>
-      <span className="muted small" aria-label="Rest time">{formatDuration(now - Date.parse(loggedAt))}</span>
-      <button className="btn ghost" onClick={() => onUndo(entryIndex)}>Undo</button>
+    <div className="last-bar reward" data-testid="last-set" aria-live="polite">
+      <div className="grow">
+        <div className="reward-title" data-testid="reward">{personalBest ? '🏆 NEW PERSONAL BEST!' : '✓ CHALLENGE COMPLETE'}</div>
+        <div className="small"><strong className="xp">+{xp} XP</strong> · {streakText(progress.streakWeeks)}</div>
+        {next && <div className="small muted reward-next">Next time: {formatTarget(next)}</div>}
+      </div>
+      <div className="reward-side">{rest}{undo}</div>
     </div>
   );
 }
 
+
 /** Logging for the current exercise: weight (pre-filled) + one tap on the reps done. */
-function SetLogger({ exercise, entryIndex }: { exercise: Exercise; entryIndex: number }) {
+function SetLogger({ exercise, entryIndex, progress }: { exercise: Exercise; entryIndex: number; progress: Progress }) {
   const { data, update } = useStore();
   const entry = data.activeWorkout!.session.entries[entryIndex];
   const last = lastPerformance(data.sessions, exercise.id);
   const rec = recommend(exercise, data.sessions);
   const plan = plannedSet(rec, entry.sets, last);
+  const challenge = challengeFor(exercise, data.sessions);
+  const result = progress.bySession.get(data.activeWorkout!.session.id)?.results.find((r) => r.exerciseId === exercise.id);
+  const challengeDone = isSuccess(result?.outcome ?? null);
 
   const [weight, setWeight] = useState(plan.weightKg);
   const [showWhy, setShowWhy] = useState(false);
@@ -149,8 +185,12 @@ function SetLogger({ exercise, entryIndex }: { exercise: Exercise; entryIndex: n
     !!q.kg && q.kg !== weight && all.findIndex((o) => o.kg === q.kg) === i);
 
   const log = (reps: number) => {
-    update((d) => logSet(d, entryIndex, { reps, weightKg: usesWeight ? weight : 0 }));
-    navigator.vibrate?.(30);
+    const set = { reps, weightKg: usesWeight ? weight : 0 };
+    // A slightly longer buzz when this set earns a reward.
+    const scored = scoreExercise(exercise, [...entry.sets, { ...set, loggedAt: '' }], data.sessions);
+    const rewarded = scored.challengeSetIndex === setsDone || scored.personalBestSetIndex === setsDone;
+    update((d) => logSet(d, entryIndex, set));
+    navigator.vibrate?.(rewarded ? [40, 60, 40] : 30);
   };
 
   // One calm line; the explanation is one tap away so the rep pad stays on screen.
@@ -164,9 +204,13 @@ function SetLogger({ exercise, entryIndex }: { exercise: Exercise; entryIndex: n
         <p className="muted last-session" data-testid="last-time">
           Last session: <strong>{last ? formatSets(last.sets) : '—'}</strong>
         </p>
-        <button className={`rec-line${waiting ? ' wait' : ''}`} data-testid="recommendation" aria-expanded={showWhy} onClick={() => setShowWhy(!showWhy)}>
-          {hint} <span className="why">{showWhy ? 'Hide' : 'Why?'}</span>
-        </button>
+        {challenge ? (
+          <ChallengeLine challenge={challenge} done={challengeDone} showWhy={showWhy} onWhy={() => setShowWhy(!showWhy)} />
+        ) : (
+          <button className={`rec-line${waiting ? ' wait' : ''}`} data-testid="recommendation" aria-expanded={showWhy} onClick={() => setShowWhy(!showWhy)}>
+            {hint} <span className="why">{showWhy ? 'Hide' : 'Why?'}</span>
+          </button>
+        )}
         {showWhy && (
           <p className="muted small why-text" data-testid="recommendation-reason">
             {rec.reason} <span className="disclaimer">{PROGRESSION_DISCLAIMER}</span>
@@ -221,5 +265,18 @@ function RepPad({ target, disabled, label, onPick }: { target: number; disabled:
         <button className="rep-btn more" onClick={() => setAll(!all)}>{all ? 'Less' : 'More'}</button>
       </div>
     </div>
+  );
+}
+
+/** "TODAY'S CHALLENGE  60 kg × 9" - the one number to aim for. Tap for why. */
+function ChallengeLine({ challenge, done, showWhy, onWhy }: { challenge: Challenge; done: boolean; showWhy: boolean; onWhy: () => void }) {
+  const label = done ? '✓ Challenge complete' : challenge.kind === 'repeat' ? "Today's challenge · repeat" : "Today's challenge";
+  return (
+    <button className={`challenge${done ? ' done' : ''}`} data-testid="challenge" aria-expanded={showWhy} onClick={onWhy}>
+      <span className="challenge-label">{label}</span>
+      <span className="challenge-target" data-testid="recommendation">
+        {formatTarget(challenge)} <span className="why">{showWhy ? 'Hide' : 'Why?'}</span>
+      </span>
+    </button>
   );
 }

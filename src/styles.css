@@ -159,6 +159,26 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; 
 .rep-btn.more { font-size: 17px; color: var(--text-2); }
 .rep-btn:disabled { opacity: .35; }
 
+/* Today's Challenge */
+.challenge {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0; width: 100%; margin-top: 4px; padding: 4px 0;
+  background: none; border: none; text-align: left; cursor: pointer;
+}
+.challenge-label { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-2); }
+.challenge-target { font-size: 22px; font-weight: 800; color: var(--accent); }
+.challenge-target .why { font-size: 14px; font-weight: 400; color: var(--text-2); text-decoration: underline; margin-left: 4px; }
+.challenge.done .challenge-label { color: var(--accent); }
+.challenge.done .challenge-target { color: var(--text-2); }
+
+/* Reward: the last-set bar, briefly celebrating. Subtle and fast. */
+.last-bar.reward { padding: 8px 0 8px 14px; background: color-mix(in srgb, var(--accent) 16%, var(--surface)); animation: pop .22s ease-out; }
+.reward-title { font-weight: 800; letter-spacing: .02em; color: var(--accent); }
+.xp { color: var(--accent); }
+.reward-side { display: flex; flex-direction: column; align-items: center; }
+.reward-side .btn { min-height: 40px; }
+@keyframes pop { from { transform: scale(.97); opacity: .5; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .last-bar.reward { animation: none; } }
+
 /* Short phones (e.g. iPhone SE): keep the whole rep pad on screen without scrolling. */
 @media (max-height: 760px) {
   .workout { gap: 8px; padding-top: 8px; }
@@ -168,6 +188,15 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; 
   .workout .stepper button, .workout .stepper input { height: 56px; }
   .workout .stepper input { font-size: 34px; }
   .rep-btn { min-height: 54px; font-size: 26px; }
+  .challenge-target { font-size: 19px; }
+  .reward-next { display: none; } /* shown on the workout summary instead */
+  .last-bar.reward { padding: 4px 0 4px 14px; }
+  .reward-title { font-size: 15px; }
+  .challenge { padding: 0; margin-top: 2px; }
+  .slot { padding: 3px 4px; }
+  .quick-weights { margin-top: 4px; }
+  .quick-weights .chip { min-height: 34px; }
+  .stepper-label { font-size: 12px; }
 }
 
 .hint { border-left: 4px solid var(--accent); }
@@ -211,3 +240,18 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; 
 .banner { background: var(--accent); color: var(--accent-ink); border-radius: var(--radius); padding: 16px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; min-height: var(--tap); }
 .list-item.next-up { border: 2px solid var(--accent); min-height: 88px; }
 .next-up-label { color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+
+/* ---------- Progress (summary + profile) ---------- */
+.bar { height: 10px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin: 6px 0 4px; }
+.bar-fill { height: 100%; background: var(--accent); border-radius: 999px; transition: width .4s ease-out; }
+.achievements { display: flex; flex-direction: column; gap: 8px; }
+.achievement { display: flex; gap: 12px; align-items: center; opacity: .45; }
+.achievement.done { opacity: 1; }
+.achievement-icon { font-size: 26px; width: 36px; text-align: center; flex: none; }
+.pb-row { padding: 6px 0; border-bottom: 1px solid var(--border); gap: 10px; }
+.reward-list { display: flex; flex-direction: column; gap: 6px; }
+.reward-row { display: flex; gap: 10px; justify-content: space-between; }
+.outcome { font-size: 13px; }
+.outcome.good { color: var(--accent); font-weight: 600; }
+details > summary { cursor: pointer; min-height: 32px; display: flex; gap: 8px; align-items: center; }
+.home-progress { margin-top: -8px; }

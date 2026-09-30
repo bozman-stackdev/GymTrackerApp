@@ -3,6 +3,9 @@ import { Screen } from '../components/Screen';
 import { saveProfile } from '../data/actions';
 import { createEmptyData, createSampleData } from '../data/seed';
 import { useStore } from '../data/store';
+import { useProgress } from '../data/useProgress';
+import { AchievementList, LevelBar, PersonalBestList, streakText } from '../components/ProgressWidgets';
+import { ACHIEVEMENTS } from '../logic/game/achievements';
 import type { Experience, Goal, Profile, Sex } from '../types';
 
 const SEXES: [Sex, string][] = [['male', 'Male'], ['female', 'Female'], ['other', 'Other'], ['', 'Prefer not to say']];
@@ -11,6 +14,7 @@ const GOALS: [Goal, string][] = [['strength', 'Strength'], ['muscle', 'Build mus
 
 export function ProfileScreen() {
   const { data, update, replace } = useStore();
+  const progress = useProgress();
   const [p, setP] = useState<Profile>(data.profile);
   const [saved, setSaved] = useState(false);
   const change = <K extends keyof Profile>(key: K, value: Profile[K]) => { setP({ ...p, [key]: value }); setSaved(false); };
@@ -28,6 +32,24 @@ export function ProfileScreen() {
 
   return (
     <Screen title="Profile">
+      <h2>Progress</h2>
+      <div className="card stack" data-testid="progress">
+        <LevelBar level={progress.level} />
+        <div className="row small" style={{ justifyContent: 'space-between' }}>
+          <span>{streakText(progress.streakWeeks)}</span>
+          <span data-testid="challenges-count">🎯 {progress.stats.challengesCompleted} challenges</span>
+        </div>
+      </div>
+      <details className="card">
+        <summary><strong>Achievements</strong> <span className="muted small">{progress.achievements.length} / {ACHIEVEMENTS.length}</span></summary>
+        <div style={{ marginTop: 12 }}><AchievementList unlocked={progress.achievements.map((a) => a.id)} /></div>
+      </details>
+      <details className="card">
+        <summary><strong>Personal bests</strong> <span className="muted small">{progress.personalBests.length}</span></summary>
+        <div style={{ marginTop: 8 }}><PersonalBestList bests={progress.personalBests} /></div>
+      </details>
+
+      <h2>About you</h2>
       <label className="field">
         Name
         <input className="input" value={p.name} onChange={(e) => change('name', e.target.value)} />

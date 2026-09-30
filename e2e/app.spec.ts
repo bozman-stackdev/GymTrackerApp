@@ -25,7 +25,8 @@ test('open app -> routine -> set logged in 2 taps; auto-advance, undo, reload, f
   const weight = await page.getByLabel('Weight', { exact: true }).inputValue();
 
   // Suggestion: one line; the explanation is one tap away.
-  await expect(page.getByTestId('recommendation')).toContainText(`Try ${weight} kg ×`);
+  await expect(page.getByTestId('challenge')).toContainText("Today's challenge");
+  await expect(page.getByTestId('recommendation')).toContainText(`${weight} kg ×`);
   await expect(page.getByTestId('recommendation-reason')).toHaveCount(0);
   await page.getByTestId('recommendation').click();
   await expect(page.getByTestId('recommendation-reason')).toContainText('in your last 2 sessions');
@@ -43,7 +44,7 @@ test('open app -> routine -> set logged in 2 taps; auto-advance, undo, reload, f
   const target = await page.locator('.rep-btn.target').innerText();
   await page.locator('.rep-btn.target').click();
   await expect(page.getByTestId('sets-today').locator('.slot.done')).toHaveText([`${weight}×${target}`]);
-  await expect(page.getByTestId('last-set')).toContainText(`${weight} kg × ${target}`);
+  await expect(page.getByTestId('last-set')).toBeVisible(); // plain or reward style; the set itself is in the slot above
 
   // A different rep count is still one tap; weight carried over.
   await page.getByRole('button', { name: `${Number(target) - 1} reps` }).click();
@@ -90,6 +91,63 @@ test('open app -> routine -> set logged in 2 taps; auto-advance, undo, reload, f
   await expect(page.locator('.list-item').first()).toContainText('Push');
   await expect(page.locator('.list-item').first()).toContainText('4 sets'); // 3 chest + 1 incline
   await page.screenshot({ path: 'test-results/screens/5-history.png' });
+});
+
+test("Today's Challenge: hit it → instant reward → summary → progress on profile", async ({ page }) => {
+  await expect(page.getByTestId('home-progress')).toContainText(/Level \d+ · 🔥 \d+-week streak/);
+  await page.getByRole('button', { name: /^Push/ }).click();
+
+  // Chest press: 45 kg × 12 twice → the engine's challenge is a weight increase.
+  const challenge = page.getByTestId('challenge');
+  await expect(challenge).toContainText("Today's challenge");
+  await expect(challenge).toContainText('50 kg × 8');
+  await expect(page.getByTestId('reward')).toHaveCount(0);
+
+  // Miss it first: plain feedback, no reward, no negativity.
+  await page.getByRole('button', { name: '6 reps' }).click();
+  await expect(page.getByTestId('last-set')).not.toHaveClass(/reward/);
+  await expect(challenge).toContainText("Today's challenge");
+
+  // Hit it: brief reward in place of the last-set bar (challenge + personal best at the suggested weight).
+  await page.locator('.rep-btn.target').click();
+  await expect(page.getByTestId('reward')).toHaveText('🏆 NEW PERSONAL BEST!');
+  await expect(page.getByTestId('last-set')).toContainText(`+${25 + 50} XP`);
+  await expect(page.getByTestId('last-set')).toContainText('Next time: 50 kg ×'); // based on all sets so far (incl. the 6-rep one)
+  await expect(challenge).toContainText('✓ Challenge complete');
+  await page.screenshot({ path: 'test-results/screens/12-reward.png' });
+
+  // The next set is ordinary again; undo would take the reward back (it's all derived from the sets).
+  await page.locator('.rep-btn.target').click();
+  await expect(page.getByTestId('last-set')).not.toHaveClass(/reward/);
+  await page.getByRole('button', { name: 'Undo' }).click();
+  await page.getByRole('button', { name: 'Undo' }).click();
+  await expect(page.getByTestId('reward')).toHaveCount(0);
+  await expect(challenge).toContainText("Today's challenge");
+  await page.locator('.rep-btn.target').click();
+  await expect(page.getByTestId('reward')).toBeVisible();
+
+  // Finish → summary with rewards, next challenges, outcome per exercise.
+  await page.getByRole('button', { name: 'Finish', exact: true }).click();
+  await expect(page.getByTestId('rewards')).toContainText('Challenge complete · Chest Press Machine');
+  await expect(page.getByTestId('rewards')).toContainText('Personal best · Chest Press Machine');
+  // Only 2 sets were kept (6 and 8 reps) - below the 3-set minimum, so no workout XP: challenge + PB only.
+  await expect(page.getByTestId('session-xp')).toHaveText(`+${25 + 50} XP`);
+  await expect(page.getByTestId('rewards')).not.toContainText('Workout complete');
+  await expect(page.getByTestId('outcome').first()).toContainText('✓ Challenge 50 kg × 8 complete');
+  await expect(page.getByTestId('next-challenges')).toContainText('Chest Press Machine');
+  await expect(page.getByTestId('level')).toBeVisible();
+  await page.screenshot({ path: 'test-results/screens/13-summary.png', fullPage: true });
+
+  // Profile: progress is secondary but all there.
+  await page.getByRole('link', { name: 'Profile' }).click();
+  await expect(page.getByTestId('progress')).toContainText(/Level \d+/);
+  await page.getByText('Achievements', { exact: true }).click();
+  await expect(page.getByTestId('achievement-done').first()).toBeVisible();
+  await expect(page.getByTestId('achievement-locked').first()).toBeVisible();
+  await page.getByText('Personal bests', { exact: true }).click();
+  await expect(page.locator('.pb-row', { hasText: 'Chest Press Machine' })).toContainText('50 kg × 8');
+  await page.screenshot({ path: 'test-results/screens/14-profile-progress.png', fullPage: true });
+  await expectNoHorizontalScroll(page);
 });
 
 test('finishing every exercise shows a one-tap Finish, and reopening the app resumes the workout', async ({ page }) => {
@@ -239,6 +297,10 @@ test.describe('small phone (iPhone SE)', () => {
     await page.locator('.rep-btn.target').click();
     await page.locator('.rep-btn.target').click(); // auto-advance: last-set bar now showing
     await expect(page.getByTestId('last-set')).toBeVisible();
+    await expect(page.locator('.rep-btn').last()).toBeInViewport({ ratio: 1 });
+    // Worst case: a reward showing (Incline press: challenge + personal best at 20 kg).
+    await page.locator('.rep-btn.target').click();
+    await expect(page.getByTestId('reward')).toBeVisible();
     await expect(page.locator('.rep-btn').last()).toBeInViewport({ ratio: 1 });
     // Worst case: weight changed, so shortcut chips appear under the weight.
     await page.getByRole('button', { name: 'More Weight' }).click();

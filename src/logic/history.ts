@@ -50,6 +50,11 @@ export function formatKg(kg: number): string {
   return `${Number(kg.toFixed(2))} kg`;
 }
 
+/** One target, e.g. "60 kg × 9" (or "12 reps" for bodyweight). */
+export function formatTarget(t: { weightKg: number; reps: number }): string {
+  return t.weightKg > 0 ? `${formatKg(t.weightKg)} × ${t.reps}` : `${t.reps} reps`;
+}
+
 /** "40 kg × 10 · 10 · 9" - consecutive sets at the same weight are grouped. */
 export function formatSets(sets: SetLog[]): string {
   const groups: { weightKg: number; reps: number[] }[] = [];

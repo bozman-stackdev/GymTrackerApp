@@ -59,6 +59,7 @@ src/
     store.tsx               React context: holds AppData, saves on every change, useStore()
     seed.ts                 Sample exercises, routines and generated history
   logic/
+    game/                   Today's Challenge, XP, levels, streaks, achievements (docs/GAMIFICATION.md)
     progression.ts          Recommendation rules (+ what to pre-fill for the next set)
     history.ts              Helpers: exercise history, last performance, formatting, volume, e1RM
   services/
@@ -70,6 +71,13 @@ src/
 e2e/app.spec.ts             End-to-end tests of the main user flows
 docs/ARCHITECTURE.md        Architecture decisions log - read before changing structure
 ```
+
+## Today's Challenge, XP and streaks
+
+Once an exercise has enough history, the workout screen shows **TODAY'S CHALLENGE** (e.g. *60 kg × 9*).
+Hit it and you get a brief **✓ CHALLENGE COMPLETE +25 XP**. Repeating a good performance counts too. XP builds levels,
+weekly streaks and achievements, which you can see on the workout summary and the Profile tab. Rewards never pay extra for
+lifting heavier than suggested. Details: **[docs/GAMIFICATION.md](docs/GAMIFICATION.md)**.
 
 ## Progression suggestions
 

@@ -99,3 +99,21 @@ is passed to the recognizer. The demo uses it; a real service may ignore it or u
 **D23. Photos are never stored** (your decision after Phase 4). A scan photo only lives in memory on the scan screen, and
 only for choosing the exercise. The `Exercise.photo` field was removed, and `migrate()` deletes photos saved by earlier
 versions when the app loads. A real recognition service would receive the photo only for that one request.
+
+## Phase 3A - Gamification (2026-09-30)
+
+**D24. Game state is derived, never stored.** `buildProgress(sessions, exercises)` replays finished workouts to produce
+XP, level, streak, achievements, personal bests and per-workout results. `useProgress(includeActive)` memoises it and can
+include the workout in progress for instant feedback. No data-model change. Undo/delete stay consistent automatically.
+
+**D25. Modules under `src/logic/game/`:** `config.ts` (all numbers), `challenge.ts` (generation, completion, personal
+best), `levels.ts`, `streak.ts` (weekly), `achievements.ts` (data list) and `progress.ts` (XP + replay). The game only
+reads `recommend()`'s output, so the progression engine and the game evolve independently. See `docs/GAMIFICATION.md`.
+
+**D26. Workout UI:** the suggestion line became "TODAY'S CHALLENGE / 60 kg × 9" (still one tap for "Why?"). The
+last-set bar briefly turns into the reward (title, XP, streak, next challenge) with a subtle 220 ms pop (off with
+reduced motion). Achievements appear on the workout summary, not mid-set. On short screens the reward shows title + XP only,
+so the rep pad stays on screen.
+
+**D27. Safety rules** (see GAMIFICATION.md) are enforced in the logic and covered by tests.
+`formatTarget()` in `logic/history.ts` is shared by the workout and summary screens.
