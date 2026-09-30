@@ -12,8 +12,18 @@ npm install
 npm run dev          # http://localhost:5173
 ```
 
-To try it on your phone: run `npm run dev`, then open the "Network" URL it prints (phone and computer on the same Wi-Fi).
-The camera button opens the phone camera directly.
+### On your phone
+
+The app is published automatically to **https://bozman-stackdev.github.io/GymTrackerApp/** on every push to `main`
+(workflow: `.github/workflows/deploy.yml`; one-time setup: repo Settings → Pages → Source: **GitHub Actions**).
+
+Open that link on your phone, then add it to your home screen so it opens like an app:
+- **iPhone (Safari):** Share button → *Add to Home Screen*.
+- **Android (Chrome):** ⋮ menu → *Add to Home screen* / *Install app*.
+
+Your data is stored on the phone, in that browser only. It is not synced between devices.
+
+For development on your phone: run `npm run dev` and open the "Network" URL it prints (same Wi-Fi).
 
 The app starts with **sample data** (a profile, 3 routines, ~5 weeks of history) so everything can be tried immediately.
 Profile → "Start fresh" wipes it; "Load sample data" brings it back.
