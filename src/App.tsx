@@ -1,0 +1,46 @@
+import { HashRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { TabBar } from './components/TabBar';
+import { StoreProvider } from './data/store';
+import { AddExerciseScreen } from './screens/AddExerciseScreen';
+import { ExerciseFormScreen, ExerciseScreen, ExercisesScreen } from './screens/ExercisesScreen';
+import { HistoryScreen, SessionScreen } from './screens/HistoryScreen';
+import { HomeScreen } from './screens/HomeScreen';
+import { ProfileScreen } from './screens/ProfileScreen';
+import { RoutineScreen } from './screens/RoutineScreen';
+import { ScanScreen } from './screens/ScanScreen';
+import { WorkoutScreen } from './screens/WorkoutScreen';
+
+// HashRouter works on any static host (and inside a native wrapper) without server config.
+export function App() {
+  return (
+    <StoreProvider>
+      <HashRouter>
+        <div className="app">
+          <Routes>
+            <Route path="/" element={<HomeScreen />} />
+            <Route path="/workout" element={<WorkoutScreen />} />
+            <Route path="/workout/add" element={<AddExerciseScreen />} />
+            <Route path="/scan" element={<ScanScreen />} />
+            <Route path="/history" element={<HistoryScreen />} />
+            <Route path="/history/:id" element={<SessionScreen />} />
+            <Route path="/exercises" element={<ExercisesScreen />} />
+            <Route path="/exercises/new" element={<ExerciseFormScreen />} />
+            <Route path="/exercises/:id" element={<ExerciseScreen />} />
+            <Route path="/exercises/:id/edit" element={<ExerciseFormScreen />} />
+            <Route path="/routines/new" element={<RoutineScreen />} />
+            <Route path="/routines/:id" element={<RoutineScreen />} />
+            <Route path="/profile" element={<ProfileScreen />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+          <TabBarUnlessTraining />
+        </div>
+      </HashRouter>
+    </StoreProvider>
+  );
+}
+
+/** The workout screens are distraction-free: no tab bar. */
+function TabBarUnlessTraining() {
+  const { pathname } = useLocation();
+  return pathname.startsWith('/workout') || pathname === '/scan' ? null : <TabBar />;
+}
