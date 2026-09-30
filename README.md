@@ -37,11 +37,15 @@ Profile → "Start fresh" wipes it; "Load sample data" brings it back.
 
 ## How it works for the user
 
-1. **Train tab** → tap a routine (e.g. *Push*). The workout starts immediately.
-2. The screen shows **last time** for the exercise, **today's suggestion**, and weight + reps **pre-filled**.
-3. Do the set, tap **✓ Done**. That's usually the only tap. Adjust with −/+ (or tap the number to type) only when reality differs.
-4. After the planned sets: **Next exercise →**. Tap **Finish** at the end → summary.
-5. **📷 Photograph a machine** (when adding an exercise, or on the Exercises tab) → pick which machine it is → it's added to the workout and the photo is saved with the exercise.
+1. Open the app. If a workout is in progress, you land straight in it. Otherwise tap a routine; **Next up** is the one you did longest ago.
+2. You see the exercise, **Last session: 60 kg × 8 · 8 · 7**, and today's target (the highlighted rep button).
+3. After a set, **tap the number of reps you did**. That's it: one tap. Weight is pre-filled and stays the same for the next set.
+   Change it with −/+, by typing, or with one-tap chips (*last set*, *last session*, *suggested*).
+4. After the last planned set, the app moves to the next exercise by itself. The strip at the top shows every exercise's
+   progress (`2/3`, `✓`); tap one to jump there. The bar under it shows your last set, rest time and **Undo**.
+5. When everything is done, a big **Finish workout** button appears (or tap **Finish** at the top at any time).
+6. The screen stays on during a workout, where the browser supports it.
+7. **📷 Photograph a machine** (when adding an exercise, or on the Exercises tab) → pick which machine it is → it's added to the workout.
 
 ## Project structure
 

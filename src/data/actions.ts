@@ -45,18 +45,38 @@ export function goToExercise(data: AppData, index: number): AppData {
   return updateActive(data, (s) => s, Math.max(0, Math.min(index, max)));
 }
 
+/**
+ * Records a set. When this set completes the exercise's planned sets, the workout moves on
+ * to the next unfinished exercise automatically (one less tap between exercises).
+ */
 export function logSet(data: AppData, entryIndex: number, set: Omit<SetLog, 'loggedAt'>, now = new Date()): AppData {
-  return updateActive(data, (s) => ({
+  const logged = updateActive(data, (s) => ({
     ...s,
     entries: s.entries.map((e, i) => (i === entryIndex ? { ...e, sets: [...e.sets, { ...set, loggedAt: now.toISOString() }] } : e)),
   }));
+  const session = logged.activeWorkout!.session;
+  const entry = session.entries[entryIndex];
+  if (entry.sets.length !== entry.targetSets) return logged;
+  return goToExercise(logged, nextUnfinished(session, entryIndex) ?? entryIndex);
 }
 
+/** Removes the last set of an exercise and shows that exercise again. */
 export function undoLastSet(data: AppData, entryIndex: number): AppData {
-  return updateActive(data, (s) => ({
-    ...s,
-    entries: s.entries.map((e, i) => (i === entryIndex ? { ...e, sets: e.sets.slice(0, -1) } : e)),
-  }));
+  return updateActive(
+    data,
+    (s) => ({ ...s, entries: s.entries.map((e, i) => (i === entryIndex ? { ...e, sets: e.sets.slice(0, -1) } : e)) }),
+    entryIndex,
+  );
+}
+
+/** Index of the next exercise with sets still to do (looking forward first, then from the top). */
+export function nextUnfinished(session: WorkoutSession, from: number): number | undefined {
+  const n = session.entries.length;
+  for (let step = 1; step < n; step++) {
+    const i = (from + step) % n;
+    if (session.entries[i].sets.length < session.entries[i].targetSets) return i;
+  }
+  return undefined;
 }
 
 /** Saves the workout to history. Exercises with no sets are dropped; an empty workout is discarded. */

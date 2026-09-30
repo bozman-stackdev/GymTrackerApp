@@ -1,6 +1,7 @@
-import { HashRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
+import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { TabBar } from './components/TabBar';
-import { StoreProvider } from './data/store';
+import { StoreProvider, useStore } from './data/store';
 import { AddExerciseScreen } from './screens/AddExerciseScreen';
 import { ExerciseFormScreen, ExerciseScreen, ExercisesScreen } from './screens/ExercisesScreen';
 import { HistoryScreen, SessionScreen } from './screens/HistoryScreen';
@@ -16,6 +17,7 @@ export function App() {
     <StoreProvider>
       <HashRouter>
         <div className="app">
+          <ResumeWorkoutOnLaunch />
           <Routes>
             <Route path="/" element={<HomeScreen />} />
             <Route path="/workout" element={<WorkoutScreen />} />
@@ -43,4 +45,16 @@ export function App() {
 function TabBarUnlessTraining() {
   const { pathname } = useLocation();
   return pathname.startsWith('/workout') || pathname === '/scan' ? null : <TabBar />;
+}
+
+/** Opening the app during a workout goes straight back to it - no hunting for "resume". */
+function ResumeWorkoutOnLaunch() {
+  const { data } = useStore();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  useEffect(() => {
+    if (data.activeWorkout && pathname === '/') navigate('/workout', { replace: true });
+    // Only on launch: afterwards the user may deliberately visit other tabs mid-workout.
+  }, []);
+  return null;
 }

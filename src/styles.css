@@ -102,17 +102,72 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; 
 .stepper-label { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-2); text-align: center; }
 
 /* ---------- Workout screen ---------- */
-.ex-name { font-size: 26px; font-weight: 800; margin: 0; line-height: 1.2; }
-.dots { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
-.dot { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--border); background: transparent; padding: 0; cursor: pointer; }
-.dot.done { background: var(--accent); border-color: var(--accent); }
-.dot.current { border-color: var(--text); }
+.workout { gap: 12px; }
+.finish-btn { min-height: 44px; }
+.ex-name { font-size: 26px; font-weight: 800; margin: 0; line-height: 1.15; }
+.last-session { margin: 4px 0 0; font-size: 18px; }
+.last-session strong { color: var(--text); }
+.target { margin: 4px 0 0; color: var(--accent); font-weight: 600; }
+.warn { color: var(--warn); margin: 0; }
+
+/* Exercise strip: progress + navigation in one row */
+.ex-strip { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px; scroll-snap-type: x proximity; }
+.ex-strip::-webkit-scrollbar { display: none; }
+.ex-chip {
+  flex: none; display: flex; align-items: center; gap: 8px; min-height: 44px; max-width: 200px; padding: 0 14px;
+  border-radius: 999px; border: 2px solid transparent; background: var(--surface); color: var(--text-2); cursor: pointer; scroll-snap-align: center;
+}
+.ex-chip-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ex-chip-count { font-variant-numeric: tabular-nums; font-size: 14px; }
+.ex-chip.current { border-color: var(--text); color: var(--text); font-weight: 600; }
+.ex-chip.done .ex-chip-count { color: var(--accent); font-weight: 700; }
+.ex-chip.add { justify-content: center; min-width: 48px; font-size: 20px; }
+
+/* Last logged set + rest timer + undo */
+.last-bar { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 0 0 14px; border-radius: var(--radius); background: var(--surface); }
+.last-bar-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.last-bar .btn { min-height: 48px; }
+
+/* This exercise's sets */
+.slots { display: flex; gap: 8px; flex-wrap: wrap; }
+.slot {
+  flex: 1; min-width: 64px; text-align: center; padding: 5px 4px; border-radius: 12px; font-size: 15px;
+  font-variant-numeric: tabular-nums; color: var(--text-2); border: 2px dashed var(--border);
+}
+.slot.next { border-style: solid; border-color: var(--text-2); color: var(--text); }
+.slot.done { border: 2px solid transparent; background: var(--surface-2); color: var(--text); font-weight: 700; }
+
+.quick-weights { justify-content: center; margin-top: 6px; }
+.quick-weights .chip { min-height: 38px; }
+
+/* Rep buttons: the main input */
+.rep-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 4px; }
+.rep-pad.all { grid-template-columns: repeat(5, 1fr); }
+.rep-btn {
+  min-height: 68px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface);
+  font-size: 32px; font-weight: 700; font-variant-numeric: tabular-nums; cursor: pointer; touch-action: manipulation;
+}
+.rep-pad.all .rep-btn { min-height: 56px; font-size: 22px; }
+.rep-btn:active { transform: scale(.96); background: var(--surface-2); }
+.rep-btn.target { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.rep-btn.more { font-size: 17px; color: var(--text-2); }
+.rep-btn:disabled { opacity: .35; }
+
+/* Short phones (e.g. iPhone SE): keep the whole rep pad on screen without scrolling. */
+@media (max-height: 760px) {
+  .workout { gap: 8px; padding-top: 8px; }
+  .workout .header { min-height: 40px; }
+  .ex-name { font-size: 22px; }
+  .last-session { font-size: 16px; margin-top: 2px; }
+  .workout .stepper button, .workout .stepper input { height: 56px; }
+  .workout .stepper input { font-size: 34px; }
+  .rep-btn { min-height: 54px; font-size: 26px; }
+}
+
 .hint { border-left: 4px solid var(--accent); }
 .hint.wait { border-left-color: var(--border); }
 .hint.down { border-left-color: var(--warn); }
 .hint .title { font-weight: 700; }
-.set-pills { display: flex; flex-wrap: wrap; gap: 6px; }
-.set-pill { padding: 6px 10px; border-radius: 10px; background: var(--surface-2); font-variant-numeric: tabular-nums; font-size: 15px; }
 
 /* ---------- Tab bar ---------- */
 .tabbar {
@@ -134,3 +189,5 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; 
 
 .photo-preview { width: 100%; max-height: 28vh; object-fit: cover; border-radius: var(--radius); }
 .banner { background: var(--accent); color: var(--accent-ink); border-radius: var(--radius); padding: 16px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; min-height: var(--tap); }
+.list-item.next-up { border: 2px solid var(--accent); min-height: 88px; }
+.next-up-label { color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }

@@ -39,3 +39,25 @@ auth must be added at the same time (see recommendations in the phase report).
 
 **D10. IDs** are generated with `newId()` (timestamp + random), not `crypto.randomUUID`, which is unavailable on
 plain-http LAN addresses used when testing on a phone.
+
+## Phase 2 - Faster workout logging (2026-09-30)
+
+**D11. A set is logged by tapping the number of reps done (rep pad), not "adjust reps, then Done".**
+The pad shows 8 numbers around the target (target highlighted) plus "More" for 1–30. Weight is pre-filled and
+carries over between sets, so the common case is one tap. Reps are locked while a weighted exercise has no weight yet
+(first time), so a set can't be saved as 0 kg by accident.
+
+**D12. `logSet` auto-advances** to the next unfinished exercise (forward first, then wrapping) when a set completes
+the planned sets. Extra sets beyond the plan don't move. `undoLastSet` returns to that exercise. Both are pure and unit tested.
+
+**D13. The "last set" bar (set, rest timer, undo) is derived from saved sets, not UI state**, so it survives
+reloads and needs no extra storage.
+
+**D14. Removed from the workout screen:** the suggestion card (now a single line: `rec.title`), prev/next arrows,
+the "Next exercise" button, the "extra set" mode and the unlabeled dots. The labelled exercise strip is now both the
+progress display and the navigation. The redirect-on-no-workout (and its `useRef` workaround) became a plain message.
+
+**D15. Workout conveniences:** the Screen Wake Lock (`useWakeLock`) keeps the phone awake during a workout.
+Opening the app with a workout in progress goes straight to it (`ResumeWorkoutOnLaunch`). Home shows the routine
+done longest ago first as "Next up". A short-screen media query keeps the whole rep pad visible on phones like the iPhone SE.
+No data-model changes in this phase.

@@ -13,6 +13,8 @@ export function HomeScreen() {
 
   const lastDone = (routineId: string) =>
     data.sessions.filter((s) => s.routineId === routineId).at(-1)?.startedAt;
+  // "Next up" = the routine done longest ago (never done counts as oldest). Shown first so it's one tap away.
+  const routines = [...data.routines].sort((a, b) => (lastDone(a.id) ?? '').localeCompare(lastDone(b.id) ?? ''));
 
   const start = (routine?: Routine) => {
     if (active && !confirm('A workout is already in progress. Discard it and start a new one?')) return;
@@ -31,12 +33,14 @@ export function HomeScreen() {
 
       <h2>Start a workout</h2>
       <div className="list">
-        {data.routines.map((r) => {
+        {routines.map((r, i) => {
           const last = lastDone(r.id);
+          const nextUp = i === 0 && !active;
           return (
             <div key={r.id} className="row">
-              <button className="list-item grow" onClick={() => start(r)}>
+              <button className={`list-item grow${nextUp ? ' next-up' : ''}`} onClick={() => start(r)}>
                 <div className="grow">
+                  {nextUp && <div className="small next-up-label">Next up</div>}
                   <div className="title" style={{ fontSize: 20 }}>{r.name}</div>
                   <div className="muted small">
                     {r.items.length} exercises{last ? ` · last ${relativeDay(last)}` : ''}

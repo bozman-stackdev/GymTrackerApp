@@ -39,6 +39,37 @@ describe('workout actions', () => {
     expect(d.sessions[0].finishedAt).toBeTruthy();
   });
 
+  it('moves to the next unfinished exercise after the last planned set, and undo comes back', () => {
+    const set = { reps: 10, weightKg: 50 };
+    let d = startWorkout(createEmptyData(), SAMPLE_ROUTINES[0]); // 5 exercises x 3 sets
+    d = logSet(logSet(d, 0, set), 0, set);
+    expect(d.activeWorkout!.currentIndex).toBe(0); // 2 of 3: stay
+    d = logSet(d, 0, set);
+    expect(d.activeWorkout!.currentIndex).toBe(1); // 3 of 3: advance
+
+    d = undoLastSet(d, 0);
+    expect(d.activeWorkout!.currentIndex).toBe(0);
+    expect(d.activeWorkout!.session.entries[0].sets).toHaveLength(2);
+  });
+
+  it('skips finished exercises and wraps around; extra sets do not jump', () => {
+    const set = { reps: 10, weightKg: 50 };
+    let d = startWorkout(createEmptyData(), SAMPLE_ROUTINES[0]);
+    for (const i of [0, 1, 2, 3]) {
+      if (i === 1) continue;
+      d = logSet(logSet(logSet(d, i, set), i, set), i, set);
+    }
+    // 0, 2 and 3 are done; after finishing 3 it looks forward first -> 4.
+    expect(d.activeWorkout!.currentIndex).toBe(4);
+    d = logSet(logSet(logSet(d, 4, set), 4, set), 4, set);
+    expect(d.activeWorkout!.currentIndex).toBe(1); // wrapped to the only unfinished one
+    d = logSet(logSet(logSet(d, 1, set), 1, set), 1, set);
+    expect(d.activeWorkout!.currentIndex).toBe(1); // everything done: stay put
+    d = goToExercise(d, 2);
+    d = logSet(d, 2, set); // extra (4th) set
+    expect(d.activeWorkout!.currentIndex).toBe(2);
+  });
+
   it('discards a workout with no sets instead of saving it', () => {
     const d = finishWorkout(startWorkout(createEmptyData(), SAMPLE_ROUTINES[0]));
     expect(d.sessions).toHaveLength(0);

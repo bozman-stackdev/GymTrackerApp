@@ -12,51 +12,90 @@ async function expectNoHorizontalScroll(page: Page) {
   expect(overflow).toBeLessThanOrEqual(0);
 }
 
-test('log a workout with one tap per set, survive a reload, and save it to history', async ({ page }) => {
+test('open app -> routine -> set logged in 2 taps; auto-advance, undo, reload, finish', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Hi Alex' })).toBeVisible();
+  await expect(page.locator('.next-up')).toContainText('Pull'); // done longest ago
   await page.screenshot({ path: 'test-results/screens/1-home.png' });
-  await page.getByRole('button', { name: /^Push/ }).click();
 
+  // Tap 1: pick the routine.
+  await page.getByRole('button', { name: /^Push/ }).click();
   await expect(page).toHaveURL(/#\/workout$/);
   await expect(page.getByRole('heading', { name: 'Chest Press Machine' })).toBeVisible();
-  await expect(page.getByTestId('last-time')).toContainText('kg ×');
-  await expect(page.getByTestId('recommendation')).toBeVisible();
-  const plannedWeight = await page.getByLabel('Weight', { exact: true }).inputValue();
+  await expect(page.getByTestId('last-time')).toHaveText(/^Last session: \d+ kg × /);
+  const weight = await page.getByLabel('Weight', { exact: true }).inputValue();
   await page.screenshot({ path: 'test-results/screens/2-workout.png' });
   await expectNoHorizontalScroll(page);
 
-  // Set 1: accept the pre-fill. Set 2: one rep fewer.
-  await page.getByRole('button', { name: '✓ Done' }).click();
-  await expect(page.getByTestId('set-counter')).toHaveText('Set 2 of 3');
-  await page.getByRole('button', { name: 'Less Reps' }).click();
-  await page.getByRole('button', { name: '✓ Done' }).click();
+  // Tap 2: the highlighted rep target. That's the whole set.
+  const target = await page.locator('.rep-btn.target').innerText();
+  await page.locator('.rep-btn.target').click();
+  await expect(page.getByTestId('sets-today').locator('.slot.done')).toHaveText([`${weight}×${target}`]);
+  await expect(page.getByTestId('last-set')).toContainText(`${weight} kg × ${target}`);
 
-  // Reload mid-workout: nothing is lost.
+  // A different rep count is still one tap; weight carried over.
+  await page.getByRole('button', { name: `${Number(target) - 1} reps` }).click();
+  await expect(page.getByLabel('Weight', { exact: true })).toHaveValue(weight);
+
+  // Reload mid-workout: nothing is lost, and the last-set bar is still there.
   await page.reload();
-  await expect(page.getByTestId('sets-today').locator('.set-pill')).toHaveCount(2);
+  await expect(page.getByTestId('sets-today').locator('.slot.done')).toHaveCount(2);
+  await expect(page.getByTestId('last-set')).toBeVisible();
 
-  // Undo, then redo, then finish the exercise.
+  // Undo, redo, then the 3rd set moves on to the next exercise by itself.
   await page.getByRole('button', { name: 'Undo' }).click();
-  await expect(page.getByTestId('sets-today').locator('.set-pill')).toHaveCount(1);
-  await page.getByRole('button', { name: '✓ Done' }).click();
-  await page.getByRole('button', { name: '✓ Done' }).click();
-  await expect(page.getByTestId('set-counter')).toHaveText('3 of 3 sets done');
-  await page.screenshot({ path: 'test-results/screens/3-sets-done.png' });
-  await page.getByRole('button', { name: 'Next exercise →' }).click();
+  await expect(page.getByTestId('sets-today').locator('.slot.done')).toHaveCount(1);
+  await page.locator('.rep-btn.target').click();
+  await page.locator('.rep-btn.target').click();
   await expect(page.getByRole('heading', { name: 'Incline Dumbbell Press' })).toBeVisible();
-  await page.getByRole('button', { name: '✓ Done' }).click();
+  await expect(page.locator('.ex-chip.done')).toContainText('Chest Press Machine');
+  await page.screenshot({ path: 'test-results/screens/3-auto-advanced.png' });
 
-  await page.getByRole('button', { name: 'Finish' }).click();
+  // Undo from the next exercise goes back to the one it belongs to.
+  await page.getByRole('button', { name: 'Undo' }).click();
+  await expect(page.getByRole('heading', { name: 'Chest Press Machine' })).toBeVisible();
+  await page.locator('.rep-btn.target').click();
+  await expect(page.getByRole('heading', { name: 'Incline Dumbbell Press' })).toBeVisible();
+
+  // Quick weight chip: after nudging the weight, one tap restores the last set's weight.
+  const inclineWeight = await page.getByLabel('Weight', { exact: true }).inputValue();
+  await page.locator('.rep-btn.target').click();
+  await page.getByRole('button', { name: 'More Weight' }).click();
+  await expect(page.getByLabel('Weight', { exact: true })).not.toHaveValue(inclineWeight);
+  await page.getByRole('button', { name: /last set/ }).click();
+  await expect(page.getByLabel('Weight', { exact: true })).toHaveValue(inclineWeight);
+
+  // Jump between exercises with the strip.
+  await page.locator('.ex-chip', { hasText: 'Lateral Raise' }).click();
+  await expect(page.getByRole('heading', { name: 'Dumbbell Lateral Raise' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Finish', exact: true }).click();
   await expect(page).toHaveURL(/#\/history\/.+/);
-  await expect(page.getByText('Chest Press Machine')).toBeVisible();
-  await expect(page.getByText(`${plannedWeight} kg ×`).first()).toBeVisible();
+  await expect(page.getByText(`${weight} kg ×`).first()).toBeVisible();
   await page.screenshot({ path: 'test-results/screens/4-summary.png' });
 
-  // It is now "last time" for the next workout, and the newest item in history.
   await page.getByRole('link', { name: 'History' }).click();
   await expect(page.locator('.list-item').first()).toContainText('Push');
-  await expect(page.locator('.list-item').first()).toContainText('4 sets'); // 3 chest (after undo) + 1 incline
+  await expect(page.locator('.list-item').first()).toContainText('4 sets'); // 3 chest + 1 incline
   await page.screenshot({ path: 'test-results/screens/5-history.png' });
+});
+
+test('finishing every exercise shows a one-tap Finish, and reopening the app resumes the workout', async ({ page }) => {
+  await page.getByRole('button', { name: /Pull/ }).click();
+  await page.goto('/'); // "reopen" the app on the home screen
+  await expect(page).toHaveURL(/#\/workout$/);
+
+  for (let i = 0; i < 4 * 3; i++) {
+    const pad = page.locator('.rep-btn.target');
+    // First-time exercises have no weight yet: set one.
+    const w = page.getByLabel('Weight', { exact: true });
+    if ((await w.count()) && (await w.inputValue()) === '0') await w.fill('20');
+    await pad.click();
+  }
+  await expect(page.locator('.ex-chip.done')).toHaveCount(4);
+  await page.screenshot({ path: 'test-results/screens/3b-all-done.png' });
+  await page.getByRole('button', { name: '✓ Finish workout' }).click();
+  await expect(page).toHaveURL(/#\/history\/.+/);
+  await expect(page.locator('.list-item')).toHaveCount(4);
 });
 
 test('empty workout + add exercise by photo (mock recognition)', async ({ page }) => {
@@ -109,12 +148,14 @@ test('create an exercise and a routine, then start it', async ({ page }) => {
   await expectNoHorizontalScroll(page);
   await page.getByRole('button', { name: 'Save routine' }).click();
 
-  await page.getByRole('button', { name: /^Leg day B/ }).click();
-  await expect(page.getByTestId('set-counter')).toHaveText('Set 1 of 4');
-  // First time: no weight pre-filled, the user sets it once.
+  await page.getByRole('button', { name: /Leg day B/ }).click();
+  await expect(page.getByTestId('sets-today').locator('.slot')).toHaveCount(4);
+  // First time: no weight yet, so reps are locked until one is set.
+  await expect(page.getByText('Set the weight first')).toBeVisible();
+  await expect(page.locator('.rep-btn.target')).toBeDisabled();
   await page.getByLabel('Weight', { exact: true }).fill('80');
-  await page.getByRole('button', { name: '✓ Done' }).click();
-  await expect(page.getByTestId('sets-today')).toContainText('80 kg × 8');
+  await page.locator('.rep-btn.target').click();
+  await expect(page.getByTestId('sets-today').locator('.slot.done')).toHaveText(['80×8']);
   await expect(page.getByLabel('Weight', { exact: true })).toHaveValue('80'); // carried to the next set
 });
 
@@ -128,4 +169,24 @@ test('profile saves and persists', async ({ page }) => {
   await expectNoHorizontalScroll(page);
   await page.reload();
   await expect(page.getByLabel('Weight (kg)')).toHaveValue('82.5');
+});
+
+test.describe('small phone (iPhone SE)', () => {
+  test.use({ viewport: { width: 375, height: 667 } });
+
+  test('rep buttons are reachable without scrolling, even after a set is logged', async ({ page }) => {
+    await page.getByRole('button', { name: /^Push/ }).click();
+    await expect(page.locator('.rep-btn.target')).toBeInViewport();
+    await page.locator('.rep-btn.target').click();
+    await page.locator('.rep-btn.target').click();
+    await page.locator('.rep-btn.target').click(); // auto-advance: last-set bar now showing
+    await expect(page.getByTestId('last-set')).toBeVisible();
+    await expect(page.locator('.rep-btn').last()).toBeInViewport({ ratio: 1 });
+    // Worst case: weight changed, so shortcut chips appear under the weight.
+    await page.getByRole('button', { name: 'More Weight' }).click();
+    await expect(page.locator('.quick-weights')).toBeVisible();
+    await expect(page.locator('.rep-btn').last()).toBeInViewport({ ratio: 1 });
+    await expectNoHorizontalScroll(page);
+    await page.screenshot({ path: 'test-results/screens/10-small-phone.png' });
+  });
 });
