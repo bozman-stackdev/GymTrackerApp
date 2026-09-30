@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Screen } from '../components/Screen';
 import { startWorkout } from '../data/actions';
 import { useStore } from '../data/store';
-import { relativeDay } from '../logic/history';
+import { relativeDay, routinesByNextUp } from '../logic/history';
 import type { Routine } from '../types';
 
 /** Start screen: one tap on a routine starts the workout. */
@@ -13,8 +13,8 @@ export function HomeScreen() {
 
   const lastDone = (routineId: string) =>
     data.sessions.filter((s) => s.routineId === routineId).at(-1)?.startedAt;
-  // "Next up" = the routine done longest ago (never done counts as oldest). Shown first so it's one tap away.
-  const routines = [...data.routines].sort((a, b) => (lastDone(a.id) ?? '').localeCompare(lastDone(b.id) ?? ''));
+  // "Next up" (done longest ago) first, so it's one tap away.
+  const routines = routinesByNextUp(data.routines, data.sessions);
 
   const start = (routine?: Routine) => {
     if (active && !confirm('A workout is already in progress. Discard it and start a new one?')) return;
@@ -56,7 +56,10 @@ export function HomeScreen() {
         })}
       </div>
 
-      <button className="btn block" onClick={() => start()}>Empty workout</button>
+      <div className="row">
+        <Link to="/scan" className="btn grow scan-btn">📷 Scan machine</Link>
+        <button className="btn grow" onClick={() => start()}>Empty workout</button>
+      </div>
       <Link to="/routines/new" className="btn block ghost">+ New routine</Link>
     </Screen>
   );

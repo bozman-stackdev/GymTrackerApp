@@ -5,7 +5,7 @@ import { RecommendationCard } from '../components/RecommendationCard';
 import { Screen } from '../components/Screen';
 import { Stepper } from '../components/Stepper';
 import { TrendChart } from '../components/TrendChart';
-import { addExerciseToWorkout, newId, saveExercise } from '../data/actions';
+import { newId, saveExercise, startExercise } from '../data/actions';
 import { useStore } from '../data/store';
 import { bestEstimated1RM, exerciseHistory, formatDate, formatSets } from '../logic/history';
 import { recommend } from '../logic/progression';
@@ -57,11 +57,9 @@ export function ExerciseScreen() {
       <h2>Next time</h2>
       <RecommendationCard rec={rec} />
 
-      {data.activeWorkout && (
-        <button className="btn primary block" onClick={() => { update((d) => addExerciseToWorkout(d, exercise.id)); navigate('/workout'); }}>
-          Add to current workout
-        </button>
-      )}
+      <button className="btn primary block" onClick={() => { update((d) => startExercise(d, exercise.id)); navigate('/workout'); }}>
+        ▶ {data.activeWorkout ? 'Add to current workout' : 'Start this exercise'}
+      </button>
 
       <h2>{usesWeight ? 'Strength trend (estimated 1-rep max)' : 'Best set (reps)'}</h2>
       <div className="card">
@@ -102,12 +100,10 @@ export function ExerciseFormScreen() {
 
   const save = () => {
     const exercise = { ...form, name: form.name.trim(), repRange: [Math.min(min, max), Math.max(min, max)] as [number, number] };
-    update((d) => {
-      const next = saveExercise(d, exercise);
-      return !existing && next.activeWorkout && params.get('from') === 'workout' ? addExerciseToWorkout(next, exercise.id) : next;
-    });
-    if (!existing && data.activeWorkout && params.get('from') === 'workout') navigate('/workout', { replace: true });
-    else navigate(`/exercises/${exercise.id}`, { replace: true });
+    // ?start=1 (from a workout or the photo flow): start tracking the new exercise straight away.
+    const startNow = !existing && params.get('start') === '1';
+    update((d) => (startNow ? startExercise(saveExercise(d, exercise), exercise.id) : saveExercise(d, exercise)));
+    navigate(startNow ? '/workout' : `/exercises/${exercise.id}`, { replace: true });
   };
 
   return (

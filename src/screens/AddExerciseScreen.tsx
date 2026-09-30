@@ -12,7 +12,7 @@ export function AddExerciseScreen() {
 
   return (
     <Screen title="Add exercise" back full>
-      <Link to="/scan" className="btn primary block">📷 Photograph a machine</Link>
+      <Link to="/scan" className="btn primary block">📷 Scan a machine</Link>
       <ExercisePicker
         exercises={data.exercises}
         onPick={(e) => {
@@ -20,7 +20,7 @@ export function AddExerciseScreen() {
           navigate('/workout', { replace: true });
         }}
       />
-      <Link to="/exercises/new?from=workout"className="btn block ghost">+ Create new exercise</Link>
+      <Link to="/exercises/new?start=1" className="btn block ghost">+ Create new exercise</Link>
     </Screen>
   );
 }

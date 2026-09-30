@@ -39,6 +39,11 @@ export function addExerciseToWorkout(data: AppData, exerciseId: string, sets = 3
   return updateActive(data, (s) => ({ ...s, entries: [...s.entries, { exerciseId, targetSets: sets, sets: [] }] }), index);
 }
 
+/** Start tracking one exercise now: added to the current workout, or a new workout is started for it. */
+export function startExercise(data: AppData, exerciseId: string, now = new Date()): AppData {
+  return addExerciseToWorkout(data.activeWorkout ? data : startWorkout(data, undefined, now), exerciseId);
+}
+
 export function goToExercise(data: AppData, index: number): AppData {
   if (!data.activeWorkout) return data;
   const max = data.activeWorkout.session.entries.length - 1;

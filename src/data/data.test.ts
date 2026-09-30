@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addExerciseToWorkout, finishWorkout, goToExercise, logSet, startWorkout, undoLastSet } from './actions';
+import { addExerciseToWorkout, finishWorkout, goToExercise, logSet, startExercise, startWorkout, undoLastSet } from './actions';
 import { createEmptyData, createSampleData, SAMPLE_ROUTINES } from './seed';
 import { loadData, saveData } from './storage';
 
@@ -68,6 +68,16 @@ describe('workout actions', () => {
     d = goToExercise(d, 2);
     d = logSet(d, 2, set); // extra (4th) set
     expect(d.activeWorkout!.currentIndex).toBe(2);
+  });
+
+  it('startExercise starts a new workout, or adds to the current one', () => {
+    let d = startExercise(createEmptyData(), 'leg-press');
+    expect(d.activeWorkout!.session.entries.map((e) => e.exerciseId)).toEqual(['leg-press']);
+    d = logSet(d, 0, { reps: 10, weightKg: 100 });
+    d = startExercise(d, 'lat-pulldown');
+    expect(d.activeWorkout!.session.entries.map((e) => e.exerciseId)).toEqual(['leg-press', 'lat-pulldown']);
+    expect(d.activeWorkout!.currentIndex).toBe(1);
+    expect(d.activeWorkout!.session.entries[0].sets).toHaveLength(1); // nothing lost
   });
 
   it('discards a workout with no sets instead of saving it', () => {

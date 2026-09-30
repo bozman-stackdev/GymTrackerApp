@@ -58,7 +58,7 @@ h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .06em; color: v
 .btn {
   min-height: var(--tap); padding: 0 20px; border-radius: var(--radius); border: 1px solid var(--border);
   background: var(--surface-2); font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  cursor: pointer; touch-action: manipulation; user-select: none;
+  cursor: pointer; touch-action: manipulation; user-select: none; text-align: center;
 }
 .btn:active { transform: scale(.98); }
 .btn:disabled { opacity: .4; }
@@ -193,6 +193,21 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; 
 .chart .line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 .chart .pt { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
 .chart .cross { stroke: var(--text-2); stroke-width: 1; stroke-dasharray: 3 3; }
+
+/* ---------- Scan a machine ---------- */
+.scan-shutter { min-height: 40vh; font-size: 28px; flex-direction: column; }
+.scan-btn { min-height: var(--tap); }
+.scan-photo { width: 100%; height: 120px; object-fit: cover; border-radius: var(--radius); }
+.scan-photo.big { height: 40vh; }
+.options { display: flex; flex-direction: column; gap: 10px; }
+.option {
+  display: flex; align-items: center; gap: 12px; min-height: 68px; padding: 0 18px; border-radius: var(--radius);
+  border: 2px solid var(--border); background: var(--surface); font-size: 20px; font-weight: 600; text-align: left; cursor: pointer;
+}
+.option.on { border-color: var(--accent); }
+.option-check { color: var(--accent); font-size: 24px; width: 24px; }
+.option.other { font-weight: 400; color: var(--text-2); min-height: 56px; }
+.demo-note { margin: 0; }
 
 .photo-preview { width: 100%; max-height: 28vh; object-fit: cover; border-radius: var(--radius); }
 .banner { background: var(--accent); color: var(--accent-ink); border-radius: var(--radius); padding: 16px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; min-height: var(--tap); }

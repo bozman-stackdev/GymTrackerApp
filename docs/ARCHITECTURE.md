@@ -78,3 +78,20 @@ There's a new "recent dip" rule. The sample data follows the same rules and demo
 
 **D19. On the workout screen, the explanation is behind a "Why?" tap** (one line by default). This keeps the rep pad
 on screen on small phones. The exercise page always shows the full explanation. Both show a short disclaimer.
+
+## Phase 4 - Photo recognition foundation (2026-09-30)
+
+**D20. Recognition is a pluggable service (`src/services/recognition/`):** `types.ts` holds the contract,
+`mock.ts` the demo, `http.ts` the adapter for a future backend, and `index.ts` picks one (the backend adapter when
+`VITE_RECOGNITION_URL` is set). The UI depends only on `recognizer` and the types. See `docs/RECOGNITION.md`.
+A real AI provider must be called from a backend, never from the app (API keys).
+
+**D21. Scan flow: photo → 3 suggestions (best guess pre-selected) + Other → Start → tracking.** The new
+`startExercise` action adds to the current workout or starts a new one. It's reused by the scan screen, "create exercise
+and start" (`?start=1`, replacing `?from=workout`) and the exercise page's Start button. If recognition fails, the
+screen falls back to the manual list.
+
+**D22. Context hint:** `likelyExerciseIds(data)` (unfinished exercises in the current workout, else the next-up routine)
+is passed to the recognizer. The demo uses it; a real service may ignore it or use it to break ties.
+`routinesByNextUp` moved to `logic/history.ts` and is shared with the home screen. Image resizing moved to
+`services/image.ts`. No data-model changes.

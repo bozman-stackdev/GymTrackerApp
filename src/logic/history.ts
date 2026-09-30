@@ -1,4 +1,4 @@
-import type { SetLog, WorkoutSession } from '../types';
+import type { AppData, Routine, SetLog, WorkoutSession } from '../types';
 
 /** One past performance of a single exercise. */
 export interface ExercisePerformance {
@@ -77,4 +77,18 @@ export function relativeDay(iso: string, now = new Date()): string {
   if (days === 1) return 'yesterday';
   if (days < 7) return `${days} days ago`;
   return formatDate(iso);
+}
+
+/** Routines ordered "next up" first: the one done longest ago (never done counts as oldest). */
+export function routinesByNextUp(routines: Routine[], sessions: WorkoutSession[]): Routine[] {
+  const lastDone = (id: string) => sessions.filter((s) => s.routineId === id).at(-1)?.startedAt ?? '';
+  return [...routines].sort((a, b) => lastDone(a.id).localeCompare(lastDone(b.id)));
+}
+
+/** Exercises the user is probably about to do: unfinished ones in the current workout, else the next-up routine. */
+export function likelyExerciseIds(data: AppData): string[] {
+  if (data.activeWorkout) {
+    return data.activeWorkout.session.entries.filter((e) => e.sets.length < e.targetSets).map((e) => e.exerciseId);
+  }
+  return routinesByNextUp(data.routines, data.sessions)[0]?.items.map((i) => i.exerciseId) ?? [];
 }

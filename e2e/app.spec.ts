@@ -111,25 +111,65 @@ test('finishing every exercise shows a one-tap Finish, and reopening the app res
   await expect(page.locator('.list-item')).toHaveCount(4);
 });
 
-test('empty workout + add exercise by photo (mock recognition)', async ({ page }) => {
-  await page.getByRole('button', { name: 'Empty workout' }).click();
-  await expect(page).toHaveURL(/#\/workout\/add$/);
-  await page.getByRole('link', { name: /Photograph a machine/ }).click();
+const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+const photo = { name: 'machine.png', mimeType: 'image/png', buffer: PNG };
 
-  // A tiny valid PNG stands in for the camera.
-  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
-  await page.getByTestId('photo-input').setInputFiles({ name: 'machine.png', mimeType: 'image/png', buffer: png });
-  await expect(page.getByText('Which machine is this?')).toBeVisible();
+test('scan: photo → "What are you using?" → Start → tracking (best guess is one tap)', async ({ page }) => {
+  // From the home screen: Scan (1) → Take a photo (2, opens the camera) → Start (3).
+  await page.getByRole('link', { name: /Scan machine/ }).click();
+  const chooser = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: /Take a photo/ }).click();
+  await (await chooser).setFiles(photo);
+
+  await expect(page.getByRole('heading', { name: 'What are you using?' })).toBeVisible();
+  const options = page.getByRole('radio');
+  await expect(options).toHaveCount(3);
+  await expect(page.getByRole('button', { name: 'Other…' })).toBeVisible();
+  await expect(page.getByText(/Demo: these are example suggestions/)).toBeVisible();
+  // Nothing in progress, so the first guess comes from the "next up" routine (Pull).
+  await expect(options.first()).toHaveAttribute('aria-checked', 'true');
+  await expect(options.first()).toContainText('Lat Pulldown');
   await page.screenshot({ path: 'test-results/screens/6-scan.png' });
   await expectNoHorizontalScroll(page);
-  await page.getByRole('button', { name: /Leg Press/ }).click();
+
+  // Pick the second suggestion instead, then Start.
+  const second = (await options.nth(1).innerText()).trim();
+  await options.nth(1).click();
+  await page.getByRole('button', { name: `Start ${second}` }).click();
 
   await expect(page).toHaveURL(/#\/workout$/);
-  await expect(page.getByRole('heading', { name: 'Leg Press' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: second })).toBeVisible();
+  await page.locator('.rep-btn.target').click(); // tracking works straight away
+  await expect(page.getByTestId('sets-today').locator('.slot.done')).toHaveCount(1);
+});
 
-  // The photo was saved with the exercise.
+test('scan during a workout adds to it; "Other" lets you pick anything; photo is saved', async ({ page }) => {
+  await page.getByRole('button', { name: /^Push/ }).click();
+  await page.getByRole('link', { name: 'Add exercise' }).click();
+  await page.getByRole('link', { name: /Scan a machine/ }).click();
+  await page.getByTestId('library-input').setInputFiles(photo); // "Choose from photos"
+
+  // Unfinished exercises of the current workout are suggested first.
+  await expect(page.getByRole('radio').first()).toContainText('Chest Press Machine');
+  await page.getByRole('button', { name: 'Other…' }).click();
+  await page.getByPlaceholder('Search exercises').fill('leg press');
+  await page.getByRole('button', { name: /Leg Press/ }).click();
+
+  await expect(page.getByRole('heading', { name: 'Leg Press' })).toBeVisible();
+  await expect(page.locator('.ex-chip')).toHaveCount(7); // 5 Push + Leg Press + "add"
   await page.goto('/#/exercises/leg-press');
   await expect(page.getByRole('img', { name: /Your photo of Leg Press/ })).toBeVisible();
+});
+
+test('scan → not listed → create exercise → tracking', async ({ page }) => {
+  await page.goto('/#/scan');
+  await page.getByTestId('photo-input').setInputFiles(photo);
+  await page.getByRole('button', { name: 'Other…' }).click();
+  await page.getByRole('link', { name: '+ Create new exercise' }).click();
+  await page.getByPlaceholder('e.g. Hack Squat').fill('Hack Squat');
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page).toHaveURL(/#\/workout$/);
+  await expect(page.getByRole('heading', { name: 'Hack Squat' })).toBeVisible();
 });
 
 test('exercise progress page shows recommendation, chart and history', async ({ page }) => {
@@ -203,5 +243,13 @@ test.describe('small phone (iPhone SE)', () => {
     await expect(page.locator('.rep-btn').last()).toBeInViewport({ ratio: 1 });
     await expectNoHorizontalScroll(page);
     await page.screenshot({ path: 'test-results/screens/10-small-phone.png' });
+  });
+
+  test('scan: the Start button is on screen without scrolling', async ({ page }) => {
+    await page.goto('/#/scan');
+    await page.getByTestId('photo-input').setInputFiles(photo);
+    await expect(page.getByRole('button', { name: /^Start / })).toBeInViewport({ ratio: 1 });
+    await expectNoHorizontalScroll(page);
+    await page.screenshot({ path: 'test-results/screens/11-small-scan.png' });
   });
 });

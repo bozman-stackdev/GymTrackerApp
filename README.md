@@ -45,7 +45,8 @@ Profile → "Start fresh" wipes it; "Load sample data" brings it back.
    progress (`2/3`, `✓`); tap one to jump there. The bar under it shows your last set, rest time and **Undo**.
 5. When everything is done, a big **Finish workout** button appears (or tap **Finish** at the top at any time).
 6. The screen stays on during a workout, where the browser supports it.
-7. **📷 Photograph a machine** (when adding an exercise, or on the Exercises tab) → pick which machine it is → it's added to the workout.
+7. **📷 Scan machine** → take a photo → *What are you using?* → tap **Start**, and you're tracking it. Today the suggestions are
+   a demo; see [docs/RECOGNITION.md](docs/RECOGNITION.md) for how real recognition plugs in.
 
 ## Project structure
 
@@ -61,7 +62,8 @@ src/
     progression.ts          Recommendation rules (+ what to pre-fill for the next set)
     history.ts              Helpers: exercise history, last performance, formatting, volume, e1RM
   services/
-    machineRecognition.ts   Photo → exercise suggestions. Mock now; swap in a real vision API later
+    recognition/            Photo → exercise suggestions: contract, demo, backend adapter (docs/RECOGNITION.md)
+    image.ts                Photo resizing / thumbnails
   components/               Reusable UI: Screen, TabBar, Stepper, ExercisePicker, RecommendationCard, TrendChart
   screens/                  One file per screen (Home, Workout, AddExercise, Scan, History, Exercises, Routine, Profile)
   App.tsx                   Routes
