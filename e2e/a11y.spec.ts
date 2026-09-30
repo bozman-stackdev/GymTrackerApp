@@ -10,7 +10,8 @@ async function checkA11y(page: Page, screen: string) {
 
 for (const scheme of ['light', 'dark'] as const) {
   test(`main screens have no serious accessibility problems (${scheme})`, async ({ page }) => {
-    await page.emulateMedia({ colorScheme: scheme });
+    // Reduced motion: measure contrast on the settled screen, not mid-way through the 0.2 s reward fade-in.
+    await page.emulateMedia({ colorScheme: scheme, reducedMotion: 'reduce' });
     page.on('dialog', (d) => d.accept());
     await page.goto('/');
     await checkA11y(page, 'welcome');
