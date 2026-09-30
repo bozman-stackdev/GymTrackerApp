@@ -92,6 +92,29 @@ export function undoLastSet(data: AppData, entryIndex: number): AppData {
   );
 }
 
+/**
+ * Edits (patch) or deletes (null) one logged set - in the workout in progress or in a finished workout.
+ * In a finished workout, an exercise left without sets is removed, and so is a workout left empty.
+ * XP, streaks and journeys are derived from history, so they update by themselves.
+ */
+export function editSet(
+  data: AppData, sessionId: string, entryIndex: number, setIndex: number, patch: Omit<SetLog, 'loggedAt'> | null,
+): AppData {
+  if (patch && !isValidSet(patch)) return data;
+  const edit = (s: WorkoutSession): WorkoutSession => ({
+    ...s,
+    entries: s.entries.map((e, i) => (i !== entryIndex ? e : {
+      ...e,
+      sets: patch ? e.sets.map((x, j) => (j === setIndex ? { ...x, ...patch } : x)) : e.sets.filter((_, j) => j !== setIndex),
+    })),
+  });
+  if (data.activeWorkout?.session.id === sessionId) return updateActive(data, edit);
+  const sessions = data.sessions
+    .map((s) => (s.id === sessionId ? { ...edit(s), entries: edit(s).entries.filter((e) => e.sets.length > 0) } : s))
+    .filter((s) => s.entries.length > 0);
+  return { ...data, sessions };
+}
+
 /** Index of the next exercise with sets still to do (looking forward first, then from the top). */
 export function nextUnfinished(session: WorkoutSession, from: number): number | undefined {
   const n = session.entries.length;

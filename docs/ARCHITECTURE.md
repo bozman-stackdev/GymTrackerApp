@@ -175,3 +175,21 @@ gained `equipment` / `equipmentId` / `detected`. See `docs/EQUIPMENT.md`. Tab re
 
 **D42. Today's Challenge front and centre:** the Train screen shows "🎯 N challenges ready" per routine. There's no separate
 "Start set" button: the rep pad records the set in one tap (deliberate deviation from the spec sketch).
+
+## Phase 6 follow-ups - ready for testers (2026-09-30)
+
+**D43. Editing sets:** `editSet(data, sessionId, entryIndex, setIndex, patch | null)` works for the workout in progress and
+finished workouts (it drops emptied exercises and workouts). The UI is a shared `SetEditor` bottom sheet, opened from the
+workout's set boxes and from the summary's "Edit sets". Derived game state updates by itself.
+
+**D44. Units (`logic/units.ts`):** stored in kg, with `profile.units` for display and input. The module-level display unit is
+set by the app shell (a deliberate trade-off versus threading `units` through every formatter). `snapWeight` (typed:
+0.01 kg / 0.5 lb) and `suggestWeight` (engine and journey: 2.5 lb plates) produce identical stored numbers on shared grid
+points, so journeys compare exactly. `unitStepKg` turns kg steps into realistic lb steps (5 kg ↔ 10 lb). `formatKg` was renamed `formatWeight`.
+
+**D45. Feedback (`services/feedback.ts`):** email if `VITE_FEEDBACK_EMAIL` is set at build time, otherwise a prefilled GitHub
+issue. It only carries the app version (`__APP_VERSION__` from vite.config) and device basics, never workout data.
+
+**D46. Backup reminder:** `AppData.backup { lastExportAt, remindAfter }` (optional; validated and kept on import).
+`needsBackupReminder` (3+ workouts not backed up, 14+ days, not sample, not mid-workout) drives a Train-screen banner with
+Export or Later (7 days). Photo storage is planned in ROADMAP §5 and not built.

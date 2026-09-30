@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Stepper } from '../../components/Stepper';
-import { logSet, setEntryEquipment, SET_LIMITS } from '../../data/actions';
+import { editSet, logSet, setEntryEquipment, SET_LIMITS } from '../../data/actions';
+import { SetEditor } from '../../components/SetEditor';
+import { unitStepKg, weightNumber } from '../../logic/units';
 import { equipmentFor } from '../../logic/equipment';
 import { useStore } from '../../data/store';
 import { challengeFor, isSuccess, scoreExercise, type Challenge } from '../../logic/game/challenge';
 import type { LiveSession } from '../../logic/game/progress';
-import { formatKg, formatSets, formatTarget, lastPerformance, workingWeight } from '../../logic/history';
+import { formatWeight, formatSets, formatTarget, lastPerformance, workingWeight } from '../../logic/history';
 import { PROGRESSION_DISCLAIMER, plannedSet, recommend } from '../../logic/progression';
 import type { Exercise } from '../../types';
 import { RepPad } from './RepPad';
@@ -23,6 +25,7 @@ export function SetLogger({ exercise, entryIndex, live }: { exercise: Exercise; 
 
   const [weight, setWeight] = useState(plan.weightKg);
   const [showWhy, setShowWhy] = useState(false);
+  const [editing, setEditing] = useState<number | null>(null); // set being fixed (tap a done set)
   const usesWeight = exercise.weightStepKg > 0;
   const needsWeight = usesWeight && weight <= 0;
   const setsDone = entry.sets.length;
@@ -88,19 +91,26 @@ export function SetLogger({ exercise, entryIndex, live }: { exercise: Exercise; 
       <div className="slots" data-testid="sets-today" aria-label="Sets this workout">
         {Array.from({ length: Math.max(entry.targetSets, setsDone + 1) }, (_, i) => {
           const s = entry.sets[i];
-          if (s) return <span key={i} className="slot done">{s.weightKg > 0 ? `${Number(s.weightKg.toFixed(2))}×` : ''}{s.reps}</span>;
+          if (s) {
+            return (
+              <button key={i} className="slot done" aria-label={`Edit set ${i + 1}: ${s.weightKg > 0 ? `${formatWeight(s.weightKg)} × ` : ''}${s.reps} reps`}
+                onClick={() => setEditing(i)}>
+                {s.weightKg > 0 ? `${weightNumber(s.weightKg)}×` : ''}{s.reps}
+              </button>
+            );
+          }
           return <span key={i} className={`slot${i === setsDone ? ' next' : ''}`}>{i < entry.targetSets ? `Set ${i + 1}` : 'Extra'}</span>;
         })}
       </div>
 
       {usesWeight && (
         <div>
-          <Stepper label="Weight" suffix="kg" value={weight} step={exercise.weightStepKg} max={SET_LIMITS.maxWeightKg} decimals onChange={setWeight} />
+          <Stepper label="Weight" weight value={weight} step={unitStepKg(exercise.weightStepKg)} max={SET_LIMITS.maxWeightKg} onChange={setWeight} />
           {quickWeights.length > 0 && (
             <div className="chips quick-weights">
               {quickWeights.map((q) => (
                 <button key={q.label} className="chip" onClick={() => setWeight(q.kg)}>
-                  {formatKg(q.kg)} <span className="muted small">{q.label}</span>
+                  {formatWeight(q.kg)} <span className="muted small">{q.label}</span>
                 </button>
               ))}
             </div>
@@ -110,6 +120,17 @@ export function SetLogger({ exercise, entryIndex, live }: { exercise: Exercise; 
 
       <RepPad target={plan.reps} disabled={needsWeight} onPick={log} label={setsDone >= entry.targetSets ? 'Extra set? Tap reps' : 'Tap reps done'} />
       {needsWeight && <p className="center warn small">Set the weight first</p>}
+      {editing !== null && entry.sets[editing] && (
+        <SetEditor
+          title={`${exercise.name} · set ${editing + 1}`}
+          set={entry.sets[editing]}
+          usesWeight={usesWeight}
+          weightStep={unitStepKg(exercise.weightStepKg)}
+          onSave={(patch) => { update((d) => editSet(d, d.activeWorkout!.session.id, entryIndex, editing, patch)); setEditing(null); }}
+          onDelete={() => { update((d) => editSet(d, d.activeWorkout!.session.id, entryIndex, editing, null)); setEditing(null); }}
+          onClose={() => setEditing(null)}
+        />
+      )}
     </section>
   );
 }

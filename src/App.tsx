@@ -4,6 +4,7 @@ import { TabBar } from './components/TabBar';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { StoreProvider, useAppState, useStore } from './data/store';
 import { WelcomeScreen } from './screens/WelcomeScreen';
+import { setUnits } from './logic/units';
 import { EquipmentFormScreen } from './screens/gym/EquipmentFormScreen';
 import { AddExerciseScreen } from './screens/AddExerciseScreen';
 import { ExerciseFormScreen } from './screens/exercises/ExerciseFormScreen';
@@ -35,6 +36,7 @@ export function App() {
 function Shell() {
   const { data, saveError } = useAppState();
   if (!data) return <WelcomeScreen />;
+  setUnits(data.profile.units ?? 'kg'); // display units for every formatter, before any screen renders
   return (
     <>
       {saveError && <div className="alert save-alert" role="alert">⚠️ Not saved: {saveError}</div>}

@@ -1,4 +1,8 @@
 import type { AppData, Routine, SetLog, WorkoutSession } from '../types';
+import { formatWeight } from './units';
+
+/** Weight in the user's units (see units.ts). */
+export { formatWeight };
 
 /** One past performance of a single exercise. */
 export interface ExercisePerformance {
@@ -59,13 +63,10 @@ export function sessionSetCount(session: WorkoutSession): number {
   return session.entries.reduce((n, e) => n + e.sets.length, 0);
 }
 
-export function formatKg(kg: number): string {
-  return `${Number(kg.toFixed(2))} kg`;
-}
 
 /** One target, e.g. "60 kg × 9" (or "12 reps" for bodyweight). */
 export function formatTarget(t: { weightKg: number; reps: number }): string {
-  return t.weightKg > 0 ? `${formatKg(t.weightKg)} × ${t.reps}` : `${t.reps} reps`;
+  return t.weightKg > 0 ? `${formatWeight(t.weightKg)} × ${t.reps}` : `${t.reps} reps`;
 }
 
 /** "40 kg × 10 · 10 · 9" - consecutive sets at the same weight are grouped. */
@@ -77,7 +78,7 @@ export function formatSets(sets: SetLog[]): string {
     else groups.push({ weightKg: s.weightKg, reps: [s.reps] });
   }
   return groups
-    .map((g) => (g.weightKg > 0 ? `${formatKg(g.weightKg)} × ${g.reps.join(' · ')}` : `${g.reps.join(' · ')} reps`))
+    .map((g) => (g.weightKg > 0 ? `${formatWeight(g.weightKg)} × ${g.reps.join(' · ')}` : `${g.reps.join(' · ')} reps`))
     .join(', ');
 }
 

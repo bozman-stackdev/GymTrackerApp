@@ -2,14 +2,18 @@ import { useRef, useState } from 'react';
 import { Screen } from '../components/Screen';
 import { saveProfile } from '../data/actions';
 import { createStarterData, createSampleData } from '../data/seed';
-import { backupFileName, downloadText, readBackupFile, serializeBackup } from '../data/backup';
+import { exportBackup, readBackupFile } from '../data/backup';
+import { relativeDay } from '../logic/history';
+import { feedbackUrl } from '../services/feedback';
 import { useStore } from '../data/store';
 import { validateProfile } from '../data/validate';
+import { fromDisplay, toDisplay, type Units } from '../logic/units';
 import { useProgress } from '../data/useProgress';
 import { AchievementList, LevelBar, PersonalBestList, streakText } from '../components/ProgressWidgets';
 import { ACHIEVEMENTS } from '../logic/game/achievements';
 import type { Experience, Goal, Profile, Sex } from '../types';
 
+const UNITS: [Units, string][] = [['kg', 'kg'], ['lb', 'lb']];
 const SEXES: [Sex, string][] = [['male', 'Male'], ['female', 'Female'], ['other', 'Other'], ['', 'Prefer not to say']];
 const EXPERIENCE: [Experience, string][] = [['beginner', 'Beginner'], ['intermediate', 'Intermediate'], ['advanced', 'Advanced']];
 const GOALS: [Goal, string][] = [['strength', 'Strength'], ['muscle', 'Build muscle'], ['general', 'General fitness']];
@@ -22,14 +26,15 @@ export function ProfileScreen() {
   const change = <K extends keyof Profile>(key: K, value: Profile[K]) => { setP({ ...p, [key]: value }); setSaved(false); };
   const num = (v: string) => (v === '' ? null : Number(v));
 
+  const units: Units = p.units ?? 'kg';
   const errors = validateProfile(p);
   const valid = Object.keys(errors).length === 0;
   const bmi = valid && p.heightCm && p.weightKg ? p.weightKg / (p.heightCm / 100) ** 2 : null;
   const restoreInput = useRef<HTMLInputElement>(null);
   const [dataMessage, setDataMessage] = useState<string | null>(null);
 
-  const exportBackup = () => {
-    downloadText(backupFileName(), serializeBackup(data));
+  const exportNow = () => {
+    exportBackup(data, update);
     setDataMessage('Backup saved. Keep the file somewhere safe (e.g. cloud drive).');
   };
   const restore = async (file: File | undefined) => {
@@ -81,10 +86,12 @@ export function ProfileScreen() {
       <div className="row" style={{ alignItems: 'flex-start' }}>
         <NumberField label="Age" value={p.age} error={errors.age} onChange={(v) => change('age', num(v))} />
         <NumberField label="Height (cm)" value={p.heightCm} error={errors.heightCm} onChange={(v) => change('heightCm', num(v))} />
-        <NumberField label="Weight (kg)" value={p.weightKg} error={errors.weightKg} onChange={(v) => change('weightKg', num(v))} decimal />
+        <NumberField label={`Weight (${units})`} value={p.weightKg === null ? null : Math.round(toDisplay(p.weightKg, units) * 10) / 10}
+          error={errors.weightKg} onChange={(v) => change('weightKg', v === '' ? null : fromDisplay(Number(v), units))} decimal />
       </div>
       {bmi && <p className="muted small flush">BMI {bmi.toFixed(1)}</p>}
 
+      <Chips label="Units" options={UNITS} value={units} onChange={(v) => change('units', v)} />
       <Chips label="Sex" options={SEXES} value={p.sex} onChange={(v) => change('sex', v)} />
       <Chips label="Experience" options={EXPERIENCE} value={p.experience} onChange={(v) => change('experience', v)} />
       <Chips label="Goal" options={GOALS} value={p.goal} onChange={(v) => change('goal', v)} />
@@ -93,12 +100,17 @@ export function ProfileScreen() {
         {saved ? '✓ Saved' : 'Save'}
       </button>
 
+      <h2>Feedback</h2>
+      <a className="btn block" href={feedbackUrl()} target="_blank" rel="noopener noreferrer" data-testid="feedback">💬 Send feedback</a>
+      <p className="muted small flush">Includes the app version and device type only - never your workouts.</p>
+
       <h2>Data</h2>
       <p className="muted small flush">
         Everything is stored only on this phone, in this browser. Export a backup now and then, or before changing phones.
         On iPhone, add the app to your Home Screen: Safari may clear data of websites you haven't opened for a week.
       </p>
-      <button className="btn block" onClick={exportBackup}>Export backup</button>
+      <button className="btn block" onClick={exportNow}>Export backup</button>
+      {data.backup?.lastExportAt && <p className="muted small center flush">Last backup {relativeDay(data.backup.lastExportAt)}</p>}
       <input ref={restoreInput} type="file" accept="application/json,.json" hidden data-testid="profile-restore-input" onChange={(e) => restore(e.target.files?.[0])} />
       <button className="btn block" onClick={() => restoreInput.current?.click()}>Restore backup</button>
       {dataMessage && <p className="small center" role="status">{dataMessage}</p>}

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { addExerciseToWorkout, finishWorkout, goToExercise, logSet, startExercise, startWorkout, undoLastSet } from './actions';
+import { addExerciseToWorkout, editSet, finishWorkout, goToExercise, logSet, startExercise, startWorkout, undoLastSet } from './actions';
 import { createSampleData, createStarterData, SAMPLE_ROUTINES } from './seed';
 import { localStorageStore } from './storage';
+import { markBackedUp, needsBackupReminder, snoozeBackupReminder } from './backup';
 import { parseAppData, validateExercise, validateProfile } from './validate';
 import { EMPTY_PROFILE, SAMPLE_EXERCISES } from './seed';
 
@@ -196,5 +197,76 @@ describe('form validation', () => {
     expect(validateExercise({ ...base, repRange: [12, 8] }, SAMPLE_EXERCISES).repRange).toBeDefined();
     expect(validateExercise({ ...base, weightStepKg: 0 }, SAMPLE_EXERCISES).weightStepKg).toBeDefined();
     expect(validateExercise({ ...base, equipment: 'bodyweight', weightStepKg: 0 }, SAMPLE_EXERCISES)).toEqual({});
+  });
+});
+
+describe('editing logged sets', () => {
+  const set = { reps: 10, weightKg: 50 };
+  it('fixes or deletes a set during a workout', () => {
+    let d = startWorkout(createStarterData(), SAMPLE_ROUTINES[0]);
+    d = logSet(logSet(d, 0, set), 0, set);
+    const id = d.activeWorkout!.session.id;
+    d = editSet(d, id, 0, 0, { reps: 8, weightKg: 52.5 });
+    expect(d.activeWorkout!.session.entries[0].sets.map((s) => [s.weightKg, s.reps])).toEqual([[52.5, 8], [50, 10]]);
+    d = editSet(d, id, 0, 1, null);
+    expect(d.activeWorkout!.session.entries[0].sets).toHaveLength(1);
+  });
+
+  it('fixes a finished workout; removes an exercise (and the workout) when its last set is deleted', () => {
+    let d = startWorkout(createStarterData(), SAMPLE_ROUTINES[0]);
+    d = logSet(logSet(d, 0, set), 1, set);
+    const id = d.activeWorkout!.session.id;
+    d = finishWorkout(d);
+    d = editSet(d, id, 1, 0, { reps: 12, weightKg: 50 });
+    expect(d.sessions[0].entries[1].sets[0].reps).toBe(12);
+    const loggedAt = d.sessions[0].entries[1].sets[0].loggedAt;
+    expect(loggedAt).toBeTruthy(); // time kept, so history order is unchanged
+    d = editSet(d, id, 1, 0, null);
+    expect(d.sessions[0].entries).toHaveLength(1);
+    d = editSet(d, id, 0, 0, null);
+    expect(d.sessions).toHaveLength(0);
+  });
+
+  it('refuses impossible values', () => {
+    let d = startWorkout(createStarterData(), SAMPLE_ROUTINES[0]);
+    d = logSet(d, 0, set);
+    expect(editSet(d, d.activeWorkout!.session.id, 0, 0, { reps: 0, weightKg: 50 })).toBe(d);
+  });
+});
+
+describe('backup reminder', () => {
+  const day = 86_400_000;
+  const withWorkouts = (n: number, startDaysAgo: number, now: Date) => {
+    const d = { ...createStarterData() };
+    d.sessions = Array.from({ length: n }, (_, i) => {
+      const at = new Date(now.getTime() - (startDaysAgo - i) * day).toISOString();
+      return { id: `w${i}`, name: 'W', startedAt: at, finishedAt: at, entries: [{ exerciseId: 'leg-press', targetSets: 1, sets: [{ reps: 10, weightKg: 100, loggedAt: at }] }] };
+    });
+    return d;
+  };
+  const now = new Date('2026-10-01T12:00:00Z');
+
+  it('asks after 14+ days with 3+ workouts not backed up', () => {
+    expect(needsBackupReminder(withWorkouts(3, 20, now), now)).toBe(true);
+    expect(needsBackupReminder(withWorkouts(2, 20, now), now)).toBe(false); // too few workouts
+    expect(needsBackupReminder(withWorkouts(5, 10, now), now)).toBe(false); // too soon
+  });
+
+  it('never for sample data or during a workout', () => {
+    expect(needsBackupReminder({ ...withWorkouts(5, 30, now), isSample: true }, now)).toBe(false);
+    expect(needsBackupReminder(startWorkout(withWorkouts(5, 30, now), SAMPLE_ROUTINES[0]), now)).toBe(false);
+  });
+
+  it('resets after an export; "Later" snoozes for a week', () => {
+    const d = withWorkouts(5, 30, now);
+    expect(needsBackupReminder(markBackedUp(d, now), now)).toBe(false);
+    const snoozed = snoozeBackupReminder(d, now);
+    expect(needsBackupReminder(snoozed, new Date(now.getTime() + 6 * day))).toBe(false);
+    expect(needsBackupReminder(snoozed, new Date(now.getTime() + 8 * day))).toBe(true);
+  });
+
+  it('backup info survives save/load', () => {
+    const d = markBackedUp(createStarterData(), now);
+    expect(parseAppData(JSON.parse(JSON.stringify(d))).backup).toEqual({ lastExportAt: now.toISOString() });
   });
 });

@@ -5,6 +5,7 @@ import { Stepper } from '../../components/Stepper';
 import { newId, saveExercise, startExercise } from '../../data/actions';
 import { useStore } from '../../data/store';
 import { validateExercise } from '../../data/validate';
+import { formatWeight, fromDisplay, getUnits, unitStepKg } from '../../logic/units';
 import type { Equipment, Exercise, MuscleGroup } from '../../types';
 
 const MUSCLES: MuscleGroup[] = ['chest', 'back', 'shoulders', 'arms', 'legs', 'core'];
@@ -67,12 +68,12 @@ export function ExerciseFormScreen() {
       <Stepper label="Min reps" value={min} step={1} min={1} max={max} onChange={(v) => set('repRange', [v, max])} />
       <Stepper label="Max reps" value={max} step={1} min={min} max={100} onChange={(v) => set('repRange', [min, v])} />
       {form.equipment !== 'bodyweight' && (
-        <Stepper label="Weight jump" suffix="kg" value={form.weightStepKg} step={0.5} min={0.5} max={50} decimals onChange={(v) => set('weightStepKg', v)} />
+        <Stepper label="Weight jump" weight value={form.weightStepKg} step={fromDisplay(getUnits() === 'lb' ? 2.5 : 0.5)} min={fromDisplay(0.5)} max={50} onChange={(v) => set('weightStepKg', v)} />
       )}
       {(errors.repRange || errors.weightStepKg) && <p className="field-error">{errors.repRange ?? errors.weightStepKg}</p>}
       <p className="muted small flush">
         Challenges add a rep at a time. After {max}+ reps on every set in 2 workouts in a row, they add{' '}
-        {form.equipment === 'bodyweight' ? 'more reps' : `${form.weightStepKg} kg`}.
+        {form.equipment === 'bodyweight' ? 'more reps' : formatWeight(unitStepKg(form.weightStepKg))}.
       </p>
 
       <button className="btn primary huge" disabled={!valid} onClick={save}>Save</button>

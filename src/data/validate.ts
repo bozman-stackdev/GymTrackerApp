@@ -10,6 +10,7 @@ const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object
 const isNum = (v: unknown, min = -Infinity, max = Infinity): v is number => typeof v === 'number' && Number.isFinite(v) && v >= min && v <= max;
 const isStr = (v: unknown): v is string => typeof v === 'string' && v.length > 0;
 const isDate = (v: unknown) => isStr(v) && !Number.isNaN(Date.parse(v));
+const str = (v: unknown) => (isDate(v) ? (v as string) : undefined);
 
 function check(ok: boolean, what: string): asserts ok {
   if (!ok) throw new DataError(`Invalid data: ${what}`);
@@ -72,6 +73,7 @@ function migrate(data: AppData): AppData {
     equipment: (data.equipment ?? []).map((e) => ({ ...e, gym: e.gym ?? '', source: e.source ?? 'manual' })), // added in Phase 6
     activeWorkout: data.activeWorkout ?? null,
     ...(data.isSample ? { isSample: true } : {}),
+    ...(isObj(data.backup) ? { backup: { lastExportAt: str(data.backup.lastExportAt), remindAfter: str(data.backup.remindAfter) } } : {}),
   };
 }
 
@@ -86,7 +88,7 @@ export function validateProfile(p: Profile): FieldErrors<Profile> {
   if (p.name.length > 40) e.name = 'Keep it under 40 characters';
   if (outside(p.age, 13, 100)) e.age = 'Age 13–100';
   if (outside(p.heightCm, 100, 250)) e.heightCm = 'Height 100–250 cm';
-  if (outside(p.weightKg, 25, 350)) e.weightKg = 'Weight 25–350 kg';
+  if (outside(p.weightKg, 25, 350)) e.weightKg = p.units === 'lb' ? 'Weight 55–770 lb' : 'Weight 25–350 kg';
   return e;
 }
 

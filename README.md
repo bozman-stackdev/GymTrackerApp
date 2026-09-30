@@ -34,6 +34,7 @@ saves everything to a file (restore it on another phone from the welcome screen 
 | `npm run dev` | Dev server with hot reload |
 | `npm test` | Unit tests (progression rules, data actions, storage) |
 | `npm run test:e2e` | End-to-end tests in a phone-sized Chromium, incl. offline and accessibility checks (starts servers itself; run `npx playwright install chromium` once first) |
+| `VITE_FEEDBACK_EMAIL=you@example.com npm run build` | Optional: send tester feedback to an email instead of GitHub issues |
 | `npm run build` | Type-check + production build into `dist/` (static files, host anywhere) |
 
 ## How it works for the user
@@ -91,6 +92,8 @@ docs/                       ARCHITECTURE (decision log), ROADMAP (backend/native
 - **Missed?** "NOT TODAY", never "failed". The next challenge adapts: same target after a near miss, adjusted after a bigger one.
 - **Rewards**: target hit, back on track, weight mastered, personal best, consistency. XP → levels → achievements.
 - **My Gym**: your machines with settings, last weights and previous session. Shown during the workout.
+- **Fix mistakes**: tap any logged set (or *Edit sets* on a workout summary) to change or delete it.
+- **kg or lb** (Profile). **Send feedback** (Profile). A gentle **backup reminder** every couple of weeks.
 
 ## Today's Challenge, XP and streaks
 

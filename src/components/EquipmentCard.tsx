@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useExerciseLookup, useStore } from '../data/store';
 import { lastUsage } from '../logic/equipment';
-import { formatKg, formatSets, relativeDay, workingWeight } from '../logic/history';
+import { formatWeight, formatSets, relativeDay, workingWeight } from '../logic/history';
 import type { GymEquipment } from '../types';
 
 /** One machine in My gym: what it's for, your settings, and what you did on it last time. */
@@ -17,7 +17,7 @@ export function EquipmentCard({ item }: { item: GymEquipment }) {
         {item.settings && <div className="small">⚙️ {item.settings}</div>}
         {usage ? (
           <>
-            <div className="small">Last used: <strong>{usage.sets.some((s) => s.weightKg > 0) ? formatKg(workingWeight(usage.sets)) : 'bodyweight'}</strong> · {relativeDay(usage.date)}</div>
+            <div className="small">Last used: <strong>{usage.sets.some((s) => s.weightKg > 0) ? formatWeight(workingWeight(usage.sets)) : 'bodyweight'}</strong> · {relativeDay(usage.date)}</div>
             <div className="muted small">Previous session: {formatSets(usage.sets)}</div>
           </>
         ) : (

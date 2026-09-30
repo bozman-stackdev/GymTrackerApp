@@ -2,13 +2,16 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { LevelBar, streakText } from '../../components/ProgressWidgets';
 import { Screen } from '../../components/Screen';
 import { formatDuration } from '../../components/useNow';
-import { deleteSession } from '../../data/actions';
+import { useState } from 'react';
+import { SetEditor } from '../../components/SetEditor';
+import { deleteSession, editSet } from '../../data/actions';
 import { useExerciseLookup, useStore } from '../../data/store';
 import { useProgress } from '../../data/useProgress';
 import { ACHIEVEMENTS } from '../../logic/game/achievements';
 import { challengeFor, type Challenge, type Outcome } from '../../logic/game/challenge';
 import type { Progress, SessionProgress, XpEvent } from '../../logic/game/progress';
-import { formatDate, formatSets, formatTarget, sessionVolumeKg } from '../../logic/history';
+import { formatDate, formatSets, formatTarget, formatWeight, sessionVolumeKg } from '../../logic/history';
+import { getUnits, toDisplay, unitStepKg } from '../../logic/units';
 import type { WorkoutSession } from '../../types';
 
 /** One finished workout: what you did, what it earned, and what's next. Also the "workout complete" screen. */
@@ -18,6 +21,8 @@ export function SessionScreen() {
   const getExercise = useExerciseLookup();
   const navigate = useNavigate();
   const progress = useProgress();
+  const [editMode, setEditMode] = useState(false);
+  const [editing, setEditing] = useState<{ entry: number; set: number } | null>(null);
   const session = data.sessions.find((s) => s.id === id);
   if (!session) return <Navigate to="/history" replace />;
 
@@ -32,16 +37,55 @@ export function SessionScreen() {
   };
 
   return (
-    <Screen title={session.name} back>
+    <Screen title={session.name} back action={
+      <button className="btn ghost" aria-pressed={editMode} onClick={() => setEditMode(!editMode)}>{editMode ? 'Done editing' : 'Edit sets'}</button>
+    }>
       <p className="muted flush">
         {formatDate(session.startedAt)}
         {session.finishedAt && ` · ${formatDuration(Date.parse(session.finishedAt) - Date.parse(session.startedAt))}`}
-        {` · ${Math.round(sessionVolumeKg(session)).toLocaleString()} kg lifted`}
+        {` · ${Math.round(toDisplay(sessionVolumeKg(session))).toLocaleString()} ${getUnits()} lifted`}
       </p>
 
       {scored && <WorkoutRewards scored={scored} progress={isLatest ? progress : undefined} />}
 
-      <div className="list">
+      {editMode && (
+        <div className="list" data-testid="edit-sets">
+          <p className="muted small flush">Tap a set to fix it. Rewards and your journey update automatically.</p>
+          {session.entries.map((e, ei) => (
+            <div key={e.exerciseId} className="card">
+              <div className="title">{getExercise(e.exerciseId).name}</div>
+              <div className="set-chips">
+                {e.sets.map((s, si) => (
+                  <button key={si} className="set-chip" onClick={() => setEditing({ entry: ei, set: si })}
+                    aria-label={`Edit ${getExercise(e.exerciseId).name} set ${si + 1}`}>
+                    {s.weightKg > 0 ? `${formatWeight(s.weightKg)} × ` : ''}{s.reps}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {editing && session.entries[editing.entry]?.sets[editing.set] && (() => {
+        const ex = getExercise(session.entries[editing.entry].exerciseId);
+        const save = (patch: { reps: number; weightKg: number } | null) => {
+          update((d) => editSet(d, session.id, editing.entry, editing.set, patch));
+          setEditing(null);
+        };
+        return (
+          <SetEditor
+            title={`${ex.name} · set ${editing.set + 1}`}
+            set={session.entries[editing.entry].sets[editing.set]}
+            usesWeight={ex.weightStepKg > 0}
+            weightStep={unitStepKg(ex.weightStepKg)}
+            onSave={save}
+            onDelete={() => save(null)}
+            onClose={() => setEditing(null)}
+          />
+        );
+      })()}
+
+      <div className="list" hidden={editMode}>
         {session.entries.map((e) => {
           const r = resultFor(e.exerciseId);
           return (

@@ -3,7 +3,7 @@ import { useExerciseLookup, useStore } from '../../data/store';
 import { challengeFor, isSuccess, type ExerciseResult } from '../../logic/game/challenge';
 import { GAME_CONFIG } from '../../logic/game/config';
 import { challengeXp, type LiveSession } from '../../logic/game/progress';
-import { formatKg, formatTarget } from '../../logic/history';
+import { formatWeight, formatTarget } from '../../logic/history';
 import type { WorkoutSession } from '../../types';
 
 type Feedback = 'personal-best' | 'mastered' | 'comeback' | 'hit' | 'matched' | 'not-today';
@@ -55,7 +55,7 @@ export function LastSetBar({ session, live, onUndo }: { session: WorkoutSession;
   const entry = session.entries[entryIndex];
   const exercise = getExercise(entry.exerciseId);
   const set = entry.sets[setIndex];
-  const text = `${set.weightKg > 0 ? `${formatKg(set.weightKg)} × ` : ''}${set.reps}`;
+  const text = `${set.weightKg > 0 ? `${formatWeight(set.weightKg)} × ` : ''}${set.reps}`;
   const rest = <span className="muted small" aria-label="Rest time">{formatDuration(now - Date.parse(loggedAt))}</span>;
   const undo = <button className="btn ghost" onClick={() => onUndo(entryIndex)}>Undo</button>;
 
@@ -76,7 +76,7 @@ export function LastSetBar({ session, live, onUndo }: { session: WorkoutSession;
   const supportive = main === 'not-today' || main === 'matched';
   // For a miss, show the best set of the exercise (more useful - and kinder - than the last one).
   const best = entry.sets.reduce((a, b) => (b.weightKg > a.weightKg || (b.weightKg === a.weightKg && b.reps > a.reps) ? b : a));
-  const shown = supportive ? `${best.weightKg > 0 ? `${formatKg(best.weightKg)} × ` : ''}${best.reps}` : text;
+  const shown = supportive ? `${best.weightKg > 0 ? `${formatWeight(best.weightKg)} × ` : ''}${best.reps}` : text;
   // Next challenge, as if today were finished - only shown when the engine has one.
   const next = challengeFor(exercise, [...data.sessions, { ...session, finishedAt: loggedAt }]);
   const mastered = result?.weightMastered;

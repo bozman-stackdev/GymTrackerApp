@@ -11,6 +11,7 @@ import { equipmentFor } from '../../logic/equipment';
 import { challengeFor } from '../../logic/game/challenge';
 import { buildJourney } from '../../logic/journey';
 import { recommend } from '../../logic/progression';
+import { getUnits, toDisplay } from '../../logic/units';
 
 /** Progress for one exercise: today's suggestion, a trend chart and past sessions. */
 export function ExerciseScreen() {
@@ -26,7 +27,7 @@ export function ExerciseScreen() {
   const usesWeight = exercise.weightStepKg > 0;
   const points = history.map((p) => ({
     date: p.date,
-    value: usesWeight ? bestEstimated1RM(p.sets) : Math.max(...p.sets.map((s) => s.reps)),
+    value: usesWeight ? toDisplay(bestEstimated1RM(p.sets)) : Math.max(...p.sets.map((s) => s.reps)),
   }));
 
   return (
@@ -55,7 +56,7 @@ export function ExerciseScreen() {
 
       <h2>{usesWeight ? 'Strength trend' : 'Best set (reps)'}</h2>
       <div className="card">
-        <TrendChart points={points} unit={usesWeight ? 'kg' : 'reps'} />
+        <TrendChart points={points} unit={usesWeight ? getUnits() : 'reps'} />
         {usesWeight && <p className="muted small flush">Estimated from your best set each workout (the weight you could lift once).</p>}
       </div>
 

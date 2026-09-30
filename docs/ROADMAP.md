@@ -1,6 +1,6 @@
 # Roadmap: from web MVP to a polished mobile app
 
-Written at the end of Phase 5, before user testing (Phase 6). Read with `ARCHITECTURE.md`.
+Written at the end of Phase 5 and updated after Phase 6 (the core loop). User testing is **Phase 7**. Read with `ARCHITECTURE.md`.
 
 ## 1. How the app is layered (what can be swapped)
 
@@ -70,18 +70,17 @@ Each browser API is already isolated in one place (`useWakeLock`, `services/imag
 Honest assessment after Phases 1–5. The core loop works and is fast (2 taps to the first set, 1 tap per set,
 ~2 ms of scoring per set with years of history). These gaps matter more than new features:
 
-### Must fix before (or right after) the first testers
-1. **Editing mistakes after the fact.** During a workout you can only undo the *last* set, and after finishing you can only
-   delete a whole workout. Testers *will* mis-tap. Add: tap a logged set to edit or delete it (during and after a workout).
-2. **Data loss risk.** Local-only data plus Safari's 7-day rule. Short term: ask testers to add the app to the Home Screen,
-   and add a gentle "Export a backup?" reminder every ~2 weeks. Medium term: the account + sync plan above.
-3. **Units.** kg only. Anyone training in lb can't use it. Store kg, display either (a small formatting-layer change).
-4. **A way for testers to give feedback** (a "Send feedback" link in Profile), so Phase 6 learns something.
+### Must fix before the first testers: ✅ done (after Phase 6)
+1. ✅ **Editing mistakes.** Tap any logged set to fix or delete it, during a workout (set boxes) and afterwards (summary → Edit sets).
+2. ✅ **Data loss risk (short term).** A gentle backup reminder (3+ workouts, 14+ days, "Later" = 7 days), plus the Home Screen tip.
+   Medium term, it's still the account + sync plan above.
+3. ✅ **Units.** kg or lb in Profile. Stored in kg; suggestions snap to 2.5 lb plates, typed weights to 0.5 lb.
+4. ✅ **Feedback.** Profile → Send feedback (email via `VITE_FEEDBACK_EMAIL`, otherwise a GitHub issue). App and device basics only.
 
 ### Should do soon
 5. **Rest timer.** The timer counts up, but there's no "rest done" buzz. This is the most requested gym-app feature and fits the
    "don't look at the phone" goal. It needs native notifications to work with the screen locked (Capacitor).
-6. **Challenge meaning.** Today one set at the target counts as done. Testers may expect "all sets". Watch for confusion in Phase 6.
+6. **Challenge meaning.** Today one set at the target counts as done. Testers may expect "all sets". Watch for confusion in Phase 7 (user testing).
 7. **Warm-up sets.** Lighter sets are ignored by the engine, but the UI doesn't label them. A quick "warm-up" toggle could help.
 8. **Managing exercises.** Custom exercises can't be deleted or archived, and the library can't be filtered by muscle group.
 9. **Manual accessibility check** with VoiceOver/TalkBack. The automated checks (axe) pass in light and dark mode, but they only
@@ -98,3 +97,20 @@ Honest assessment after Phases 1–5. The core loop works and is fast (2 taps to
 ### Deliberately not doing
 Social features, leaderboards, messaging, subscriptions, daily streaks. They conflict with
 "spend less time tracking your workout and more time doing it".
+
+## 5. Photo storage plan (for when equipment photos are wanted)
+
+Not built yet; photos are currently never stored (D23). The plan, sized for thousands of photos:
+
+1. **Never inside `AppData`.** The main record stays small JSON. Equipment keeps only a `photoId`.
+2. **Two sizes per photo**, resized on the phone (which also strips GPS/EXIF): thumbnail 256 px (~15 KB) and full
+   ~1024 px (~150 KB). 1,000 photos ≈ 165 MB.
+3. **A `PhotoStore` interface** (`put / get / delete / list`), like `DataStore`:
+   - web: **IndexedDB** (hundreds of MB to GBs per site, quota checked with `navigator.storage.estimate()`, `persist()` requested);
+   - native: the app's **file system** (Capacitor Filesystem);
+   - with accounts: **cloud object storage** (e.g. Supabase or Firebase Storage) as the source of truth. The phone keeps all
+     thumbnails and a size-capped cache of full photos (least recently used first), downloading on demand.
+4. **Metadata per photo:** id, equipmentId, createdAt, width/height, bytes, content hash (dedupe), where it lives (local/remote).
+   Deleting a machine deletes its photos.
+5. **Backups:** the JSON export keeps only references. An optional "full backup" (.zip with photos) can come later; cloud sync makes it unnecessary.
+6. **Privacy:** opt-in per machine. Gym photos may include people, so keep them private per user and cover it in the privacy policy.

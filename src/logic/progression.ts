@@ -19,7 +19,8 @@
  * so rules can change without touching any screen. These are simple rules of thumb, not medical advice.
  */
 import type { Exercise, SetLog, WorkoutSession } from '../types';
-import { bestEstimated1RM, bestRepsAtWeight, daysBetween, exerciseHistory, formatKg, workingSets, workingWeight, type ExercisePerformance } from './history';
+import { suggestWeight, unitStepKg } from './units';
+import { bestEstimated1RM, bestRepsAtWeight, daysBetween, exerciseHistory, formatWeight, workingSets, workingWeight, type ExercisePerformance } from './history';
 
 export interface ProgressionConfig {
   /** Sessions of an exercise needed before any advice. */
@@ -155,7 +156,7 @@ export function recommend(exercise: Exercise, sessions: WorkoutSession[], config
   const [repMin, repMax] = exercise.repRange;
   const facts = analyse(exercise, exerciseHistory(sessions, exercise.id), config);
   const usesWeight = exercise.weightStepKg > 0;
-  const setText = (kg: number, reps: number) => (usesWeight && kg > 0 ? `${formatKg(kg)} × ${reps}` : `${reps} reps`);
+  const setText = (kg: number, reps: number) => (usesWeight && kg > 0 ? `${formatWeight(kg)} × ${reps}` : `${reps} reps`);
   const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
   // R0
@@ -166,7 +167,7 @@ export function recommend(exercise: Exercise, sessions: WorkoutSession[], config
     };
   }
   const { weightKg: w, reps, lowest, best } = facts.last;
-  const lastText = `${reps.join(', ')} reps${usesWeight ? ` at ${formatKg(w)}` : ''}`;
+  const lastText = `${reps.join(', ')} reps${usesWeight ? ` at ${formatWeight(w)}` : ''}`;
 
   // R1: be patient - no advice until there is a real history.
   if (facts.sessions < config.minSessions || facts.daysOfHistory < config.minDaysOfHistory) {
@@ -187,7 +188,7 @@ export function recommend(exercise: Exercise, sessions: WorkoutSession[], config
     if (!usesWeight) {
       return { kind: 'increase-reps', rule: 'R2', weightKg: 0, reps: lowest + 1, title: `Try ${lowest + 1} reps`, reason: `${why} Aim a little higher.` };
     }
-    const next = w + exercise.weightStepKg;
+    const next = suggestWeight(w + unitStepKg(exercise.weightStepKg));
     return {
       kind: 'increase-weight', rule: 'R2', weightKg: next, reps: repMin, title: `Try ${setText(next, repMin)}`,
       reason: `${why} Consider increasing the weight and building the reps back up.`,
@@ -204,10 +205,10 @@ export function recommend(exercise: Exercise, sessions: WorkoutSession[], config
 
   // R4: repeatedly below the range -> lighter.
   if (usesWeight && facts.sessionsBelowRangeInARow >= config.sessionsBelowRangeBeforeDecrease) {
-    const next = Math.max(0, w - exercise.weightStepKg);
+    const next = Math.max(0, suggestWeight(w - unitStepKg(exercise.weightStepKg)));
     return {
       kind: 'decrease-weight', rule: 'R4', weightKg: next, reps: repMin, title: `Try ${setText(next, repMin)}`,
-      reason: `No set reached ${repMin} reps at ${formatKg(w)} in your last ${plural(facts.sessionsBelowRangeInARow, 'session')}. A little lighter should get you back into the ${repMin}–${repMax} range.`,
+      reason: `No set reached ${repMin} reps at ${formatWeight(w)} in your last ${plural(facts.sessionsBelowRangeInARow, 'session')}. A little lighter should get you back into the ${repMin}–${repMax} range.`,
     };
   }
 
@@ -226,7 +227,7 @@ export function recommend(exercise: Exercise, sessions: WorkoutSession[], config
     const t = prev.target;
     return {
       kind: 'retry', rule: 'R7', weightKg: t.weightKg, reps: t.reps, title: `Try ${setText(t.weightKg, t.reps)} again`,
-      reason: `So close last time: ${prev.best} of ${t.reps} reps${usesWeight ? ` at ${formatKg(t.weightKg)}` : ''}. Same target again.`,
+      reason: `So close last time: ${prev.best} of ${t.reps} reps${usesWeight ? ` at ${formatWeight(t.weightKg)}` : ''}. Same target again.`,
     };
   }
 

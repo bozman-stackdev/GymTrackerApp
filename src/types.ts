@@ -92,6 +92,8 @@ export interface Profile {
   weightKg: number | null;
   experience: Experience;
   goal: Goal;
+  /** Display/input units. Everything is stored in kg. */
+  units?: 'kg' | 'lb';
 }
 
 /** Everything the app stores. Bump `version` and add a migration in storage.ts when this changes shape. */
@@ -106,4 +108,6 @@ export interface AppData {
   activeWorkout: ActiveWorkout | null;
   /** True while the user is exploring the demo data (shows a banner with a way out). */
   isSample?: boolean;
+  /** When a backup was last exported, and until when the backup reminder is snoozed. */
+  backup?: { lastExportAt?: string; remindAfter?: string };
 }

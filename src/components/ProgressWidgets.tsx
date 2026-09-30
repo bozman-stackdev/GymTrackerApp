@@ -3,7 +3,7 @@ import { useExerciseLookup } from '../data/store';
 import { ACHIEVEMENTS } from '../logic/game/achievements';
 import type { LevelInfo } from '../logic/game/levels';
 import type { PersonalBest } from '../logic/game/progress';
-import { formatDate, formatKg } from '../logic/history';
+import { formatDate, formatWeight } from '../logic/history';
 
 export const streakText = (weeks: number) => (weeks > 0 ? `🔥 ${weeks}-week streak` : 'Streak starts with your next workout');
 
@@ -49,7 +49,7 @@ export function PersonalBestList({ bests }: { bests: PersonalBest[] }) {
       {bests.map((b) => (
         <div key={b.exerciseId} className="row small pb-row">
           <span className="grow">{getExercise(b.exerciseId).name}</span>
-          <strong>{b.set.weightKg > 0 ? `${formatKg(b.set.weightKg)} × ${b.set.reps}` : `${b.set.reps} reps`}</strong>
+          <strong>{b.set.weightKg > 0 ? `${formatWeight(b.set.weightKg)} × ${b.set.reps}` : `${b.set.reps} reps`}</strong>
           <span className="muted">{formatDate(b.date)}</span>
         </div>
       ))}

@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Screen } from '../components/Screen';
 import { startWorkout } from '../data/actions';
+import { exportBackup, needsBackupReminder, snoozeBackupReminder } from '../data/backup';
 import { createStarterData } from '../data/seed';
 import { useStore } from '../data/store';
 import { useProgress } from '../data/useProgress';
@@ -41,6 +42,13 @@ export function HomeScreen() {
         <div className="sample-banner" data-testid="sample-banner">
           <span className="grow">You're exploring sample data.</span>
           <button className="btn ghost" onClick={startOwn}>Start my own</button>
+        </div>
+      )}
+      {needsBackupReminder(data) && (
+        <div className="sample-banner" data-testid="backup-reminder" role="status">
+          <span className="grow">💾 Keep your workouts safe: export a backup.</span>
+          <button className="btn ghost" onClick={() => exportBackup(data, update)}>Export</button>
+          <button className="btn ghost" onClick={() => update((d) => snoozeBackupReminder(d))}>Later</button>
         </div>
       )}
       {active && (

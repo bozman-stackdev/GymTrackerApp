@@ -5,6 +5,8 @@
 import type { AppData } from '../types';
 import { DataError, parseAppData } from './validate';
 
+const DAY = 86_400_000;
+
 export function backupFileName(now = new Date()): string {
   const d = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   return `gym-tracker-backup-${d}.json`;
@@ -39,4 +41,32 @@ export function downloadText(fileName: string, text: string): void {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+export const BACKUP_REMINDER = { minWorkouts: 3, everyDays: 14, snoozeDays: 7 };
+
+/** Gentle reminder: 3+ workouts not backed up and 14+ days since the last export (or first workout). Never mid-workout. */
+export function needsBackupReminder(data: AppData, now = new Date(), cfg = BACKUP_REMINDER): boolean {
+  if (data.isSample || data.activeWorkout) return false;
+  const { lastExportAt, remindAfter } = data.backup ?? {};
+  if (remindAfter && now.getTime() < Date.parse(remindAfter)) return false;
+  const finished = data.sessions.filter((s) => s.finishedAt);
+  const notBackedUp = finished.filter((s) => !lastExportAt || s.finishedAt! > lastExportAt);
+  if (notBackedUp.length < cfg.minWorkouts) return false;
+  const since = lastExportAt ?? finished.map((s) => s.startedAt).sort()[0];
+  return now.getTime() - Date.parse(since) >= cfg.everyDays * DAY;
+}
+
+export function markBackedUp(data: AppData, now = new Date()): AppData {
+  return { ...data, backup: { lastExportAt: now.toISOString() } };
+}
+
+export function snoozeBackupReminder(data: AppData, now = new Date(), cfg = BACKUP_REMINDER): AppData {
+  return { ...data, backup: { ...data.backup, remindAfter: new Date(now.getTime() + cfg.snoozeDays * DAY).toISOString() } };
+}
+
+/** Downloads a backup and records it (so the reminder resets). */
+export function exportBackup(data: AppData, update: (fn: (d: AppData) => AppData) => void): void {
+  downloadText(backupFileName(), serializeBackup(data));
+  update((d) => markBackedUp(d));
 }

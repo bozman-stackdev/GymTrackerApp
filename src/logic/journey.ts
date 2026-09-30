@@ -11,6 +11,7 @@
 import type { Exercise, SetLog, WorkoutSession } from '../types';
 import { exerciseHistory, workingSets, workingWeight } from './history';
 import { PROGRESSION_CONFIG } from './progression';
+import { snapWeight, suggestWeight, unitStepKg } from './units';
 
 export interface Level {
   weightKg: number;
@@ -32,10 +33,8 @@ const usesWeight = (ex: Exercise) => ex.weightStepKg > 0;
 export function nextLevel(ex: Exercise, l: Level): Level {
   const [repMin, repMax] = ex.repRange;
   if (!usesWeight(ex) || l.reps < repMax) return { weightKg: l.weightKg, reps: l.reps + 1 };
-  return { weightKg: roundKg(l.weightKg + ex.weightStepKg), reps: repMin };
+  return { weightKg: suggestWeight(l.weightKg + unitStepKg(ex.weightStepKg)), reps: repMin };
 }
-
-const roundKg = (kg: number) => Math.round(kg * 100) / 100;
 
 /** What a workout "proves": its working weight and the reps of its weakest working set. */
 function sessionProof(ex: Exercise, sets: SetLog[]): Level | null {
@@ -91,7 +90,7 @@ export class MasteryTracker {
     const used = [...this.weights];
     if (!usesWeight(this.exercise) || used.length === 0) return used.length ? [0] : [];
     const set = new Set(used.filter((w) => w <= upTo));
-    for (let w = Math.min(...used); w <= upTo + 1e-9; w = roundKg(w + this.exercise.weightStepKg)) set.add(w);
+    for (let w = Math.min(...used); w <= upTo + 1e-9; w = snapWeight(w + unitStepKg(this.exercise.weightStepKg))) set.add(w);
     return [...set].sort((a, b) => a - b);
   }
 
