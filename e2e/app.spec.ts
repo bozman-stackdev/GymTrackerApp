@@ -135,7 +135,7 @@ test("Today's Challenge: hit it → instant reward → summary → progress on p
   // Only 2 sets were kept (6 and 8 reps) - below the 3-set minimum, so no workout XP: challenge + PB only.
   await expect(page.getByTestId('session-xp')).toHaveText(`+${25 + 50} XP`);
   await expect(page.getByTestId('rewards')).not.toContainText('Workout complete');
-  await expect(page.getByTestId('outcome').first()).toContainText('✓ Challenge 50 kg × 8 complete');
+  await expect(page.getByTestId('outcome').first()).toContainText('✓ Target 50 kg × 8 hit');
   await expect(page.getByTestId('next-challenges')).toContainText('Chest Press Machine');
   await expect(page.getByTestId('level')).toBeVisible();
   await page.screenshot({ path: 'test-results/screens/13-summary.png', fullPage: true });
@@ -158,7 +158,7 @@ test('a "repeat" challenge pays 10 XP when hit', async ({ page }) => {
   await expect(page.getByTestId('challenge')).toContainText("Today's challenge · repeat");
   await expect(page.getByTestId('challenge')).toContainText('20 kg × 15');
   await page.locator('.rep-btn.target').click();
-  await expect(page.getByTestId('reward')).toHaveText('✓ CHALLENGE COMPLETE');
+  await expect(page.getByTestId('reward')).toHaveText('✓ TARGET HIT');
   await expect(page.getByTestId('last-set')).toContainText('+10 XP');
 });
 
@@ -203,7 +203,7 @@ test('scan: photo → "What are you using?" → Start → tracking (best guess i
   await expectNoHorizontalScroll(page);
 
   // Pick the second suggestion instead, then Start.
-  const second = (await options.nth(1).innerText()).trim();
+  const second = (await options.nth(1).innerText()).split(/ · |\n/)[0].trim(); // name only (not the machine / ✓)
   await options.nth(1).click();
   await page.getByRole('button', { name: `Start ${second}` }).click();
 
@@ -246,7 +246,7 @@ test('scan → not listed → create exercise → tracking', async ({ page }) =>
 });
 
 test('exercise progress page shows recommendation, chart and history', async ({ page }) => {
-  await page.getByRole('link', { name: 'Exercises' }).click();
+  await page.getByRole('link', { name: 'My Gym' }).click();
   await page.getByPlaceholder('Search exercises').fill('shoulder press');
   await page.getByRole('button', { name: /Shoulder Press Machine/ }).click();
   await expect(page.getByTestId('recommendation')).toContainText('Try 35 kg × 8');

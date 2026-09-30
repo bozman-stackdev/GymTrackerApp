@@ -5,6 +5,7 @@ import { createStarterData } from '../data/seed';
 import { useStore } from '../data/store';
 import { useProgress } from '../data/useProgress';
 import { streakText } from '../components/ProgressWidgets';
+import { challengeFor } from '../logic/game/challenge';
 import { relativeDay, routinesByNextUp } from '../logic/history';
 import type { Routine } from '../types';
 
@@ -19,6 +20,10 @@ export function HomeScreen() {
     data.sessions.filter((s) => s.routineId === routineId).at(-1)?.startedAt;
   // "Next up" (done longest ago) first, so it's one tap away.
   const routines = routinesByNextUp(data.routines, data.sessions);
+
+  // Today's Challenge is the heart of a workout: show how many are waiting in each routine.
+  const challengesReady = (r: Routine) =>
+    r.items.filter((i) => { const ex = data.exercises.find((e) => e.id === i.exerciseId); return ex && challengeFor(ex, data.sessions); }).length;
 
   const startOwn = () => {
     if (confirm('Clear the sample data and start with your own (empty history, starter routines)?')) replace(createStarterData());
@@ -63,6 +68,7 @@ export function HomeScreen() {
                   <div className="muted small">
                     {r.items.length} exercises{last ? ` · last ${relativeDay(last)}` : ''}
                   </div>
+                  {challengesReady(r) > 0 && <div className="small challenges-ready">🎯 {challengesReady(r)} challenge{challengesReady(r) === 1 ? '' : 's'} ready</div>}
                 </div>
                 <span className="play" aria-hidden>▶</span>
               </button>

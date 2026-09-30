@@ -69,7 +69,24 @@ const scenarios: Scenario[] = [
   {
     name: 'a one-rep wobble is not a dip',
     rows: [[35, 60, [10, 10, 9]], [28, 60, [11, 10, 10]], [21, 60, [11, 11, 10]], [14, 60, [10, 10, 10]], [7, 60, [10, 10, 9]]],
-    rule: 'R6', title: 'Try 60 kg × 10',
+    rule: 'R7', title: 'Try 60 kg × 11 again', why: 'So close last time: 10 of 11', // not a dip: a near miss
+  },
+
+  // --- Missed challenges ----------------------------------------------------------------------------
+  {
+    name: 'near miss (1 rep short of the target): same target again',
+    rows: [[28, 60, [8, 8, 8]], [21, 60, [9, 9, 8]], [14, 60, [10, 10, 9]], [7, 60, [9, 9, 9]]], // target was 60 × 10, best set 9
+    rule: 'R7', title: 'Try 60 kg × 10 again', why: '9 of 10 reps at 60 kg',
+  },
+  {
+    name: 'bigger miss: the next target is adjusted to what was actually done (and says so)',
+    rows: [[28, 60, [8, 8, 8]], [21, 60, [9, 9, 8]], [14, 60, [10, 10, 9]], [7, 60, [8, 7, 7]]], // target 60 × 10, did 8, 7, 7
+    rule: 'R6', title: 'Try 60 kg × 8', why: 'Last target was 60 kg × 10; you did 8, 7, 7 reps at 60 kg. Adjusted',
+  },
+  {
+    name: 'target weight not attempted (stayed lighter): no "so close", just adjust',
+    rows: [[35, 60, [10, 10, 10]], [28, 60, [11, 11, 10]], [21, 60, [12, 12, 12]], [14, 60, [12, 12, 12]], [7, 60, [10, 10, 10]]], // target was 65 × 8
+    rule: 'R6', title: 'Try 60 kg × 11', why: 'Last target was 65 kg × 8',
   },
 
   // --- Bodyweight ---------------------------------------------------------------------------------
@@ -101,7 +118,7 @@ describe('details', () => {
   it('is configurable without touching the UI', () => {
     const topOnce = history([[21, 60, [10, 10]], [14, 60, [11, 11]], [7, 60, [12, 12]]]);
     expect(recommend(press, topOnce).rule).toBe('R3');
-    expect(recommend(press, topOnce, { ...PROGRESSION_CONFIG, sessionsAtTopBeforeIncrease: 1 }).rule).toBe('R2');
+    expect(recommend(press, topOnce, { ...PROGRESSION_CONFIG, sessionsToMaster: 1 }).rule).toBe('R2');
     expect(recommend(press, topOnce, { ...PROGRESSION_CONFIG, minSessions: 5 }).rule).toBe('R1');
   });
 });

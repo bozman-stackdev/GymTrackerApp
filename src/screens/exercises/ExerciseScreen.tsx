@@ -1,10 +1,15 @@
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
+import { EquipmentCard } from '../../components/EquipmentCard';
+import { JourneyView } from '../../components/JourneyView';
 import { RecommendationCard } from '../../components/RecommendationCard';
 import { Screen } from '../../components/Screen';
 import { TrendChart } from '../../components/TrendChart';
 import { startExercise } from '../../data/actions';
 import { useStore } from '../../data/store';
 import { bestEstimated1RM, exerciseHistory, formatDate, formatSets } from '../../logic/history';
+import { equipmentFor } from '../../logic/equipment';
+import { challengeFor } from '../../logic/game/challenge';
+import { buildJourney } from '../../logic/journey';
 import { recommend } from '../../logic/progression';
 
 /** Progress for one exercise: today's suggestion, a trend chart and past sessions. */
@@ -17,6 +22,7 @@ export function ExerciseScreen() {
 
   const history = exerciseHistory(data.sessions, exercise.id);
   const rec = recommend(exercise, data.sessions);
+  const challenge = challengeFor(exercise, data.sessions);
   const usesWeight = exercise.weightStepKg > 0;
   const points = history.map((p) => ({
     date: p.date,
@@ -31,12 +37,21 @@ export function ExerciseScreen() {
         <span className="tag">{exercise.repRange[0]}–{exercise.repRange[1]} reps</span>
       </div>
 
-      <h2>Next challenge</h2>
+      <h2>Journey</h2>
+      <JourneyView exercise={exercise} journey={buildJourney(exercise, data.sessions, challenge)} />
+
+      <h2>{challenge ? 'Why this challenge' : 'Next time'}</h2>
       <RecommendationCard rec={rec} />
 
       <button className="btn primary block" onClick={() => { update((d) => startExercise(d, exercise.id)); navigate('/workout'); }}>
         ▶ {data.activeWorkout ? 'Add to current workout' : 'Start this exercise'}
       </button>
+
+      <h2>Equipment</h2>
+      <div className="list">
+        {equipmentFor(data.equipment, exercise.id).map((e) => <EquipmentCard key={e.id} item={e} />)}
+      </div>
+      <Link to={`/gym/new?exercise=${exercise.id}`} className="btn block ghost">+ Add equipment for this exercise</Link>
 
       <h2>{usesWeight ? 'Strength trend' : 'Best set (reps)'}</h2>
       <div className="card">

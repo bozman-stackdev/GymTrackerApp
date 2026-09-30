@@ -5,6 +5,7 @@ const ICONS: Record<Recommendation['kind'], string> = {
   'increase-reps': '➕',
   'decrease-weight': '⬇️',
   hold: '⏸️',
+  retry: '🔁',
   'not-enough-data': '⏳',
   'first-time': '👋',
 };

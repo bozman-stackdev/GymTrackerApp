@@ -4,6 +4,7 @@ import { TabBar } from './components/TabBar';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { StoreProvider, useAppState, useStore } from './data/store';
 import { WelcomeScreen } from './screens/WelcomeScreen';
+import { EquipmentFormScreen } from './screens/gym/EquipmentFormScreen';
 import { AddExerciseScreen } from './screens/AddExerciseScreen';
 import { ExerciseFormScreen } from './screens/exercises/ExerciseFormScreen';
 import { ExerciseScreen } from './screens/exercises/ExerciseScreen';
@@ -51,6 +52,8 @@ function Shell() {
         <Route path="/exercises/:id/edit" element={<ExerciseFormScreen />} />
         <Route path="/routines/new" element={<RoutineScreen />} />
         <Route path="/routines/:id" element={<RoutineScreen />} />
+        <Route path="/gym/new" element={<EquipmentFormScreen />} />
+        <Route path="/gym/:id" element={<EquipmentFormScreen />} />
         <Route path="/profile" element={<ProfileScreen />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

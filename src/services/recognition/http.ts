@@ -7,13 +7,16 @@
  *   POST <url>   multipart/form-data: photo=<jpeg>, exercises=<JSON array of exercise names>
  *   200 OK       { "candidates": [ { "name": "Lat Pulldown", "confidence": 0.82 }, ... ] }
  *
- * Names are matched to the user's exercises (case-insensitive); unknown names are dropped.
+ * Names are matched to the user's exercises, or to the user's own machines (My gym), case-insensitive;
+ * unknown names are dropped. Optional "brand"/"model" in the response pre-fill "Add to My gym".
  */
 import { resizeImage } from '../image';
 import { MAX_SUGGESTIONS, type MachineRecognizer } from './types';
 
 interface RemoteResponse {
   candidates: { name: string; confidence: number }[];
+  brand?: string;
+  model?: string;
 }
 
 interface HttpOptions {
@@ -27,7 +30,7 @@ export function httpRecognizer(
   { fetchImpl = fetch, prepare = (p) => resizeImage(p, 1024) }: HttpOptions = {},
 ): MachineRecognizer {
   return {
-    async identify({ photo, exercises }) {
+    async identify({ photo, exercises, equipment = [] }) {
       const form = new FormData();
       form.append('photo', await prepare(photo), 'photo.jpg');
       form.append('exercises', JSON.stringify(exercises.map((e) => e.name)));
@@ -37,12 +40,18 @@ export function httpRecognizer(
       const body = (await res.json()) as RemoteResponse;
 
       const byName = new Map(exercises.map((e) => [e.name.toLowerCase(), e.id]));
+      const machines = new Map(equipment.map((e) => [e.name.toLowerCase(), e]));
       const suggestions = body.candidates
-        .map((c) => ({ exerciseId: byName.get(c.name.toLowerCase()), confidence: c.confidence }))
-        .filter((s): s is { exerciseId: string; confidence: number } => !!s.exerciseId)
+        .map((c) => {
+          const machine = machines.get(c.name.toLowerCase());
+          return machine
+            ? { exerciseId: machine.exerciseIds[0], equipmentId: machine.id, confidence: c.confidence }
+            : { exerciseId: byName.get(c.name.toLowerCase()), confidence: c.confidence };
+        })
+        .filter((s): s is { exerciseId: string; confidence: number; equipmentId?: string } => !!s.exerciseId)
         .sort((a, b) => b.confidence - a.confidence)
         .slice(0, MAX_SUGGESTIONS);
-      return { source: 'remote', suggestions };
+      return { source: 'remote', suggestions, detected: body.brand || body.model ? { brand: body.brand, model: body.model } : undefined };
     },
   };
 }

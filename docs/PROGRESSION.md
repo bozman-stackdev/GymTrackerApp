@@ -13,7 +13,7 @@ It is a simple rule of thumb ("double progression"), not medical or coaching adv
    - sessions in a row where **no** working set reached the bottom of the range at that weight
    - number of "good" sessions at that weight (every working set within or above the range)
    - recent vs earlier performance: the average best estimated 1RM of the last 2 sessions compared with the 3 before
-2. **Apply rules in order**; the first match wins (`recommend()`):
+2. **Apply rules in order** (R0, R1, R2, R3, R4, R5, R7, R6); the first match wins (`recommend()`):
 
 | Rule | When | Suggestion | Example text |
 |---|---|---|---|
@@ -22,6 +22,7 @@ It is a simple rule of thumb ("double progression"), not medical or coaching adv
 | R2 | Top of range on every set, **2 sessions in a row** | + one weight step, reps back to bottom | "Try 65 kg × 8 — You completed 60 kg × 12+ on every set in your last 2 sessions. Consider increasing the weight…" |
 | R3 | Top of range, but only once so far | Stay, repeat it | "Stay at 60 kg × 12 — …Aim for another strong session before increasing." |
 | R4 | No set reached the range, **2 sessions in a row** | − one weight step | "Try 65 kg × 8 — No set reached 8 reps at 70 kg in your last 2 sessions…" |
+| R7 | The last target was missed by ≤ 1 rep, at the target weight | The same target again | "Try 60 kg × 10 again — So close last time: 9 of 10 reps at 60 kg. Same target again." |
 | R5 | Last 2 sessions ≥ 5% below the 3 before | Stay, consolidate | "Stay at 60 kg × 8 — Your last 2 sessions were about 8% below the ones before…" |
 | R6 | Anything else | Same weight, +1 rep on the weakest set | "Try 60 kg × 11 — Last session: 11, 10, 10 reps at 60 kg. Add a rep to your weakest set…" |
 
@@ -41,10 +42,11 @@ Bodyweight exercises (weight step 0) progress by reps only.
 |---|---|---|
 | `minSessions` | 3 | Sessions before any advice |
 | `minDaysOfHistory` | 14 | Days between first and latest session before any advice |
-| `sessionsAtTopBeforeIncrease` | 2 | Consistent sessions at the top before adding weight |
+| `sessionsToMaster` | 2 | Workouts in a row with every set at a level to master it; mastering the top of the range unlocks more weight |
 | `sessionsBelowRangeBeforeDecrease` | 2 | Sessions with no set in range before going lighter |
 | `recentSessions` / `earlierSessions` | 2 / 3 | Window for "recent vs earlier" |
 | `dipThreshold` | 0.05 | Drop (5%) that counts as a dip |
+| `nearMissReps` | 1 | Missing the last target by this many reps (or fewer) repeats it |
 
 - **Per exercise:** rep range and weight step are set on each exercise (Exercises → ✎).
 - **Rules:** each rule is one `if` block in `recommend()`. Add or reorder rules there, then add a scenario to the test table.
@@ -71,3 +73,25 @@ Machine press, rep range 8–12, 5 kg step. Histories are oldest → newest, rou
 | 60×11–12 ×3 · 60×8,8,8 ×2 | R5 Stay at 60 kg × 8 |
 | small one-rep wobble | R6 (not a dip) |
 | Bodyweight 12,12,12 · 12,12,13 | R2 Try 13 reps |
+
+## Missed challenges
+
+The engine knows which target applied to the last workout (`previousTarget()`), so a miss changes the next one:
+
+| What happened | Next challenge |
+|---|---|
+| Missed by ≤ 1 rep at the target weight | **Same target again** (R7, "so close") |
+| Missed by more | **Adjusted** to what was actually done: weakest set + 1 (R6), and the reason says so ("Last target was 60 kg × 10; you did 8, 7, 7…") |
+| No set in the rep range, 2 workouts in a row | **Lighter** (R4) |
+| Recent workouts clearly weaker | **Stay and consolidate** (R5) |
+
+## Exercise Progression Journey (`src/logic/journey.ts`)
+
+Each exercise is a ladder of levels: `60 × 8 → 60 × 9 → … → 60 × 12 → 65 × 8 → …` (from its rep range and weight step).
+
+- **Mastered**: every working set reached the level in `sessionsToMaster` (2) workouts **in a row**. That is the same rule R2
+  uses before adding weight, so mastering the top of the rep range is exactly what unlocks the next weight. Once earned, it's kept.
+- **Reached**: done, but not yet in 2 workouts in a row ("1 of 2").
+- **Current**: Today's Challenge. **Locked**: the next levels.
+- A heavier workout also proves lighter levels at that rep count. Warm-up (lighter) sets are ignored.
+- `MasteryTracker` is incremental, so years of history replay cheaply. `JOURNEY_CONFIG` controls how much is shown.

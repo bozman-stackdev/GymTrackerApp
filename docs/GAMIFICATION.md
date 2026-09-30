@@ -23,6 +23,7 @@ The challenge is the progression engine's suggestion as one target: `challengeFo
 | add weight (R2) | `more-weight` | TODAY'S CHALLENGE · 65 kg × 8 |
 | stay after one strong session (R3), or after a dip (R5) | `repeat` | TODAY'S CHALLENGE · REPEAT · 60 kg × 12 (10 XP) |
 | go lighter (R4) | `lighter` | TODAY'S CHALLENGE · 55 kg × 8 |
+| near miss last time (R7) | `retry` | TODAY'S CHALLENGE · TRY AGAIN · 60 kg × 10 |
 | first time / building history (R0, R1) | none | "Match last time" (no challenge yet) |
 
 Result per exercise (`evaluate`), from the best set at (or above) the target weight:
@@ -32,7 +33,7 @@ Result per exercise (`evaluate`), from the best set at (or above) the target wei
 | `hit` | a set reaches the target reps | +25 XP, "✓ CHALLENGE COMPLETE" (+10 XP for a *repeat* challenge) |
 | `exceeded` | more reps than the target | +25 XP (the same: no bonus for overdoing it) |
 | `matched` | not the target, but as good as last session | no XP (XP is only for progress); positive note "✓ Matched last session" |
-| `missed` | neither | nothing taken away; "same target next time" |
+| `missed` | neither | nothing taken away; **NOT TODAY** · best set · target · "We'll adjust your next challenge based on this." (never "failed") |
 
 No separate Start button: the rep pad records the set in one tap, and the reward appears straight away.
 
@@ -44,6 +45,8 @@ No separate Start button: the rep pad records the set in one tap, and the reward
 | Challenge hit or beaten | 25 |
 | "Repeat" challenge hit (stay at the same weight × reps) | 10 |
 | Personal best | 50 |
+| Weight mastered (top of the rep range, every set, 2 workouts in a row) | 50 |
+| Back on track (target hit after missing the previous one) | +15 on top of the challenge |
 | Consistency milestone (every 4 streak weeks) | 50 |
 | Matched last session | 0 (by decision: no XP unless you progress) |
 
@@ -62,13 +65,21 @@ The heaviest weight done for a full set within the rep range (most reps for body
 ## Achievements (`achievements.ts`)
 
 First Workout · First Challenge Complete · 5 Workouts · 10 Challenges Complete · 5 Sessions on the Same Exercise ·
-Personal Best · Consistency (2+ workouts a week, 4 weeks in a row) · First Weight Increase · 25 Workouts.
+Exercise Mastered (a weight mastered) · 5 Successful Sessions (every challenge in a workout) · Personal Best ·
+Consistency (2+ workouts a week, 4 weeks in a row) · First Weight Increase · 25 Workouts.
 They're shown on the workout summary when unlocked and on the Profile tab, never mid-set. Add one by adding a line.
 
 ## Safety rules (built in and tested)
 
 - Beating a challenge pays the same as hitting it; lifting heavier than the target earns nothing extra.
-- Personal bests only count **at or below the suggested weight** and **within the rep range** (no heavy singles).
+- Personal bests and mastery only count **at or below the suggested weight**, and personal bests only **within the rep range** (no heavy singles).
+  Mastery also needs a challenge to be in place that day.
 - Workout XP needs a real workout (3+ sets) and is paid at most once per day.
 - Streaks are weekly, not daily. No penalties, no "you lost your streak" messages.
 - The engine can always say "repeat" or "go lighter", and those challenges pay the same as "add weight".
+
+## Feedback during a workout (the last-set bar)
+
+Shown on the set that earned it; results that depend on all sets appear after the last planned set. Priority, when several apply:
+**🏆 NEW PERSONAL BEST!** > **★ LEVEL MASTERED** (a weight) > **✓ BACK ON TRACK** > **✓ TARGET HIT** > **✓ SOLID – MATCHED LAST TIME** > **NOT TODAY**.
+The XP shown is the sum. Rep-level masteries are only ticked in the journey and on the summary (no XP, no interruption).

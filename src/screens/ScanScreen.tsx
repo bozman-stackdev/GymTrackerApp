@@ -35,7 +35,9 @@ export function ScanScreen() {
     setFailed(false);
     setStep('analysing');
     try {
-      const res = await recognizer.identify({ photo: file, exercises: data.exercises, likelyExerciseIds: likelyExerciseIds(data) });
+      const res = await recognizer.identify({
+        photo: file, exercises: data.exercises, likelyExerciseIds: likelyExerciseIds(data), equipment: data.equipment,
+      });
       setResult(res);
       setSelectedId(res.suggestions[0]?.exerciseId ?? null);
       setStep(res.suggestions.length ? 'choose' : 'other');
@@ -46,14 +48,19 @@ export function ScanScreen() {
     }
   };
 
-  const start = (exercise: Exercise) => {
-    update((d) => startExercise(d, exercise.id));
+  const start = (exercise: Exercise, equipmentId?: string) => {
+    update((d) => startExercise(d, exercise.id, new Date(), equipmentId));
     navigate('/workout', { replace: true });
   };
 
   const byId = (id: string) => data.exercises.find((e) => e.id === id);
   const options = (result?.suggestions ?? []).map((s) => byId(s.exerciseId)).filter((e): e is Exercise => !!e);
   const selected = selectedId ? byId(selectedId) : undefined;
+  const machineFor = (exerciseId: string) => {
+    const id = result?.suggestions.find((s) => s.exerciseId === exerciseId)?.equipmentId;
+    return data.equipment.find((m) => m.id === id);
+  };
+  const selectedMachine = selected && machineFor(selected.id);
   const retake = () => camera.current?.click();
 
   return (
@@ -80,7 +87,10 @@ export function ScanScreen() {
           <div className="options" role="radiogroup" aria-label="Suggested exercises">
             {options.map((e) => (
               <button key={e.id} role="radio" aria-checked={e.id === selectedId} className={`option${e.id === selectedId ? ' on' : ''}`} onClick={() => setSelectedId(e.id)}>
-                <span className="grow">{e.name}</span>
+                <span className="grow">
+                  {e.name}
+                  {machineFor(e.id) && <span className="muted small option-machine"> · 📍 {machineFor(e.id)!.name}</span>}
+                </span>
                 <span className="option-check" aria-hidden>{e.id === selectedId ? '✓' : ''}</span>
               </button>
             ))}
@@ -89,10 +99,15 @@ export function ScanScreen() {
           {result?.source === 'demo' && (
             <p className="muted small center demo-note">Demo: these are example suggestions. Real photo recognition isn't switched on yet.</p>
           )}
-          <button className="btn primary huge" disabled={!selected} onClick={() => selected && start(selected)}>
+          <button className="btn primary huge" disabled={!selected} onClick={() => selected && start(selected, selectedMachine?.id)}>
             Start{selected ? ` ${selected.name}` : ''}
           </button>
-          <button className="btn ghost block" onClick={retake}>Retake photo</button>
+          <div className="row">
+            <button className="btn ghost grow" onClick={retake}>Retake photo</button>
+            {selected && !selectedMachine && (
+              <Link to={`/gym/new?exercise=${selected.id}`} className="btn ghost grow">Save machine to My gym</Link>
+            )}
+          </div>
         </>
       )}
 

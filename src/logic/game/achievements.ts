@@ -8,6 +8,10 @@ export interface GameStats {
   weightIncreases: number;
   maxSessionsOnOneExercise: number;
   streakWeeks: number;
+  /** Weights mastered on exercise journeys (top of the rep range, 2 workouts in a row). */
+  levelsMastered: number;
+  /** Workouts where every challenge was completed. */
+  successfulSessions: number;
 }
 
 export interface Achievement {
@@ -24,6 +28,8 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'five-workouts', icon: '💪', title: '5 Workouts', description: 'Finish 5 workouts', test: (s) => s.workouts >= 5 },
   { id: 'ten-challenges', icon: '🔟', title: '10 Challenges Complete', description: 'Hit 10 challenges', test: (s) => s.challengesCompleted >= 10 },
   { id: 'five-sessions-exercise', icon: '🔁', title: '5 Sessions on the Same Exercise', description: 'Train one exercise in 5 workouts', test: (s) => s.maxSessionsOnOneExercise >= 5 },
+  { id: 'exercise-mastered', icon: '⭐', title: 'Exercise Mastered', description: 'Master a weight: top of the rep range on every set, 2 workouts in a row', test: (s) => s.levelsMastered >= 1 },
+  { id: 'five-successful-sessions', icon: '✅', title: '5 Successful Sessions', description: 'Complete every challenge in 5 workouts', test: (s) => s.successfulSessions >= 5 },
   { id: 'personal-best', icon: '🏆', title: 'Personal Best', description: 'Set a personal best', test: (s) => s.personalBests >= 1 },
   {
     id: 'consistency', icon: '📅', title: 'Consistency', description: `Train ${GAME_CONFIG.streak.minWorkoutsPerWeek}+ times a week for ${GAME_CONFIG.streak.milestoneWeeks} weeks in a row`,

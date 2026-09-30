@@ -49,7 +49,9 @@ export function SessionScreen() {
               <div className="grow">
                 <div className="title">{getExercise(e.exerciseId).name}</div>
                 <div className="muted small">{formatSets(e.sets)}</div>
-                {r?.challenge && r.outcome && <OutcomeLine outcome={r.outcome} target={formatTarget(r.challenge)} />}
+                {r?.challenge && r.outcome && <OutcomeLine outcome={r.outcome} target={formatTarget(r.challenge)} comeback={r.comeback} />}
+                {r?.weightMastered ? <div className="outcome good" data-testid="mastered">★ Weight mastered: {formatTarget(r.weightMastered)} - next weight unlocked</div>
+                  : r?.newlyMastered && <div className="outcome muted" data-testid="mastered">✓ {formatTarget(r.newlyMastered)} mastered</div>}
               </div>
             </Link>
           );
@@ -66,12 +68,12 @@ export function SessionScreen() {
 
 
 /** Positive for hit/beaten/matched; neutral (never negative) for a miss. */
-function OutcomeLine({ outcome, target }: { outcome: Outcome; target: string }) {
+function OutcomeLine({ outcome, target, comeback }: { outcome: Outcome; target: string; comeback: boolean }) {
   const text = {
-    hit: `✓ Challenge ${target} complete`,
-    exceeded: `✓ Challenge ${target} beaten`,
-    matched: `✓ Matched last session · aiming for ${target}`,
-    missed: `Challenge ${target} · same target next time`,
+    hit: comeback ? `✓ Back on track: ${target} complete` : `✓ Target ${target} hit`,
+    exceeded: comeback ? `✓ Back on track: ${target} beaten` : `✓ Target ${target} beaten`,
+    matched: `✓ Matched last session · target was ${target}`,
+    missed: `Not today · target ${target} · next challenge adjusted`,
   }[outcome];
   return <div className={`outcome${outcome === 'missed' ? ' muted' : ' good'}`} data-testid="outcome">{text}</div>;
 }
@@ -82,6 +84,8 @@ const EVENT_LABEL: Record<XpEvent['type'], string> = {
   matched: 'Matched last session',
   'personal-best': 'Personal best',
   consistency: 'Consistency milestone',
+  mastery: 'Level mastered',
+  comeback: 'Back on track',
 };
 
 /** What this workout earned. `progress` is given for the latest workout only (level/streak "now"). */

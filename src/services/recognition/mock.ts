@@ -9,7 +9,7 @@ import { MAX_SUGGESTIONS, type MachineRecognizer } from './types';
 const FAKE_CONFIDENCE = [0.6, 0.25, 0.15];
 
 export const mockRecognizer: MachineRecognizer = {
-  async identify({ photo, exercises, likelyExerciseIds = [] }) {
+  async identify({ photo, exercises, likelyExerciseIds = [], equipment = [] }) {
     await new Promise((r) => setTimeout(r, 700)); // feel like a real request
 
     const machines = exercises.filter((e) => e.equipment === 'machine' || e.equipment === 'cable');
@@ -20,7 +20,12 @@ export const mockRecognizer: MachineRecognizer = {
     const ids = [...new Set([...likelyExerciseIds.filter((id) => known.has(id)), ...rotated])].slice(0, MAX_SUGGESTIONS);
     return {
       source: 'demo',
-      suggestions: ids.map((exerciseId, i) => ({ exerciseId, confidence: FAKE_CONFIDENCE[i] ?? 0.1 })),
+      suggestions: ids.map((exerciseId, i) => ({
+        exerciseId,
+        confidence: FAKE_CONFIDENCE[i] ?? 0.1,
+        // If the user has their own machine for it, suggest that machine (as a real recognizer would).
+        equipmentId: equipment.find((e) => e.exerciseIds.includes(exerciseId))?.id,
+      })),
     };
   },
 };

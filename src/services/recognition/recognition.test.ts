@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SAMPLE_EXERCISES } from '../../data/seed';
+import { SAMPLE_EQUIPMENT, SAMPLE_EXERCISES } from '../../data/seed';
 import { httpRecognizer } from './http';
 import { mockRecognizer } from './mock';
 import { MAX_SUGGESTIONS } from './types';
@@ -34,6 +34,22 @@ describe('demo recognizer', () => {
     const ids = res.suggestions.map((s) => s.exerciseId);
     expect(ids.slice(0, 2)).toEqual(['lat-pulldown', 'db-curl']);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+describe('equipment-aware recognition (My gym)', () => {
+  it('demo: suggests your own machine for a suggested exercise', async () => {
+    const res = await mockRecognizer.identify({ photo: photoA, exercises, likelyExerciseIds: ['leg-press'], equipment: SAMPLE_EQUIPMENT });
+    expect(res.suggestions[0]).toMatchObject({ exerciseId: 'leg-press', equipmentId: 'eq-leg-press' });
+  });
+
+  it('remote: a machine name from your library maps to that machine and its exercise; brand/model are passed on', async () => {
+    const fetchImpl = (async () => new Response(JSON.stringify({
+      candidates: [{ name: 'Life Fitness Leg Press', confidence: 0.9 }], brand: 'Life Fitness', model: 'Signature',
+    }))) as unknown as typeof fetch;
+    const res = await httpRecognizer('https://example.test', { prepare: async (p) => p, fetchImpl }).identify({ photo: photoA, exercises, equipment: SAMPLE_EQUIPMENT });
+    expect(res.suggestions).toEqual([{ exerciseId: 'leg-press', equipmentId: 'eq-leg-press', confidence: 0.9 }]);
+    expect(res.detected).toEqual({ brand: 'Life Fitness', model: 'Signature' });
   });
 });
 

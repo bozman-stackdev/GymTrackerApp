@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Stepper } from '../../components/Stepper';
-import { logSet, SET_LIMITS } from '../../data/actions';
+import { logSet, setEntryEquipment, SET_LIMITS } from '../../data/actions';
+import { equipmentFor } from '../../logic/equipment';
 import { useStore } from '../../data/store';
 import { challengeFor, isSuccess, scoreExercise, type Challenge } from '../../logic/game/challenge';
 import type { LiveSession } from '../../logic/game/progress';
@@ -34,12 +35,16 @@ export function SetLogger({ exercise, entryIndex, live }: { exercise: Exercise; 
   ].filter((q, i, all): q is { kg: number; label: string } =>
     !!q.kg && q.kg !== weight && all.findIndex((o) => o.kg === q.kg) === i);
 
+  // My gym: which machine this is on (quiet one-liner; a picker only when there's more than one).
+  const machines = equipmentFor(data.equipment, exercise.id);
+  const machine = machines.find((m) => m.id === entry.equipmentId) ?? machines[0];
+
   const log = (reps: number) => {
     const set = { reps, weightKg: usesWeight ? weight : 0 };
     // A slightly longer buzz when this set earns a reward.
     const scored = scoreExercise(exercise, [...entry.sets, { ...set, loggedAt: '' }], data.sessions);
     const rewarded = scored.challengeSetIndex === setsDone || scored.personalBestSetIndex === setsDone;
-    update((d) => logSet(d, entryIndex, set));
+    update((d) => logSet(machine && !entry.equipmentId ? setEntryEquipment(d, entryIndex, machine.id) : d, entryIndex, set));
     navigator.vibrate?.(rewarded ? [40, 60, 40] : 30);
   };
 
@@ -51,6 +56,18 @@ export function SetLogger({ exercise, entryIndex, live }: { exercise: Exercise; 
     <section className="stack logger">
       <div>
         <h1 className="ex-name">{exercise.name}</h1>
+        {machine && (
+          <div className="equipment-line small muted" data-testid="equipment">
+            <span aria-hidden>📍</span>
+            {machines.length > 1 ? (
+              <select className="equipment-select" aria-label="Equipment" value={machine.id}
+                onChange={(e) => update((d) => setEntryEquipment(d, entryIndex, e.target.value))}>
+                {machines.map((m) => <option key={m.id} value={m.id}>{m.name}{m.gym ? ` (${m.gym})` : ''}</option>)}
+              </select>
+            ) : <span>{machine.name}</span>}
+            {machine.settings && <span>· {machine.settings}</span>}
+          </div>
+        )}
         <p className="muted last-session" data-testid="last-time">
           Last session: <strong>{last ? formatSets(last.sets) : '—'}</strong>
         </p>
@@ -99,7 +116,10 @@ export function SetLogger({ exercise, entryIndex, live }: { exercise: Exercise; 
 
 /** "TODAY'S CHALLENGE  60 kg × 9" - the one number to aim for. Tap for why. */
 function ChallengeLine({ challenge, done, showWhy, onWhy }: { challenge: Challenge; done: boolean; showWhy: boolean; onWhy: () => void }) {
-  const label = done ? '✓ Challenge complete' : challenge.kind === 'repeat' ? "Today's challenge · repeat" : "Today's challenge";
+  const label = done ? '✓ Challenge complete'
+    : challenge.kind === 'repeat' ? "Today's challenge · repeat"
+    : challenge.kind === 'retry' ? "Today's challenge · try again"
+    : "Today's challenge";
   return (
     <button className={`challenge${done ? ' done' : ''}`} data-testid="challenge" aria-expanded={showWhy} onClick={onWhy}>
       <span className="challenge-label">{label}</span>

@@ -2,7 +2,7 @@
  * Checks that saved or imported data has the shape the app expects, and upgrades older versions.
  * Used on every load and on backup import, so bad data is rejected with a clear message instead of crashing screens.
  */
-import type { AppData, Exercise, Profile, WorkoutSession } from '../types';
+import type { AppData, Exercise, GymEquipment, Profile, WorkoutSession } from '../types';
 
 export class DataError extends Error {}
 
@@ -44,6 +44,12 @@ export function parseAppData(input: unknown): AppData {
   for (const [i, r] of (input.routines as unknown[]).entries()) {
     check(isObj(r) && isStr(r.id) && typeof r.name === 'string' && Array.isArray(r.items), `routine #${i + 1}`);
   }
+  if (input.equipment !== undefined) {
+    check(Array.isArray(input.equipment), 'equipment list');
+    for (const [i, e] of (input.equipment as unknown[]).entries()) {
+      check(isObj(e) && isStr(e.id) && isStr(e.name) && Array.isArray(e.exerciseIds) && e.exerciseIds.every(isStr), `equipment #${i + 1}`);
+    }
+  }
   if (input.activeWorkout != null) {
     const a = input.activeWorkout;
     check(isObj(a) && isNum(a.currentIndex, 0), 'workout in progress');
@@ -63,6 +69,7 @@ function migrate(data: AppData): AppData {
     exercises,
     routines: data.routines,
     sessions: data.sessions,
+    equipment: (data.equipment ?? []).map((e) => ({ ...e, gym: e.gym ?? '', source: e.source ?? 'manual' })), // added in Phase 6
     activeWorkout: data.activeWorkout ?? null,
     ...(data.isSample ? { isSample: true } : {}),
   };
@@ -92,5 +99,22 @@ export function validateExercise(ex: Exercise, all: Exercise[]): FieldErrors<Exe
   const [min, max] = ex.repRange;
   if (!(min >= 1 && max <= 100 && min <= max)) e.repRange = 'Reps: min 1, max 100, min ≤ max';
   if (ex.equipment !== 'bodyweight' && !(ex.weightStepKg > 0 && ex.weightStepKg <= 50)) e.weightStepKg = 'Weight jump 0.25–50 kg';
+  return e;
+}
+
+export function validateEquipment(item: GymEquipment, all: GymEquipment[]): FieldErrors<GymEquipment> {
+  const e: FieldErrors<GymEquipment> = {};
+  const name = item.name.trim();
+  if (!name) e.name = 'Give it a name';
+  else if (name.length > 60) e.name = 'Keep it under 60 characters';
+  else if (all.some((o) => o.id !== item.id && o.name.trim().toLowerCase() === name.toLowerCase() && o.gym.trim().toLowerCase() === item.gym.trim().toLowerCase())) {
+    e.name = 'This gym already has equipment with this name';
+  }
+  if (item.exerciseIds.length === 0) e.exerciseIds = 'Pick at least one exercise';
+  if (item.gym.length > 60) e.gym = 'Keep it under 60 characters';
+  if ((item.brand ?? '').length > 60) e.brand = 'Keep it under 60 characters';
+  if ((item.model ?? '').length > 60) e.model = 'Keep it under 60 characters';
+  if ((item.settings ?? '').length > 200) e.settings = 'Keep it under 200 characters';
+  if ((item.notes ?? '').length > 500) e.notes = 'Keep it under 500 characters';
   return e;
 }

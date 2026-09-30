@@ -188,6 +188,10 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; 
 .xp { color: var(--accent); }
 .reward-side { display: flex; flex-direction: column; align-items: center; }
 .reward-side .btn { min-height: 40px; }
+/* Supportive result (not today / matched): calm, neutral - never red. */
+.last-bar.result { padding: 8px 0 8px 14px; background: var(--surface-2); }
+.last-bar.result .reward-title { color: var(--text); }
+.last-bar.result .reward-next, .last-bar.result .muted { color: var(--text); }
 @keyframes pop { from { transform: scale(.97); opacity: .5; } to { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .last-bar.reward { animation: none; } }
 
@@ -284,3 +288,24 @@ details > summary { cursor: pointer; min-height: 44px; display: flex; gap: 8px; 
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .sets-control { gap: 4px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; } .btn:active, .rep-btn:active { transform: none; } }
+
+/* ---------- My gym ---------- */
+.gym-group { gap: 8px; }
+.gym-name { font-weight: 700; font-size: 15px; }
+.equipment-card .title { margin-bottom: 2px; }
+.textarea { min-height: 88px; padding: 10px 14px; resize: vertical; }
+.equipment-line { margin: 2px 0 0; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.equipment-select { min-height: 44px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text); padding: 0 8px; font-size: 15px; max-width: 100%; }
+
+/* ---------- Journey ---------- */
+.journey { display: flex; flex-direction: column; gap: 8px; }
+.journey-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.journey-level { display: grid; grid-template-columns: 28px auto 1fr; gap: 8px; align-items: center; min-height: 36px; padding: 2px 8px; border-radius: 10px; }
+.journey-mark { text-align: center; font-size: 18px; }
+.journey-target { font-weight: 700; font-variant-numeric: tabular-nums; }
+.journey-note { font-size: 13px; color: var(--text-2); text-align: right; }
+.journey-level.mastered .journey-mark { color: var(--accent); }
+.journey-level.current { background: color-mix(in srgb, var(--accent) 14%, var(--surface)); outline: 2px solid var(--accent); }
+.journey-level.current .journey-note { color: var(--accent-text); font-weight: 700; }
+.journey-level.locked { color: var(--text-2); }
+.challenges-ready { color: var(--accent-text); font-weight: 600; margin-top: 2px; }

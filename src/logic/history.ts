@@ -33,6 +33,11 @@ export function workingSets(sets: SetLog[]): SetLog[] {
   return sets.filter((s) => s.weightKg === w);
 }
 
+/** Most reps in any set at (at least) the given weight; 0 if none. Used to compare a workout with a target. */
+export function bestRepsAtWeight(sets: SetLog[], weightKg: number): number {
+  return Math.max(0, ...sets.filter((s) => s.weightKg >= weightKg).map((s) => s.reps));
+}
+
 /** Epley estimate of a one-rep max. Used only for the trend chart. */
 export function estimated1RM(set: SetLog): number {
   return set.weightKg * (1 + set.reps / 30);

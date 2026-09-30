@@ -214,7 +214,7 @@ describe('achievements', () => {
     expect(at['first-challenge']).toBe('s3');
     expect(at['five-workouts']).toBeUndefined();
     expect(at['consistency']).toBeUndefined(); // one workout a week doesn't make a streak
-    expect(p.bySession.get('s3')!.unlocked).toEqual(['first-challenge']);
+    expect(p.bySession.get('s3')!.unlocked).toEqual(['first-challenge']); // 60×10 mastered quietly (a rep level, not a weight)
   });
 
   it('every achievement has a unique id and a description', () => {
@@ -263,5 +263,86 @@ describe('live scoring during a workout', () => {
     const full = performance.now() - t1;
     expect(live).toBeLessThan(100);
     expect(full).toBeLessThan(1500); // generous: CI machines vary
+  });
+});
+
+describe('mastery and comeback rewards', () => {
+  it('rep levels are mastered quietly (journey ✓, no XP); mastering a WEIGHT pays mastery XP once', () => {
+    const rows: Row[] = [['2026-06-01', 60, [10, 10, 10]], ['2026-06-08', 60, [11, 11, 11]], ['2026-06-15', 60, [12, 12, 12]], ['2026-06-22', 60, [12, 12, 12]]];
+    const p = buildProgress(history(rows), exercises);
+    const s3 = p.bySession.get('s3')!; // challenge "repeat 60 × 12" hit → top of the range, 2 in a row
+    expect(s3.results[0].newlyMastered).toEqual({ weightKg: 60, reps: 12 });
+    expect(s3.results[0].weightMastered).toEqual({ weightKg: 60, reps: 12 });
+    expect(s3.events.filter((e) => e.type === 'mastery')).toEqual([{ type: 'mastery', xp: XP.mastery, exerciseId: 'press' }]);
+    expect(s3.unlocked).toContain('exercise-mastered');
+    // Earlier rep-level masteries (e.g. 60 × 10 at s1) earned no mastery XP.
+    expect([...p.bySession.values()].flatMap((x) => x.events).filter((e) => e.type === 'mastery')).toHaveLength(1);
+    expect(challengeFor(press, history(rows))).toMatchObject({ kind: 'more-weight', weightKg: 65, reps: 8 }); // next weight unlocked
+  });
+
+  it('no mastery XP above the suggested weight, and none before a challenge exists', () => {
+    const rows: Row[] = [['2026-06-01', 60, [10, 10, 10]], ['2026-06-08', 60, [10, 10, 10]]]; // no challenge yet (R1)
+    const early = buildProgress(history(rows), exercises).bySession.get('s1')!;
+    expect(early.results[0].newlyMastered).toBeNull();
+    // Challenge is 60 × 11; the workout that jumps to 80 kg earns no mastery (or PB) for the heavy levels.
+    // (From the next workout the engine plans at the weight actually used, so following it is rewarded normally.)
+    const jump = buildProgress(history([...building, ['2026-06-22', 80, [9, 9, 9]]]), exercises).bySession.get('s3')!;
+    expect(jump.results[0].newlyMastered?.weightKg ?? 0).toBeLessThanOrEqual(60);
+    expect(jump.results[0].personalBestSetIndex).toBe(-1);
+  });
+
+  it('back on track: completing a target after missing the previous one pays a comeback bonus', () => {
+    // s3 misses 60 × 11 by one (10, 10, 10) → s4 challenge "try 60 × 11 again" → hit.
+    const rows: Row[] = [...building, ['2026-06-22', 60, [10, 10, 10]], ['2026-06-29', 60, [11, 11, 10]]];
+    const p = buildProgress(history(rows), exercises);
+    const s3 = p.bySession.get('s3')!;
+    expect(s3.results[0].outcome).not.toBe('hit');
+    expect(s3.events.some((e) => e.xp < 0)).toBe(false); // nothing deducted
+    const s4 = p.bySession.get('s4')!;
+    expect(s4.results[0].challenge).toMatchObject({ kind: 'retry', weightKg: 60, reps: 11 });
+    expect(s4.results[0].comeback).toBe(true);
+    expect(s4.events).toEqual(expect.arrayContaining([
+      { type: 'challenge', xp: XP.challenge, exerciseId: 'press' }, // a retry is still a progress target: full XP
+      { type: 'comeback', xp: XP.comeback, exerciseId: 'press' },
+    ]));
+  });
+
+  it('no comeback bonus without a previous miss', () => {
+    const p = buildProgress(history([...building, ['2026-06-22', 60, [11, 11, 11]]]), exercises);
+    expect(p.bySession.get('s3')!.results[0].comeback).toBe(false);
+  });
+
+  it('counts successful sessions (every challenge completed) for the achievement', () => {
+    const rows: Row[] = [...building, ['2026-06-22', 60, [11, 11, 11]], ['2026-06-29', 60, [12, 12, 12]]];
+    const p = buildProgress(history(rows), exercises);
+    expect(p.stats.successfulSessions).toBe(2);
+  });
+
+  it('live scoring and the replay give the same mastery/comeback results', () => {
+    const rows: Row[] = [...building, ['2026-06-22', 60, [10, 10, 10]], ['2026-06-29', 60, [11, 11, 11]]];
+    const h = history(rows);
+    const full = buildProgress(h, exercises).bySession.get('s4')!;
+    const live = scoreLiveSession({ ...h[4], finishedAt: undefined }, h.slice(0, 4), exercises);
+    expect(live.results).toEqual(full.results);
+  });
+});
+
+describe('sample data demonstrates the core loop', () => {
+  it('has every case: no history yet, challenges, a miss, a hit, a comeback, mastery, a PB, XP and a gym', () => {
+    const now = new Date('2026-10-07T12:00:00');
+    const d = createSampleData(now);
+    const p = buildProgress(d.sessions, d.exercises, now);
+    const results = [...p.bySession.values()].flatMap((s) => s.results);
+    const face = d.exercises.find((e) => e.id === 'face-pull')!;
+    expect(challengeFor(face, d.sessions)).toBeNull(); // insufficient history
+    expect(results.some((r) => r.challenge)).toBe(true); // enough history for challenges
+    expect(results.some((r) => r.outcome === 'missed')).toBe(true);
+    expect(results.some((r) => r.outcome === 'hit' || r.outcome === 'exceeded')).toBe(true);
+    expect(results.some((r) => r.comeback)).toBe(true);
+    expect(results.some((r) => r.weightMastered)).toBe(true);
+    expect(results.some((r) => r.personalBestSetIndex >= 0)).toBe(true);
+    expect(p.totalXp).toBeGreaterThan(500);
+    expect(d.equipment.length).toBeGreaterThanOrEqual(3);
+    expect(d.sessions.some((s) => s.entries.some((e) => e.equipmentId))).toBe(true);
   });
 });

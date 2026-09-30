@@ -11,21 +11,26 @@
  *   R3 one more strong one   top of range, but fewer than N sessions   -> stay, repeat the strong session
  *   R4 too heavy             no set reached the range, M sessions      -> weight - step
  *   R5 recent dip            recent sessions clearly below earlier     -> stay, aim to match last session
+ *   R7 near miss             last target missed by ≤ nearMissReps      -> same target again ("so close")
  *   R6 default               otherwise                                 -> same weight, +1 rep on weakest set
+ *                            (after a bigger miss this re-bases on what was actually done, and says so)
  *
  * All thresholds live in PROGRESSION_CONFIG. The UI only displays the result (title + reason),
  * so rules can change without touching any screen. These are simple rules of thumb, not medical advice.
  */
 import type { Exercise, SetLog, WorkoutSession } from '../types';
-import { bestEstimated1RM, daysBetween, exerciseHistory, formatKg, workingSets, workingWeight, type ExercisePerformance } from './history';
+import { bestEstimated1RM, bestRepsAtWeight, daysBetween, exerciseHistory, formatKg, workingSets, workingWeight, type ExercisePerformance } from './history';
 
 export interface ProgressionConfig {
   /** Sessions of an exercise needed before any advice. */
   minSessions: number;
   /** Days between the first and latest session needed before any advice. */
   minDaysOfHistory: number;
-  /** Consecutive sessions at the top of the rep range (same weight) before suggesting more weight. */
-  sessionsAtTopBeforeIncrease: number;
+  /**
+   * Consecutive sessions with EVERY set at a level to master it (see journey.ts).
+   * Mastering the top of the rep range is what unlocks the next weight (rule R2).
+   */
+  sessionsToMaster: number;
   /** Consecutive sessions below the rep range (same weight) before suggesting less weight. */
   sessionsBelowRangeBeforeDecrease: number;
   /** How many recent sessions count as "recent" when comparing with earlier ones. */
@@ -34,16 +39,19 @@ export interface ProgressionConfig {
   earlierSessions: number;
   /** A drop larger than this (0.05 = 5%) in recent vs earlier performance counts as a dip. */
   dipThreshold: number;
+  /** Missing the last target by at most this many reps (at the target weight) means: try the same target again. */
+  nearMissReps: number;
 }
 
 export const PROGRESSION_CONFIG: ProgressionConfig = {
   minSessions: 3,
   minDaysOfHistory: 14,
-  sessionsAtTopBeforeIncrease: 2,
+  sessionsToMaster: 2,
   sessionsBelowRangeBeforeDecrease: 2,
   recentSessions: 2,
   earlierSessions: 3,
   dipThreshold: 0.05,
+  nearMissReps: 1,
 };
 
 /** Shown next to recommendations. */
@@ -56,7 +64,11 @@ export type RecommendationKind =
   | 'increase-weight'
   | 'hold'
   | 'decrease-weight'
-  | 'increase-reps';
+  | 'increase-reps'
+  | 'retry';
+
+/** Recommendations that are real targets (they become Today's Challenge). */
+export const TARGET_KINDS: RecommendationKind[] = ['increase-reps', 'increase-weight', 'hold', 'decrease-weight', 'retry'];
 
 export interface Recommendation {
   kind: RecommendationKind;
@@ -129,7 +141,17 @@ export function analyse(exercise: Exercise, history: ExercisePerformance[], conf
   return facts;
 }
 
-export function recommend(exercise: Exercise, sessions: WorkoutSession[], config = PROGRESSION_CONFIG): Recommendation {
+/** The target that applied to the latest workout of this exercise, and how close that workout got to it. */
+export function previousTarget(exercise: Exercise, sessions: WorkoutSession[], config = PROGRESSION_CONFIG) {
+  const last = exerciseHistory(sessions, exercise.id).at(-1);
+  if (!last) return null;
+  const target = recommend(exercise, sessions.filter((s) => s.id !== last.sessionId), config, false);
+  if (!TARGET_KINDS.includes(target.kind)) return null;
+  const best = bestRepsAtWeight(last.sets, target.weightKg);
+  return { target, best, missed: best < target.reps };
+}
+
+export function recommend(exercise: Exercise, sessions: WorkoutSession[], config = PROGRESSION_CONFIG, lookBack = true): Recommendation {
   const [repMin, repMax] = exercise.repRange;
   const facts = analyse(exercise, exerciseHistory(sessions, exercise.id), config);
   const usesWeight = exercise.weightStepKg > 0;
@@ -160,7 +182,7 @@ export function recommend(exercise: Exercise, sessions: WorkoutSession[], config
   }
 
   // R2: consistently at the top of the range -> more weight (reps-only for bodyweight).
-  if (facts.sessionsAtTopInARow >= config.sessionsAtTopBeforeIncrease) {
+  if (facts.sessionsAtTopInARow >= config.sessionsToMaster) {
     const why = `You completed ${setText(w, repMax)}+ on every set in your last ${plural(facts.sessionsAtTopInARow, 'session')}.`;
     if (!usesWeight) {
       return { kind: 'increase-reps', rule: 'R2', weightKg: 0, reps: lowest + 1, title: `Try ${lowest + 1} reps`, reason: `${why} Aim a little higher.` };
@@ -198,13 +220,23 @@ export function recommend(exercise: Exercise, sessions: WorkoutSession[], config
     };
   }
 
+  // R7: the last target was only just missed -> the same target again.
+  const prev = lookBack ? previousTarget(exercise, sessions, config) : null;
+  if (prev?.missed && prev.best > 0 && prev.target.reps - prev.best <= config.nearMissReps) {
+    const t = prev.target;
+    return {
+      kind: 'retry', rule: 'R7', weightKg: t.weightKg, reps: t.reps, title: `Try ${setText(t.weightKg, t.reps)} again`,
+      reason: `So close last time: ${prev.best} of ${t.reps} reps${usesWeight ? ` at ${formatKg(t.weightKg)}` : ''}. Same target again.`,
+    };
+  }
+
   // R6: default - same weight, one more rep on the weakest set.
   const target = Math.min(repMax, Math.max(repMin, lowest + 1));
   const track = facts.successfulSessionsAtWeight > 1 ? ` You've done ${plural(facts.successfulSessionsAtWeight, 'good session')} at this weight.` : '';
-  return {
-    kind: 'increase-reps', rule: 'R6', weightKg: w, reps: target, title: `Try ${setText(w, target)}`,
-    reason: `Last session: ${lastText}. Add a rep to your weakest set before adding weight.${track}`,
-  };
+  const adjusted = prev?.missed
+    ? `Last target was ${setText(prev.target.weightKg, prev.target.reps)}; you did ${lastText}. Adjusted to that: add a rep to your weakest set.`
+    : `Last session: ${lastText}. Add a rep to your weakest set before adding weight.${track}`;
+  return { kind: 'increase-reps', rule: 'R6', weightKg: w, reps: target, title: `Try ${setText(w, target)}`, reason: adjusted };
 }
 
 /**

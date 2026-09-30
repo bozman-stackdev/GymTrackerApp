@@ -151,3 +151,27 @@ history only. `useProgress()` / `useLiveSession()` in `data/useProgress.ts`.
 the same weeks the streak uses. Accessibility: focus-visible outlines, 44px targets, aria-pressed chips, labelled
 controls, contrast fixes (`--danger`, `--accent-text`), and axe checks in light and dark mode (`e2e/a11y.spec.ts`).
 There's a CI workflow (`ci.yml`) for typecheck, unit tests and e2e on every push. Roadmap and product review: `docs/ROADMAP.md`.
+
+## Phase 6 - Core loop: challenge, journey, missed challenges, rewards, My gym (2026-09-30)
+
+**D37. Journey + mastery (`logic/journey.ts`)** is pure progression logic next to the engine. Mastered = every working set at
+a level in `sessionsToMaster` workouts in a row (renamed from `sessionsAtTopBeforeIncrease`; the same knob drives R2), so
+the journey and the engine can't disagree. `MasteryTracker` is incremental for the replay.
+
+**D38. Missed challenges live in the engine:** `previousTarget()` gives the target that applied to the last workout.
+New rule R7 (near miss → same target, kind `retry`). R6's reason mentions the miss when it re-bases. The game never deducts XP.
+
+**D39. Rewards:** `exerciseEvents()` is the single XP calculation for the replay and live feedback. There are new events:
+`mastery` (a *weight* mastered: top of the rep range; rep levels are ticked without XP to keep mastery meaningful)
+and `comeback` (+15 on a hit after a miss). There are new achievements: Exercise Mastered and 5 Successful Sessions.
+Mastery is capped at the challenge weight, like PBs.
+
+**D40. Live feedback** (`LastSetBar`): per-set results (hit, PB) plus end-of-exercise results (mastery, matched,
+NOT TODAY) after the last planned set. NOT TODAY is neutral styling, never red, never "failed", and shows the best set.
+
+**D41. Equipment library:** a new `AppData.equipment` list and `SessionEntry.equipmentId`. Both are additive; `parseAppData`
+defaults the list to `[]`, so older data loads unchanged. "Last used" is derived from history. The recognition contract
+gained `equipment` / `equipmentId` / `detected`. See `docs/EQUIPMENT.md`. Tab renamed "Exercises" → "My Gym".
+
+**D42. Today's Challenge front and centre:** the Train screen shows "🎯 N challenges ready" per routine. There's no separate
+"Start set" button: the rep pad records the set in one tap (deliberate deviation from the spec sketch).

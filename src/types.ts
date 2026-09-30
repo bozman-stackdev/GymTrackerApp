@@ -38,6 +38,30 @@ export interface SessionEntry {
   exerciseId: string;
   targetSets: number;
   sets: SetLog[];
+  /** Which machine/station was used (from My gym), if any. */
+  equipmentId?: string;
+}
+
+/** A specific machine, bench or station in the user's gym ("My gym"). */
+export interface GymEquipment {
+  id: string;
+  /** e.g. "Life Fitness Leg Press". */
+  name: string;
+  /** Exercises done on it (a cable station can have several). The first is the main one. */
+  exerciseIds: string[];
+  type: Equipment;
+  /** Gym / location, e.g. "Anytime Fitness Leeds" ('' when not set). */
+  gym: string;
+  brand?: string;
+  model?: string;
+  /** Machine settings to remember, e.g. "Seat 5, feet mid-platform". */
+  settings?: string;
+  notes?: string;
+  /** Reserved for a photo of the machine. Not captured yet: photos aren't stored (decision D23). */
+  photo?: string;
+  /** Added by hand, or (future) recognised from a photo. */
+  source: 'manual' | 'scan';
+  createdAt: string;
 }
 
 /** One visit to the gym. */
@@ -77,6 +101,8 @@ export interface AppData {
   exercises: Exercise[];
   routines: Routine[];
   sessions: WorkoutSession[];
+  /** The user's personal equipment library ("My gym"). */
+  equipment: GymEquipment[];
   activeWorkout: ActiveWorkout | null;
   /** True while the user is exploring the demo data (shows a banner with a way out). */
   isSample?: boolean;

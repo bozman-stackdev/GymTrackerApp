@@ -4,9 +4,10 @@
  */
 import type { Exercise, SetLog, WorkoutSession } from '../../types';
 import { exerciseHistory, workingWeight, type ExercisePerformance } from '../history';
-import { recommend, type Recommendation } from '../progression';
+import { compareLevels, MasteryTracker, type Level } from '../journey';
+import { previousTarget, recommend, type Recommendation } from '../progression';
 
-export type ChallengeKind = 'more-reps' | 'more-weight' | 'repeat' | 'lighter';
+export type ChallengeKind = 'more-reps' | 'more-weight' | 'repeat' | 'lighter' | 'retry';
 
 export interface Challenge {
   exerciseId: string;
@@ -21,6 +22,7 @@ const KIND_BY_RECOMMENDATION: Partial<Record<Recommendation['kind'], ChallengeKi
   'increase-weight': 'more-weight',
   hold: 'repeat',
   'decrease-weight': 'lighter',
+  retry: 'retry',
 };
 
 /** Null while the engine is still building history (first time / not enough data): no challenge yet. */
@@ -81,16 +83,38 @@ export interface ExerciseResult {
   /** Which set completed the challenge / was a personal best (-1 = none). Used for instant feedback. */
   challengeSetIndex: number;
   personalBestSetIndex: number;
+  /** Challenge completed after the previous target on this exercise was missed. */
+  comeback: boolean;
+  /** Highest journey level newly mastered with this workout (only at or below the challenge weight), or null. */
+  newlyMastered: Level | null;
+  /** A whole weight mastered (top of the rep range) with this workout - the rewarded milestone - or null. */
+  weightMastered: Level | null;
 }
 
-export function scoreExercise(exercise: Exercise, sets: SetLog[], priorSessions: WorkoutSession[]): ExerciseResult {
+/**
+ * Scores one exercise of a workout against the history before it.
+ * @param tracker mastery so far (containing exactly `priorSessions`); it is advanced by this workout.
+ *                Built from `priorSessions` when not given (the replay passes one to stay fast).
+ */
+export function scoreExercise(exercise: Exercise, sets: SetLog[], priorSessions: WorkoutSession[], tracker?: MasteryTracker): ExerciseResult {
   const challenge = challengeFor(exercise, priorSessions);
   const prior = exerciseHistory(priorSessions, exercise.id);
+  const outcome = challenge ? evaluate(challenge, sets, prior.at(-1)) : null;
+
+  const mastery = tracker ?? prior.reduce((t, p) => (t.add(p.sets), t), new MasteryTracker(exercise));
+  // Safety: mastery only counts while following a challenge, and not above its weight.
+  const newly = mastery.add(sets).filter((l) => challenge && l.weightKg <= challenge.weightKg).sort(compareLevels);
+  const newlyMastered = newly.at(-1) ?? null;
+  const weightMastered = newly.filter((l) => l.reps === exercise.repRange[1]).at(-1) ?? null;
+
   return {
     exerciseId: exercise.id,
     challenge,
-    outcome: challenge ? evaluate(challenge, sets, prior.at(-1)) : null,
+    outcome,
     challengeSetIndex: challenge ? sets.findIndex((_, i) => isSuccess(evaluate(challenge, sets.slice(0, i + 1)))) : -1,
     personalBestSetIndex: personalBestIndex(exercise, sets, prior, challenge),
+    comeback: isSuccess(outcome) && !!previousTarget(exercise, priorSessions)?.missed,
+    newlyMastered,
+    weightMastered,
   };
 }

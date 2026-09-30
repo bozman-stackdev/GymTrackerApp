@@ -7,12 +7,13 @@
  */
 import type { Exercise, SetLog, WorkoutSession } from '../../types';
 import { ACHIEVEMENTS, type GameStats } from './achievements';
+import { MasteryTracker } from '../journey';
 import { isSuccess, pbScore, scoreExercise, type Challenge, type ExerciseResult } from './challenge';
 import { GAME_CONFIG, type GameConfig } from './config';
 import { levelFor, type LevelInfo } from './levels';
 import { WeeklyStreak, weekIndex } from './streak';
 
-export type XpEventType = 'workout' | 'challenge' | 'matched' | 'personal-best' | 'consistency';
+export type XpEventType = 'workout' | 'challenge' | 'matched' | 'personal-best' | 'consistency' | 'mastery' | 'comeback';
 
 export interface XpEvent {
   type: XpEventType;
@@ -54,6 +55,18 @@ export function challengeXp(challenge: Challenge, config: GameConfig = GAME_CONF
   return challenge.kind === 'repeat' ? config.xp.repeatChallenge : config.xp.challenge;
 }
 
+/** XP events one exercise earned (shared by the replay and live feedback, so they always agree). */
+export function exerciseEvents(r: ExerciseResult, config: GameConfig = GAME_CONFIG): XpEvent[] {
+  const events: XpEvent[] = [];
+  const e = (type: XpEventType, xp: number) => events.push({ type, xp, exerciseId: r.exerciseId });
+  if (isSuccess(r.outcome)) e('challenge', challengeXp(r.challenge!, config));
+  else if (r.outcome === 'matched' && config.xp.matched > 0) e('matched', config.xp.matched);
+  if (r.comeback) e('comeback', config.xp.comeback);
+  if (r.personalBestSetIndex >= 0) e('personal-best', config.xp.personalBest);
+  if (r.weightMastered) e('mastery', config.xp.mastery);
+  return events;
+}
+
 /**
  * @param sessions finished workouts; may also include the workout in progress (pass it with a `finishedAt`) to
  *                 preview what it has earned so far.
@@ -67,7 +80,11 @@ export function buildProgress(
   const byId = new Map(exercises.map((e) => [e.id, e]));
   const ordered = sessions.filter((s) => s.finishedAt).sort((a, b) => a.startedAt.localeCompare(b.startedAt));
 
-  const stats: GameStats = { workouts: 0, challengesCompleted: 0, personalBests: 0, weightIncreases: 0, maxSessionsOnOneExercise: 0, streakWeeks: 0 };
+  const stats: GameStats = {
+    workouts: 0, challengesCompleted: 0, personalBests: 0, weightIncreases: 0, maxSessionsOnOneExercise: 0, streakWeeks: 0,
+    levelsMastered: 0, successfulSessions: 0,
+  };
+  const trackers = new Map<string, MasteryTracker>();
   const sessionsPerExercise = new Map<string, number>();
   const streak = new WeeklyStreak(config);
   const bySession = new Map<string, SessionProgress>();
@@ -90,24 +107,27 @@ export function buildProgress(
 
     const results = session.entries
       .filter((e) => byId.has(e.exerciseId) && e.sets.length > 0)
-      .map((e) => scoreExercise(byId.get(e.exerciseId)!, e.sets, priorByExercise.get(e.exerciseId) ?? []));
+      .map((e) => {
+        const ex = byId.get(e.exerciseId)!;
+        if (!trackers.has(ex.id)) trackers.set(ex.id, new MasteryTracker(ex));
+        return scoreExercise(ex, e.sets, priorByExercise.get(e.exerciseId) ?? [], trackers.get(ex.id));
+      });
 
     for (const r of results) {
+      events.push(...exerciseEvents(r, config));
       if (isSuccess(r.outcome)) {
-        events.push({ type: 'challenge', xp: challengeXp(r.challenge!, config), exerciseId: r.exerciseId });
         stats.challengesCompleted++;
         if (r.challenge?.kind === 'more-weight') stats.weightIncreases++;
-      } else if (r.outcome === 'matched' && config.xp.matched > 0) {
-        events.push({ type: 'matched', xp: config.xp.matched, exerciseId: r.exerciseId });
       }
-      if (r.personalBestSetIndex >= 0) {
-        events.push({ type: 'personal-best', xp: config.xp.personalBest, exerciseId: r.exerciseId });
-        stats.personalBests++;
-      }
+      if (r.personalBestSetIndex >= 0) stats.personalBests++;
+      if (r.weightMastered) stats.levelsMastered++;
       const n = (sessionsPerExercise.get(r.exerciseId) ?? 0) + 1;
       sessionsPerExercise.set(r.exerciseId, n);
       stats.maxSessionsOnOneExercise = Math.max(stats.maxSessionsOnOneExercise, n);
     }
+
+    const withChallenge = results.filter((r) => r.challenge);
+    if (withChallenge.length > 0 && withChallenge.every((r) => isSuccess(r.outcome))) stats.successfulSessions++;
 
     streak.add(session.startedAt);
     stats.streakWeeks = streak.endingAt(weekIndex(session.startedAt));

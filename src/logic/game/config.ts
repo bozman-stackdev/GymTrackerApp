@@ -18,6 +18,14 @@ export const GAME_CONFIG = {
     personalBest: 50,
     /** Every `milestoneWeeks` weeks of streak. */
     consistencyMilestone: 50,
+    /**
+     * Mastering a WEIGHT on the journey: the top of the rep range on every set, 2 workouts in a row
+     * (what unlocks the next weight). Rep levels on the way are ticked in the journey without XP - they
+     * already earn challenge XP, and celebrating each one would make mastery meaningless.
+     */
+    mastery: 50,
+    /** Completing a challenge after missing the previous one on that exercise ("back on track"). */
+    comeback: 15,
   },
   minSetsForWorkoutXp: 3,
   /** XP needed to reach level 1, 2, 3, ... Levels beyond the list add `xpPerLevelAfterList` each. */

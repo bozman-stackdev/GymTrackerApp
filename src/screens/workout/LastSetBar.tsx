@@ -1,15 +1,45 @@
-import { streakText } from '../../components/ProgressWidgets';
 import { formatDuration, useNow } from '../../components/useNow';
 import { useExerciseLookup, useStore } from '../../data/store';
-import { challengeFor } from '../../logic/game/challenge';
+import { challengeFor, isSuccess, type ExerciseResult } from '../../logic/game/challenge';
 import { GAME_CONFIG } from '../../logic/game/config';
 import { challengeXp, type LiveSession } from '../../logic/game/progress';
 import { formatKg, formatTarget } from '../../logic/history';
 import type { WorkoutSession } from '../../types';
 
+type Feedback = 'personal-best' | 'mastered' | 'comeback' | 'hit' | 'matched' | 'not-today';
+
+const TITLES: Record<Feedback, string> = {
+  'personal-best': '🏆 NEW PERSONAL BEST!',
+  mastered: '★ LEVEL MASTERED',
+  comeback: '✓ BACK ON TRACK',
+  hit: '✓ TARGET HIT',
+  matched: '✓ SOLID – MATCHED LAST TIME',
+  'not-today': 'NOT TODAY',
+};
+
+/**
+ * What the latest set earned. Challenge hit / personal best show on the set that did it;
+ * mastery, "matched" and "not today" show once the planned sets for the exercise are done (they depend on all sets).
+ */
+function feedbackFor(r: ExerciseResult | undefined, setIndex: number, targetSets: number): { list: Feedback[]; xp: number } {
+  const list: Feedback[] = [];
+  let xp = 0;
+  if (!r) return { list, xp };
+  const exerciseDone = setIndex === targetSets - 1;
+  if (r.challengeSetIndex === setIndex) {
+    list.push(r.comeback ? 'comeback' : 'hit');
+    xp += challengeXp(r.challenge!) + (r.comeback ? GAME_CONFIG.xp.comeback : 0);
+  }
+  if (r.personalBestSetIndex === setIndex) { list.push('personal-best'); xp += GAME_CONFIG.xp.personalBest; }
+  if (exerciseDone && r.weightMastered) { list.push('mastered'); xp += GAME_CONFIG.xp.mastery; }
+  if (exerciseDone && r.challenge && !isSuccess(r.outcome)) list.push(r.outcome === 'matched' ? 'matched' : 'not-today');
+  const order: Feedback[] = ['personal-best', 'mastered', 'comeback', 'hit', 'matched', 'not-today'];
+  return { list: list.sort((a, b) => order.indexOf(a) - order.indexOf(b)), xp };
+}
+
 /**
  * The most recent set of the whole workout, with rest time and undo. Derived from saved data, so it survives a reload.
- * When that set completed Today's Challenge or was a personal best, it briefly becomes a small reward.
+ * When that set earned something (or finished an exercise), it briefly becomes a small result card.
  */
 export function LastSetBar({ session, live, onUndo }: { session: WorkoutSession; live: LiveSession; onUndo: (entryIndex: number) => void }) {
   const { data } = useStore();
@@ -30,10 +60,9 @@ export function LastSetBar({ session, live, onUndo }: { session: WorkoutSession;
   const undo = <button className="btn ghost" onClick={() => onUndo(entryIndex)}>Undo</button>;
 
   const result = live.results.find((r) => r.exerciseId === entry.exerciseId);
-  const challengeDone = result?.challengeSetIndex === setIndex;
-  const personalBest = result?.personalBestSetIndex === setIndex;
+  const { list, xp } = feedbackFor(result, setIndex, entry.targetSets);
 
-  if (!challengeDone && !personalBest) {
+  if (list.length === 0) {
     return (
       <div className="last-bar" data-testid="last-set" aria-live="polite">
         <span className="last-bar-text">✓ <strong>{text}</strong> <span className="muted">{exercise.name}</span></span>
@@ -43,15 +72,27 @@ export function LastSetBar({ session, live, onUndo }: { session: WorkoutSession;
     );
   }
 
-  const xp = (challengeDone && result?.challenge ? challengeXp(result.challenge) : 0) + (personalBest ? GAME_CONFIG.xp.personalBest : 0);
+  const main = list[0];
+  const supportive = main === 'not-today' || main === 'matched';
+  // For a miss, show the best set of the exercise (more useful - and kinder - than the last one).
+  const best = entry.sets.reduce((a, b) => (b.weightKg > a.weightKg || (b.weightKg === a.weightKg && b.reps > a.reps) ? b : a));
+  const shown = supportive ? `${best.weightKg > 0 ? `${formatKg(best.weightKg)} × ` : ''}${best.reps}` : text;
   // Next challenge, as if today were finished - only shown when the engine has one.
-  const next = challengeDone ? challengeFor(exercise, [...data.sessions, { ...session, finishedAt: loggedAt }]) : null;
+  const next = challengeFor(exercise, [...data.sessions, { ...session, finishedAt: loggedAt }]);
+  const mastered = result?.weightMastered;
+
   return (
-    <div className="last-bar reward" data-testid="last-set" aria-live="polite">
+    <div className={`last-bar ${supportive ? 'result' : 'reward'}`} data-testid="last-set" aria-live="polite">
       <div className="grow">
-        <div className="reward-title" data-testid="reward">{personalBest ? '🏆 NEW PERSONAL BEST!' : '✓ CHALLENGE COMPLETE'}</div>
-        <div className="small"><strong className="xp">+{xp} XP</strong> · {streakText(live.streakWeeks)}</div>
-        {next && <div className="small muted reward-next">Next time: {formatTarget(next)}</div>}
+        <div className="reward-title" data-testid="reward">{TITLES[main]}</div>
+        <div className="small">
+          {main === 'mastered' && mastered ? <strong>{formatTarget(mastered)}</strong> : <strong>{supportive ? `Best ${shown}` : shown}</strong>}
+          {xp > 0 && <> · <strong className="xp">+{xp} XP</strong></>}
+          {supportive && result?.challenge && <> · target {formatTarget(result.challenge)}</>}
+        </div>
+        {main === 'not-today'
+          ? <div className="small reward-next">We'll adjust your next challenge based on this.</div>
+          : next && <div className="small reward-next">Next time: {formatTarget(next)}</div>}
       </div>
       <div className="reward-side">{rest}{undo}</div>
     </div>

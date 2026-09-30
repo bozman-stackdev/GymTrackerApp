@@ -58,6 +58,8 @@ src/
   types.ts                  The data model (Exercise, Routine, WorkoutSession, Profile, AppData)
   logic/                    PURE TypeScript - no React, no browser. Reusable in a native app or on a server.
     progression.ts          Progression engine: history → recommendation (docs/PROGRESSION.md)
+    journey.ts              Exercise journey: levels and mastery
+    equipment.ts            My gym queries: machines per exercise, last used (docs/EQUIPMENT.md)
     game/                   Today's Challenge, XP, levels, streaks, achievements (docs/GAMIFICATION.md)
     history.ts              History helpers and formatting
   data/                     Workout logic + storage
@@ -78,6 +80,17 @@ e2e/                        Phone-sized browser tests: flows, first run/backup, 
 public/ + scripts/          App icons (regenerate with `node scripts/make-icons.mjs`)
 docs/                       ARCHITECTURE (decision log), ROADMAP (backend/native/product review), feature docs
 ```
+
+## The core loop
+
+**Previous performance → progression engine → Today's Challenge → you do the set → result vs target → reward or
+"Not today" → journey updated → next challenge.**
+
+- **Today's Challenge** (e.g. *60 kg × 9*): more reps, more weight, *repeat* or *try again*, once there's enough history.
+- **Journey** (exercise page): ✓ mastered levels → *current challenge* → 🔒 next. Mastered = every set, 2 workouts in a row.
+- **Missed?** "NOT TODAY", never "failed". The next challenge adapts: same target after a near miss, adjusted after a bigger one.
+- **Rewards**: target hit, back on track, weight mastered, personal best, consistency. XP → levels → achievements.
+- **My Gym**: your machines with settings, last weights and previous session. Shown during the workout.
 
 ## Today's Challenge, XP and streaks
 

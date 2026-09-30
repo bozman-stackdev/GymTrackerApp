@@ -2,7 +2,7 @@
  * Sample data so the prototype is testable immediately.
  * History is generated relative to "now" so it always looks recent.
  */
-import type { AppData, Exercise, Profile, Routine, SetLog, WorkoutSession } from '../types';
+import type { AppData, Exercise, GymEquipment, Profile, Routine, SetLog, WorkoutSession } from '../types';
 
 export const SAMPLE_EXERCISES: Exercise[] = [
   // Push
@@ -47,6 +47,19 @@ export const SAMPLE_ROUTINES: Routine[] = [
     name: 'Legs',
     items: ['leg-press', 'leg-extension', 'lying-leg-curl', 'calf-raise-machine', 'hanging-knee-raise'].map((exerciseId) => ({ exerciseId, sets: 3 })),
   },
+];
+
+const GYM = 'Anytime Fitness Leeds';
+const eq = (id: string, name: string, exerciseIds: string[], type: GymEquipment['type'], extra: Partial<GymEquipment> = {}): GymEquipment =>
+  ({ id, name, exerciseIds, type, gym: GYM, source: 'manual', createdAt: '2026-08-20T18:00:00.000Z', ...extra });
+
+/** A sample "My gym": the machines the sample user trains on. */
+export const SAMPLE_EQUIPMENT: GymEquipment[] = [
+  eq('eq-leg-press', 'Life Fitness Leg Press', ['leg-press'], 'machine', { brand: 'Life Fitness', model: 'Signature Series', settings: 'Seat 5, feet mid-platform' }),
+  eq('eq-chest-press', 'Technogym Chest Press', ['chest-press-machine'], 'machine', { brand: 'Technogym', model: 'Selection 700', settings: 'Seat 3, handles middle' }),
+  eq('eq-shoulder-press', 'Hammer Strength Shoulder Press', ['shoulder-press-machine'], 'machine', { brand: 'Hammer Strength', settings: 'Seat 2', notes: 'Plate-loaded: log the plates only.' }),
+  eq('eq-lat-pulldown', 'Matrix Lat Pulldown', ['lat-pulldown'], 'cable', { brand: 'Matrix', settings: 'Knee pad 4' }),
+  eq('eq-cable', 'Dual Cable Station', ['triceps-pushdown', 'face-pull', 'seated-cable-row'], 'cable', { brand: 'Precor', notes: 'Left stack runs smoother.' }),
 ];
 
 export const EMPTY_PROFILE: Profile = { name: '', sex: '', age: null, heightCm: null, weightKg: null, experience: 'beginner', goal: 'general' };
@@ -109,7 +122,7 @@ export function createSampleData(now = new Date()): AppData {
             }
           } else s.reps += 1;
         }
-        return { exerciseId: ex.id, targetSets: item.sets, sets };
+        return { exerciseId: ex.id, targetSets: item.sets, sets, equipmentId: SAMPLE_EQUIPMENT.find((e) => e.exerciseIds.includes(ex.id))?.id };
       });
 
     sessions.push({
@@ -122,10 +135,10 @@ export function createSampleData(now = new Date()): AppData {
     });
   });
 
-  return { version: 1, profile: SAMPLE_PROFILE, exercises, routines: SAMPLE_ROUTINES, sessions, activeWorkout: null, isSample: true };
+  return { version: 1, profile: SAMPLE_PROFILE, exercises, routines: SAMPLE_ROUTINES, sessions, equipment: SAMPLE_EQUIPMENT, activeWorkout: null, isSample: true };
 }
 
 /** A real user's starting point: the exercise library and three editable starter routines, no history. */
 export function createStarterData(): AppData {
-  return { version: 1, profile: EMPTY_PROFILE, exercises: SAMPLE_EXERCISES, routines: SAMPLE_ROUTINES, sessions: [], activeWorkout: null };
+  return { version: 1, profile: EMPTY_PROFILE, exercises: SAMPLE_EXERCISES, routines: SAMPLE_ROUTINES, sessions: [], equipment: [], activeWorkout: null };
 }
