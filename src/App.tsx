@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { TabBar } from './components/TabBar';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -81,9 +81,12 @@ function ResumeWorkoutOnLaunch() {
   const { data } = useStore();
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  // Only on launch: afterwards the user may deliberately visit other tabs mid-workout.
+  const checked = useRef(false);
   useEffect(() => {
+    if (checked.current) return;
+    checked.current = true;
     if (data.activeWorkout && pathname === '/') navigate('/workout', { replace: true });
-    // Only on launch: afterwards the user may deliberately visit other tabs mid-workout.
-  }, []);
+  }, [data.activeWorkout, pathname, navigate]);
   return null;
 }

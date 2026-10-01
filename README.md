@@ -32,7 +32,8 @@ saves everything to a file (restore it on another phone from the welcome screen 
 | Command | What it does |
 |---|---|
 | `npm run dev` | Dev server with hot reload |
-| `npm test` | Unit tests (progression rules, data actions, storage) |
+| `npm test` | Unit tests (progression rules, data actions, storage, sync) |
+| `npm run lint` | Lint (oxlint: React Hooks rules, accessibility, correctness); warnings fail |
 | `npm run test:e2e` | End-to-end tests in a phone-sized Chromium, incl. offline and accessibility checks (starts servers itself; run `npx playwright install chromium` once first) |
 | `VITE_FEEDBACK_EMAIL=you@example.com npm run build` | Optional: send tester feedback to an email instead of GitHub issues |
 | `VITE_SUPABASE_URL=… VITE_SUPABASE_KEY=… npm run build` | Optional: switch on accounts + sync (docs/ACCOUNTS.md; the deploy reads repo variables `SUPABASE_URL`, `SUPABASE_KEY`) |

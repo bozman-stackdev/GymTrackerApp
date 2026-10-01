@@ -89,11 +89,10 @@ Honest assessment after Phases 1–5. The core loop works and is fast (2 taps to
    catch part of the problems.
 
 ### Technical debt worth paying off
-10. **Full progress replay** (summary, profile) is ~0.1 s per year of history on a laptop, and slower on phones. It only runs
-    after a workout finishes, but cache per-workout results (or compute them on the backend) before it becomes noticeable.
-11. **Icons are emoji**, which render differently on each platform. Replace them with a small SVG icon set for a polished look.
-12. **Unit-test the UI components?** No: the e2e tests cover the flows well. **Do** add ESLint with the React Hooks rules
-    (TypeScript 7 support in typescript-eslint was the blocker). A hooks mistake was caught by review, not tooling.
+10. ✅ **Full progress replay**: 2.5× faster (3 years of heavy training: 429 → 171 ms on a laptop) and computed once per
+    history change, shared by all screens (D56). If it ever becomes noticeable on phones: cache per-workout results.
+11. ✅ **Icons are emoji**: replaced by one SVG line-icon set (D54).
+12. ✅ **Lint with the React Hooks rules**: `npm run lint` (oxlint, D55), in CI. UI components stay covered by e2e tests.
 13. **Analytics**: none (good for privacy). Consider privacy-friendly, opt-in usage counts before a public launch.
 
 ### Deliberately not doing

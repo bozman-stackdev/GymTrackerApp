@@ -119,3 +119,29 @@ test('on the go: Finish Exercise → add the next one; only "Finish Session" end
   await expect(page).toHaveURL(/#\/history\/.+/);
   await expect(page.locator('.list-item')).toHaveCount(2);
 });
+
+test('set editor closes with Escape or a tap outside; typed numbers are corrected at once', async ({ page }) => {
+  await page.getByRole('button', { name: /^Push/ }).click();
+  await page.getByRole('button', { name: '8 reps', exact: true }).click();
+
+  await page.getByRole('button', { name: /^Edit set 1:/ }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page.getByRole('dialog').getByRole('button', { name: 'Cancel' })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+
+  await page.getByRole('button', { name: /^Edit set 1:/ }).click();
+  await page.mouse.click(200, 40); // above the sheet
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+
+  // Typing: the field can be cleared and retyped; an impossible weight is corrected straight away (max 1000 kg).
+  const weight = page.getByLabel('Weight', { exact: true });
+  await weight.fill('');
+  await expect(weight).toHaveValue('');
+  await weight.pressSequentially('2000');
+  await expect(weight).toHaveValue('1000');
+  await weight.fill('52.5');
+  await expect(weight).toHaveValue('52.5'); // a decimal can be typed
+  await page.locator('.rep-btn.target').click();
+  await expect(page.getByTestId('sets-today').locator('.slot.done').nth(1)).toHaveText(/^52\.5×/);
+});

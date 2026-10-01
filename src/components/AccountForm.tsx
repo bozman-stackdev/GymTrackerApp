@@ -80,6 +80,8 @@ export function AccountForm({ initialMode = 'login', onSignedIn, note }: {
         <div className="account-field">
           <label className="field">
             Display name
+            {/* "nickname" is a valid autofill token (WHATWG), missing from the linter's list. */}
+            {/* oxlint-disable-next-line jsx-a11y/autocomplete-valid */}
             <input className="input" value={name} maxLength={30} autoComplete="nickname" placeholder="e.g. Alex" aria-describedby="name-hint" onChange={(e) => setName(e.target.value)} />
           </label>
           <span id="name-hint" className="muted small">Shown to friends in leaderboards later. Not your email.</span>

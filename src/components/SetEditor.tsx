@@ -18,17 +18,23 @@ export function SetEditor({ title, set, usesWeight, weightStep, onSave, onDelete
   const [reps, setReps] = useState(set.reps);
   const [weight, setWeight] = useState(set.weightKg);
   const first = useRef<HTMLButtonElement>(null);
+  // Parents pass a new onClose on every render: keep the latest without re-running the effect below
+  // (which would move focus back to Cancel while the user is typing).
+  const close = useRef(onClose);
+  useEffect(() => { close.current = onClose; });
 
   useEffect(() => {
     first.current?.focus();
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close.current();
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, []);
 
   return (
-    <div className="sheet-backdrop" onClick={onClose}>
-      <div className="sheet" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
+    <div className="sheet-layer">
+      {/* Tapping outside the sheet closes it. A real button, so it isn't a mystery click target; Cancel is the keyboard way. */}
+      <button type="button" className="sheet-backdrop" aria-label="Close" tabIndex={-1} onClick={onClose} />
+      <div className="sheet" role="dialog" aria-modal="true" aria-label={title}>
         <div className="row between">
           <strong>{title}</strong>
           <button ref={first} className="btn ghost" onClick={onClose}>Cancel</button>

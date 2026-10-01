@@ -69,6 +69,7 @@ export function HomeScreen() {
       <div className="list">
         {routines.map((r, i) => {
           const last = lastDone(r.id);
+          const ready = challengesReady(r);
           const nextUp = i === 0 && !active;
           return (
             <div key={r.id} className="row">
@@ -79,7 +80,7 @@ export function HomeScreen() {
                   <div className="muted small">
                     {plural(r.items.length, 'exercise')}{last ? ` · last ${relativeDay(last)}` : ''}
                   </div>
-                  {challengesReady(r) > 0 && <div className="small challenges-ready with-icon"><Icon name="target" size={15} /> {plural(challengesReady(r), 'challenge')} ready</div>}
+                  {ready > 0 && <div className="small challenges-ready with-icon"><Icon name="target" size={15} /> {plural(ready, 'challenge')} ready</div>}
                 </div>
                 <span className="play" aria-hidden><Icon name="play" size={18} /></span>
               </button>

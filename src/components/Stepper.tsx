@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { fromDisplay, getUnits, snapWeight, toDisplay } from '../logic/units';
 
 /**
@@ -18,15 +18,16 @@ export function Stepper({ label, value, step, min = 0, max = Infinity, decimals 
 }) {
   const show = (v: number) => (weight ? Math.round(toDisplay(v) * 10) / 10 : v);
   const shown = show(value);
-  // Keep the typed text separately so the user can clear the field and type a new number.
-  const [text, setText] = useState(String(shown));
-  useEffect(() => setText(String(shown)), [shown]);
+  // While typing, keep the raw text (so the field can be cleared and retyped); otherwise show the value.
+  const [draft, setDraft] = useState<string | null>(null);
 
   // Clamp to the allowed range, so a typo (e.g. 800 instead of 80) can't go beyond it.
-  const set = (displayValue: number) => {
+  const set = (displayValue: number): number => {
     const raw = weight ? fromDisplay(displayValue) : displayValue;
     const clamped = Math.min(max, Math.max(min, raw));
-    onChange(weight ? snapWeight(clamped) : Math.round(clamped * 100) / 100);
+    const stored = weight ? snapWeight(clamped) : Math.round(clamped * 100) / 100;
+    onChange(stored);
+    return stored;
   };
   const displayStep = weight ? show(step) : step;
   const unit = weight ? getUnits() : suffix;
@@ -39,14 +40,17 @@ export function Stepper({ label, value, step, min = 0, max = Infinity, decimals 
         <input
           aria-label={label}
           inputMode={decimals || weight ? 'decimal' : 'numeric'}
-          value={text}
-          onFocus={(e) => e.target.select()}
+          value={draft ?? String(shown)}
+          onFocus={(e) => { setDraft(String(shown)); e.target.select(); }}
           onChange={(e) => {
-            setText(e.target.value);
+            setDraft(e.target.value);
             const n = Number(e.target.value.replace(',', '.'));
-            if (e.target.value !== '' && Number.isFinite(n)) set(n);
+            if (e.target.value === '' || !Number.isFinite(n)) return;
+            // Out of range (or not a real plate step): show the corrected number straight away.
+            const corrected = show(set(n));
+            if (corrected !== n) setDraft(String(corrected));
           }}
-          onBlur={() => setText(String(shown))}
+          onBlur={() => setDraft(null)}
         />
         <button type="button" aria-label={`More ${label}`} disabled={value >= max} onClick={() => set(shown + displayStep)}>+</button>
       </div>

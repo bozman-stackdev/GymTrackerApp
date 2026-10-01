@@ -127,3 +127,15 @@ test('workout: "Create" from an empty search starts the new exercise', async ({ 
   await expect(page).toHaveURL(/#\/workout$/);
   await expect(page.getByRole('heading', { name: 'Landmine Press' })).toBeVisible();
 });
+
+test('no iPhone zoom-on-focus: every text field and drop-down uses 16px+ text', async ({ page }) => {
+  const small: string[] = [];
+  for (const path of ['/#/profile', '/#/exercises/new', '/#/gym/new', '/#/account?mode=signup', '/#/exercises', '/#/routines/push', '/#/workout/add']) {
+    await page.goto(path);
+    await page.locator('main').waitFor();
+    small.push(...await page.evaluate((p) => [...document.querySelectorAll('input:not([type=file]), select, textarea')]
+      .filter((el) => parseFloat(getComputedStyle(el).fontSize) < 16)
+      .map((el) => `${p} ${el.tagName.toLowerCase()} ${el.getAttribute('aria-label') ?? el.getAttribute('placeholder') ?? ''} ${getComputedStyle(el).fontSize}`), path));
+  }
+  expect(small).toEqual([]);
+});

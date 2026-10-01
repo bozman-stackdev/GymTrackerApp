@@ -1,0 +1,28 @@
+{
+  // Lint: `npm run lint` (oxlint: understands TypeScript 7 itself; typescript-eslint doesn't support TS 7 yet).
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "react", "jsx-a11y", "import", "unicorn", "oxc"],
+  "categories": { "correctness": "error", "suspicious": "warn" },
+  "env": { "browser": true, "es2024": true },
+  "rules": {
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "error",
+    "react/jsx-key": "error",
+    "react/react-in-jsx-scope": "off",
+    "no-console": ["warn", { "allow": ["error", "warn"] }],
+    "typescript/no-explicit-any": "error",
+    "eqeqeq": ["error", "smart"],
+    // Valid ARIA roles (status, radio, progressbar, img on svg); the axe tests check them.
+    "jsx-a11y/prefer-tag-over-role": "off",
+    // toSorted()/toReversed() need iOS 16+; sort() is only used on fresh arrays.
+    "unicorn/no-array-sort": "off",
+    "unicorn/no-array-reverse": "off",
+    // Style only.
+    "unicorn/consistent-function-scoping": "off",
+    "import/no-unassigned-import": "off",
+    "import/no-named-as-default": "off",
+    "no-underscore-dangle": "off"
+  },
+  "overrides": [{ "files": ["scripts/**"], "rules": { "no-console": "off" } }],
+  "ignorePatterns": ["dist/**", "test-results/**", "node_modules/**"]
+}

@@ -231,3 +231,23 @@ Safari with separate storage), so sign-up confirmation and password reset use em
 signed-in users touch only rows where `user_id = auth.uid()`. `delete_my_account()` (security definer) deletes the login;
 cascades remove the rest. `supabase/test-schema.sh` checks these rules against a real Postgres with a stand-in auth
 schema, and fails when RLS is switched off.
+
+## Polish pass (overnight, after accounts)
+
+**D54. One SVG icon set (`components/Icon.tsx`), no emoji in the UI.** 24×24 line icons drawn with `currentColor`, so
+they follow the theme, the accent and text size, and look the same on every phone (emoji differ per platform; the
+calendar emoji even showed a fixed date). Decorative by default (`aria-hidden`); `label` when an icon is the only content.
+Achievement icons are names (`AchievementIcon`), so `logic/` stays free of React.
+
+**D55. Lint = oxlint (`npm run lint`, warnings fail, runs in CI).** typescript-eslint doesn't support TypeScript 7; oxlint
+parses TS itself and has the React Hooks, jsx-a11y and correctness rules. Switched off, with reasons in `.oxlintrc.json`:
+`toSorted()` hints (needs iOS 16+), valid-ARIA "prefer the native tag" hints (axe tests cover roles), style-only rules.
+
+**D56. Progress: computed once, shared.** `progressFor()` caches the replay per (sessions, exercises, day), so Home, History,
+Profile and the summary don't each replay the whole history. Hot paths (`exerciseHistory`, `workingWeight`, `analyse`)
+use plain loops and compute each workout's working weight once. Measured: 3 years / 496 workouts, 429 → 171 ms here.
+
+**D57. Order-independent history.** Synced workouts can arrive in any order, so nothing may assume `data.sessions` is
+chronological: `lastDoneAt()` (routines, "next up") takes the latest date, `exerciseHistory()` sorts when needed.
+
+**D58. Form controls are 16px+** (iOS zooms into smaller fields on focus). `e2e/layout.spec.ts` checks every field.

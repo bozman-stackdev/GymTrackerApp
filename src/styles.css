@@ -331,7 +331,7 @@ details > summary { cursor: pointer; min-height: 44px; display: flex; gap: 8px; 
 .equipment-card .title { margin-bottom: 2px; }
 .textarea { min-height: 88px; padding: 10px 14px; resize: vertical; }
 .equipment-line { margin: 2px 0 0; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-.equipment-select { min-height: 44px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text); padding: 0 8px; font-size: 15px; max-width: 100%; }
+.equipment-select { min-height: 44px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text); padding: 0 8px; font-size: 16px; max-width: 100%; } /* 16px+: iOS zooms into smaller fields */
 
 /* ---------- Journey ---------- */
 .journey { display: flex; flex-direction: column; gap: 8px; }
@@ -347,9 +347,10 @@ details > summary { cursor: pointer; min-height: 44px; display: flex; gap: 8px; 
 .challenges-ready { color: var(--accent-text); font-weight: 600; margin-top: 2px; }
 
 /* ---------- Set editor (bottom sheet) ---------- */
-.sheet-backdrop { position: fixed; inset: 0; background: rgb(0 0 0 / .45); display: flex; align-items: flex-end; justify-content: center; z-index: 50; }
+.sheet-layer { position: fixed; inset: 0; display: flex; align-items: flex-end; justify-content: center; z-index: 50; }
+.sheet-backdrop { position: absolute; inset: 0; background: rgb(0 0 0 / .45); border: 0; padding: 0; margin: 0; cursor: default; }
 .sheet {
-  width: 100%; max-width: 480px; background: var(--bg); border-radius: 20px 20px 0 0; padding: 16px calc(16px + var(--safe-right)) calc(16px + var(--safe-bottom)) calc(16px + var(--safe-left));
+  position: relative; width: 100%; max-width: 480px; background: var(--bg); border-radius: 20px 20px 0 0; padding: 16px calc(16px + var(--safe-right)) calc(16px + var(--safe-bottom)) calc(16px + var(--safe-left));
   display: flex; flex-direction: column; gap: 12px; animation: sheet-in .18s ease-out;
 }
 @keyframes sheet-in { from { transform: translateY(24px); opacity: .6; } to { transform: none; opacity: 1; } }

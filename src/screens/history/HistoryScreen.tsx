@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Screen } from '../../components/Screen';
 import { useStore } from '../../data/store';
@@ -14,7 +15,7 @@ export function HistoryScreen() {
   const { data } = useStore();
   const progress = useProgress();
   const sessions = [...data.sessions].sort((a, b) => b.startedAt.localeCompare(a.startedAt));
-  const thisWeek = weekIndex(new Date());
+  const [thisWeek] = useState(() => weekIndex(new Date()));
 
   const weeks: { week: number; sessions: WorkoutSession[] }[] = [];
   for (const s of sessions) {

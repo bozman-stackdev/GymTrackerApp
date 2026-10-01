@@ -1,4 +1,4 @@
-# Checks every push and pull request: types, unit tests, build, and the phone-sized end-to-end tests
+# Checks every push and pull request: types, lint, unit tests, build, and the phone-sized end-to-end tests
 # (including offline and accessibility checks).
 name: CI
 
@@ -17,6 +17,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+      - run: npm run lint
       - run: npm test
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e

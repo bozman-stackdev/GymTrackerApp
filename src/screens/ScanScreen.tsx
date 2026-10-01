@@ -84,7 +84,7 @@ export function ScanScreen() {
       )}
 
       {previewUrl && step !== 'capture' && (
-        <img className={`scan-photo${step === 'analysing' ? ' big' : ''}`} src={previewUrl} alt="Your photo" />
+        <img className={`scan-photo${step === 'analysing' ? ' big' : ''}`} src={previewUrl} alt="The machine to identify" />
       )}
 
       {step === 'analysing' && <p className="center" aria-live="polite">Looking at your photo…</p>}

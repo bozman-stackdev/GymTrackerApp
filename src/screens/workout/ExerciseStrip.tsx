@@ -9,7 +9,7 @@ export function ExerciseStrip({ session, currentIndex, onSelect }: { session: Wo
   const getExercise = useExerciseLookup();
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    ref.current?.querySelector('.current')?.scrollIntoView?.({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+    ref.current?.querySelectorAll('.ex-chip')[currentIndex]?.scrollIntoView?.({ inline: 'center', block: 'nearest', behavior: 'smooth' });
   }, [currentIndex]);
 
   return (

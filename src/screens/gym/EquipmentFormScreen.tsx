@@ -23,11 +23,11 @@ export function EquipmentFormScreen() {
   const gyms = knownGyms(data.equipment);
   const firstExercise = params.get('exercise');
 
-  const [item, setItem] = useState<GymEquipment>(existing ?? {
+  const [item, setItem] = useState<GymEquipment>(() => existing ?? ({
     id: newId(), name: '', exerciseIds: firstExercise ? [firstExercise] : [],
     type: firstExercise ? getExercise(firstExercise).equipment : 'machine',
     gym: gyms[0] ?? '', source: 'manual', createdAt: new Date().toISOString(),
-  });
+  }));
   const [picking, setPicking] = useState(false);
   const set = <K extends keyof GymEquipment>(key: K, value: GymEquipment[K]) => setItem((i) => ({ ...i, [key]: value }));
   const errors = validateEquipment(item, data.equipment);
@@ -106,7 +106,7 @@ export function EquipmentFormScreen() {
       </div>
 
       {text('Gym', 'gym', 'e.g. Anytime Fitness Leeds', 'gym-list')}
-      <datalist id="gym-list">{gyms.map((g) => <option key={g} value={g} />)}</datalist>
+      <datalist id="gym-list">{gyms.map((g) => <option key={g} value={g}>{g}</option>)}</datalist>
       {text('Settings', 'settings', 'e.g. Seat 5, feet mid-platform')}
 
       <details className="card">
