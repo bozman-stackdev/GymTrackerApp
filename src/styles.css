@@ -13,6 +13,11 @@
   --danger: #f87171;
   --radius: 16px;
   --tap: 56px; /* minimum size of anything you press */
+  /* Notch / Dynamic Island / home bar. The app draws under the status bar (viewport-fit=cover), so every edge pads by these. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
   color-scheme: dark;
 }
 @media (prefers-color-scheme: light) {
@@ -44,9 +49,19 @@ a { color: inherit; text-decoration: none; }
 
 /* ---------- Layout ---------- */
 .app { max-width: 480px; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; }
-.screen { flex: 1; padding: 16px 16px calc(96px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 16px; }
-.screen.full { padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
-.header { display: flex; align-items: center; gap: 8px; min-height: 48px; }
+.screen {
+  --screen-top: 16px; --pad-l: calc(16px + var(--safe-left)); --pad-r: calc(16px + var(--safe-right));
+  flex: 1; display: flex; flex-direction: column; gap: 16px;
+  padding: calc(var(--screen-top) + var(--safe-top)) var(--pad-r) calc(96px + var(--safe-bottom)) var(--pad-l);
+}
+.screen.full { padding-bottom: calc(16px + var(--safe-bottom)); }
+/* Sticky, so Back / Cancel stay reachable on long screens. It stretches over the screen padding to cover the status bar. */
+.header {
+  display: flex; align-items: center; gap: 8px; min-height: 48px;
+  position: sticky; top: 0; z-index: 5; background: var(--bg);
+  margin: calc(-1 * (var(--screen-top) + var(--safe-top))) calc(-1 * var(--pad-r)) 0 calc(-1 * var(--pad-l));
+  padding: calc(var(--screen-top) + var(--safe-top)) var(--pad-r) 0 var(--pad-l);
+}
 .header h1 { font-size: 24px; margin: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .row { display: flex; gap: 12px; align-items: center; }
 .stack { display: flex; flex-direction: column; gap: 12px; }
@@ -197,7 +212,7 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; 
 
 /* Short phones (e.g. iPhone SE): keep the whole rep pad on screen without scrolling. */
 @media (max-height: 760px) {
-  .workout { gap: 8px; padding-top: 8px; }
+  .workout { gap: 8px; --screen-top: 8px; }
   .workout .header { min-height: 40px; }
   .ex-name { font-size: 22px; }
   .last-session { font-size: 16px; margin-top: 2px; }
@@ -223,7 +238,7 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; 
 /* ---------- Tab bar ---------- */
 .tabbar {
   position: fixed; bottom: 0; left: 0; right: 0; display: flex; justify-content: center;
-  background: var(--surface); border-top: 1px solid var(--border); padding-bottom: env(safe-area-inset-bottom); z-index: 10;
+  background: var(--surface); border-top: 1px solid var(--border); padding: 0 var(--safe-right) var(--safe-bottom) var(--safe-left); z-index: 10;
 }
 .tabbar nav { display: flex; width: 100%; max-width: 480px; }
 .tabbar a { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 64px; font-size: 12px; color: var(--text-2); }
@@ -313,7 +328,7 @@ details > summary { cursor: pointer; min-height: 44px; display: flex; gap: 8px; 
 /* ---------- Set editor (bottom sheet) ---------- */
 .sheet-backdrop { position: fixed; inset: 0; background: rgb(0 0 0 / .45); display: flex; align-items: flex-end; justify-content: center; z-index: 50; }
 .sheet {
-  width: 100%; max-width: 480px; background: var(--bg); border-radius: 20px 20px 0 0; padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+  width: 100%; max-width: 480px; background: var(--bg); border-radius: 20px 20px 0 0; padding: 16px calc(16px + var(--safe-right)) calc(16px + var(--safe-bottom)) calc(16px + var(--safe-left));
   display: flex; flex-direction: column; gap: 12px; animation: sheet-in .18s ease-out;
 }
 @keyframes sheet-in { from { transform: translateY(24px); opacity: .6; } to { transform: none; opacity: 1; } }

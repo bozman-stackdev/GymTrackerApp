@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { ExerciseForm } from '../components/ExerciseForm';
 import { ExercisePicker } from '../components/ExercisePicker';
 import { Screen } from '../components/Screen';
-import { deleteRoutine, newId, saveRoutine } from '../data/actions';
+import { deleteRoutine, newId, saveExercise, saveRoutine } from '../data/actions';
 import { useExerciseLookup, useStore } from '../data/store';
 import type { Routine } from '../types';
 
@@ -14,7 +15,8 @@ export function RoutineScreen() {
   const navigate = useNavigate();
   const existing = data.routines.find((r) => r.id === id);
   const [routine, setRoutine] = useState<Routine>(existing ?? { id: newId(), name: '', items: [] });
-  const [picking, setPicking] = useState(false);
+  // Adding an exercise happens inside this screen, so the routine being built is never lost.
+  const [picking, setPicking] = useState<null | { create?: string }>(null);
 
   const setItems = (items: Routine['items']) => setRoutine((r) => ({ ...r, items }));
   const move = (i: number, dir: -1 | 1) => {
@@ -23,13 +25,23 @@ export function RoutineScreen() {
     setItems(items);
   };
 
+  const addItem = (exerciseId: string) => { setItems([...routine.items, { exerciseId, sets: 3 }]); setPicking(null); };
+
+  if (picking?.create !== undefined) {
+    return (
+      <Screen title="New exercise" action={<button className="btn ghost" onClick={() => setPicking({})}>Cancel</button>}>
+        <ExerciseForm initialName={picking.create} onSave={(ex) => { update((d) => saveExercise(d, ex)); addItem(ex.id); }} />
+      </Screen>
+    );
+  }
   if (picking) {
     return (
-      <Screen title="Add exercise" action={<button className="btn ghost" onClick={() => setPicking(false)}>Cancel</button>}>
+      <Screen title="Add exercise" action={<button className="btn ghost" onClick={() => setPicking(null)}>Cancel</button>}>
         <ExercisePicker
           exercises={data.exercises}
           exclude={routine.items.map((i) => i.exerciseId)}
-          onPick={(e) => { setItems([...routine.items, { exerciseId: e.id, sets: 3 }]); setPicking(false); }}
+          onPick={(e) => addItem(e.id)}
+          onCreate={(name) => setPicking({ create: name })}
         />
       </Screen>
     );
@@ -75,7 +87,7 @@ export function RoutineScreen() {
         })}
       </div>
 
-      <button className="btn block" onClick={() => setPicking(true)}>+ Add exercise</button>
+      <button className="btn block" onClick={() => setPicking({})}>+ Add exercise</button>
       <button className="btn primary huge" disabled={!routine.name.trim() || routine.items.length === 0} onClick={save}>Save routine</button>
       {existing && <button className="btn ghost danger block" onClick={remove}>Delete routine</button>}
     </Screen>

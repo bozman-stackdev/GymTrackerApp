@@ -193,3 +193,13 @@ issue. It only carries the app version (`__APP_VERSION__` from vite.config) and 
 **D46. Backup reminder:** `AppData.backup { lastExportAt, remindAfter }` (optional; validated and kept on import).
 `needsBackupReminder` (3+ workouts not backed up, 14+ days, not sample, not mid-workout) drives a Train-screen banner with
 Export or Later (7 days). Photo storage is planned in ROADMAP §5 and not built.
+
+**D47. Safe areas:** the installed app draws under the iPhone status bar (`viewport-fit=cover`, translucent status bar),
+so every edge pads by the `--safe-top/right/bottom/left` tokens (from `env(safe-area-inset-*)`) in `styles.css`.
+The header is sticky and stretches over the top padding, so Back / Cancel stay tappable on long screens. The tokens let
+`e2e/layout.spec.ts` simulate a Dynamic Island (62 px top, 34 px home bar) and check that a tap on each header button hits it.
+
+**D48. Creating exercises from a picker:** `ExerciseForm` (component) is shared by the exercise screen and the routine
+builder. `ExercisePicker` takes an optional `onCreate(name)`: "+ Create custom exercise", or "+ Create “search text”" when
+nothing matches (name prefilled). The routine builder shows the form inside the same screen so the unsaved routine is
+kept. The new exercise goes into the library straight away. The workout uses `/exercises/new?start=1&name=…`.

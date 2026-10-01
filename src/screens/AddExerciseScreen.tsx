@@ -19,8 +19,8 @@ export function AddExerciseScreen() {
           update((d) => addExerciseToWorkout(d, e.id));
           navigate('/workout', { replace: true });
         }}
+        onCreate={(name) => navigate(`/exercises/new?start=1${name ? `&name=${encodeURIComponent(name)}` : ''}`)}
       />
-      <Link to="/exercises/new?start=1" className="btn block ghost">+ Create new exercise</Link>
     </Screen>
   );
 }
