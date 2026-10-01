@@ -8,7 +8,7 @@ Code: `src/services/backend/` (contract, sync engine, Supabase adapter, fake bac
 
 ## Switching it on (one-time setup, about 20 minutes)
 
-Until steps 1–6 are done, the published app shows no account features at all.
+Steps 1, 2, 3 and 6 switch accounts on. Steps 4–5 (email) can wait until testers join. Until then, the published app shows no account features at all.
 
 1. **Create the project.** Go to supabase.com, sign up (GitHub sign-in is fine), then **New project**:
    name `gym-tracker`, a strong database password (save it in a password manager), region **London (eu-west-2)**
@@ -18,19 +18,19 @@ Until steps 1–6 are done, the published app shows no account features at all.
 3. **Login settings.** **Authentication** → **Sign In / Providers** → **Email**:
    - Email provider: on.
    - **Minimum password length: 8** (the app asks for 8).
-   - **Confirm email**: on is safer (stops typos in email addresses), but it needs email sending (step 5).
-     For a first test with just you, you can leave it off: sign-up then logs straight in.
-4. **Codes instead of links in emails.** **Authentication** → **Emails** → **Templates**. The installed app can't open
-   email links (they open Safari, which has separate storage), so the app asks for the code instead:
+   - **Confirm email: OFF for now.** Sign-up then logs straight in, with no email needed. (On the free plan
+     Supabase only emails your own team, and the email templates can't be edited until step 4 is done.)
+4. **Later, before inviting testers: your own email service.** Needed for "Forgot password" (and to turn
+   "Confirm email" back on). Add one under **Authentication** → **Emails** → **SMTP Settings**, e.g. Resend
+   (resend.com, free tier; needs a domain you own). That also unlocks the templates.
+5. **Then: codes instead of links in emails.** **Authentication** → **Emails** → **Templates**. The installed app
+   can't open email links (they open Safari, which has separate storage), so the app asks for a code:
    - **Confirm signup**: replace the body with
      `<h2>Your Gym Tracker code</h2><p>Enter this code in the app: <strong>{{ .Token }}</strong></p>`
    - **Reset Password**: replace the body with
      `<h2>Reset your Gym Tracker password</h2><p>Enter this code in the app: <strong>{{ .Token }}</strong></p><p>Didn't ask for this? Ignore this email.</p>`
-5. **Email sending (needed for testers).** Supabase's built-in email is for trying things out only: it delivers to
-   members of your Supabase team, and only a few emails an hour. For testers, add your own email service under
-   **Authentication** → **Emails** → **SMTP Settings**. A free option is Resend (resend.com, free tier), which
-   needs a domain you own. Without it, sign-up works only with "Confirm email" off, and "Forgot password" won't
-   send emails to testers.
+
+   Then turn **Confirm email** back on (step 3).
 6. **Connect the app.** In Supabase: **Project Settings** → **API Keys**. Copy the **Project URL** and the
    **publishable** key (`sb_publishable_…`; older projects call it the **anon public** key).
    **Never use the secret / service_role key.** Then in GitHub: repo **Settings** → **Secrets and variables** →
@@ -41,7 +41,7 @@ Until steps 1–6 are done, the published app shows no account features at all.
    Both values are public by design: the database rules (row-level security) are what protect each person's data.
    The next deploy to `main` builds the app with accounts switched on.
 
-**Check it works:** on your phone, Profile → Create account → (code) → "✓ Synced". Finish a workout, then in
+**Check it works:** on your phone, Profile → Create account → "✓ Synced". Finish a workout, then in
 Supabase **Table Editor** → `records` you should see a row with kind `session`. On a second phone or browser:
 Welcome → **Log in to my account** → your history appears.
 
@@ -79,7 +79,7 @@ Welcome → **Log in to my account** → your history appears.
 
 - 500 MB database. One workout is about 1–2 KB, so that's hundreds of thousands of workouts.
 - Free projects pause after a week with no activity and are resumed from the dashboard. Fine for testing; consider the paid plan before launch.
-- Built-in email is very limited (step 5).
+- Built-in email is very limited: your own team's addresses only, and the templates can't be edited (steps 4–5).
 
 ## Tests
 
