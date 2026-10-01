@@ -6,9 +6,9 @@ for reminders (next) and friends/leaderboards (later). Without an account the ap
 Code: `src/services/backend/` (contract, sync engine, Supabase adapter, fake backend) · `src/data/account.tsx`
 (React glue) · `src/components/AccountForm.tsx` · `src/screens/AccountScreen.tsx` · database: `supabase/schema.sql`.
 
-## Switching it on (one-time setup, about 20 minutes)
+## Switching it on (one-time setup, about 15 minutes)
 
-Steps 1, 2, 3 and 6 switch accounts on. Steps 4–5 (email) can wait until testers join. Until then, the published app shows no account features at all.
+Until these 4 steps are done, the published app shows no account features at all.
 
 1. **Create the project.** Go to supabase.com, sign up (GitHub sign-in is fine), then **New project**:
    name `gym-tracker`, a strong database password (save it in a password manager), region **London (eu-west-2)**
@@ -18,20 +18,8 @@ Steps 1, 2, 3 and 6 switch accounts on. Steps 4–5 (email) can wait until teste
 3. **Login settings.** **Authentication** → **Sign In / Providers** → **Email**:
    - Email provider: on.
    - **Minimum password length: 8** (the app asks for 8).
-   - **Confirm email: OFF for now.** Sign-up then logs straight in, with no email needed. (On the free plan
-     Supabase only emails your own team, and the email templates can't be edited until step 4 is done.)
-4. **Later, before inviting testers: your own email service.** Needed for "Forgot password" (and to turn
-   "Confirm email" back on). Add one under **Authentication** → **Emails** → **SMTP Settings**, e.g. Resend
-   (resend.com, free tier; needs a domain you own). That also unlocks the templates.
-5. **Then: codes instead of links in emails.** **Authentication** → **Emails** → **Templates**. The installed app
-   can't open email links (they open Safari, which has separate storage), so the app asks for a code:
-   - **Confirm signup**: replace the body with
-     `<h2>Your Gym Tracker code</h2><p>Enter this code in the app: <strong>{{ .Token }}</strong></p>`
-   - **Reset Password**: replace the body with
-     `<h2>Reset your Gym Tracker password</h2><p>Enter this code in the app: <strong>{{ .Token }}</strong></p><p>Didn't ask for this? Ignore this email.</p>`
-
-   Then turn **Confirm email** back on (step 3).
-6. **Connect the app.** In Supabase: **Project Settings** → **API Keys**. Copy the **Project URL** and the
+   - **Confirm email: OFF.** Sign-up logs straight in, with no email needed.
+4. **Connect the app.** In Supabase: **Project Settings** → **API Keys**. Copy the **Project URL** and the
    **publishable** key (`sb_publishable_…`; older projects call it the **anon public** key).
    **Never use the secret / service_role key.** Then in GitHub: repo **Settings** → **Secrets and variables** →
    **Actions** → **Variables** tab → **New repository variable**, twice:
@@ -79,7 +67,7 @@ Welcome → **Log in to my account** → your history appears.
 
 - 500 MB database. One workout is about 1–2 KB, so that's hundreds of thousands of workouts.
 - Free projects pause after a week with no activity and are resumed from the dashboard. Fine for testing; consider the paid plan before launch.
-- Built-in email is very limited: your own team's addresses only, and the templates can't be edited (steps 4–5).
+- No email is sent (no confirmation, no password reset), so **"Forgot password" doesn't work for now**: a tester who forgets their password needs a new account. Email needs a domain plus an email service; we can add it later.
 
 ## Tests
 
