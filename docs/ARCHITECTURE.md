@@ -208,3 +208,26 @@ kept. The new exercise goes into the library straight away. The workout uses `/e
 to the next unfinished exercise, or to a "between exercises" state (`currentIndex === entries.length`) offering
 "+ Add exercise". Only the top-right "Finish Session" ends the workout, so a workout built as you go is never
 offered "finish" after its first exercise. The between state is a normal saved `currentIndex` and survives reloads.
+
+## Accounts and sync (side quest, step 1)
+
+**D50. Optional accounts on Supabase, behind a `Backend` interface (`services/backend/types.ts`).** Email + password
+via Supabase Auth (we never handle password hashes). Built in only when `VITE_SUPABASE_URL`/`VITE_SUPABASE_KEY` are set
+(`VITE_BACKEND=fake` for e2e); otherwise the code is dropped from the bundle and the app is unchanged. Setup and
+privacy: docs/ACCOUNTS.md.
+
+**D51. Offline-first sync with per-record fingerprints (`services/backend/sync.ts`).** `DataStore` stays synchronous
+(localStorage remains the working copy, so ROADMAP's "make DataStore async" step isn't needed). One generic server table
+`records(user_id, kind, id, data, deleted, updated_at)`; the server sets `updated_at` (the pull cursor, re-read with a
+10 s overlap). The phone remembers the fingerprint of what the server has (`gymtracker:sync`, not in backups) to tell
+local edits from remote ones. Rules: a phone's unsynced edit wins; first meeting → the account wins; deletions are
+tombstones; more than 10 deletions that are also over 25% of the synced items are refused and re-downloaded instead.
+Server records are validated like a backup file before use.
+
+**D52. Codes, not links, in auth emails.** An installed iPhone web app doesn't receive email links (they open in
+Safari with separate storage), so sign-up confirmation and password reset use emailed codes (`verifyOtp`).
+
+**D53. Security = row-level security, tested.** `supabase/schema.sql` revokes everything from signed-out visitors and lets
+signed-in users touch only rows where `user_id = auth.uid()`. `delete_my_account()` (security definer) deletes the login;
+cascades remove the rest. `supabase/test-schema.sh` checks these rules against a real Postgres with a stand-in auth
+schema, and fails when RLS is switched off.

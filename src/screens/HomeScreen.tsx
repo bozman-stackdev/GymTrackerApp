@@ -4,6 +4,7 @@ import { startWorkout } from '../data/actions';
 import { exportBackup, needsBackupReminder, snoozeBackupReminder } from '../data/backup';
 import { createStarterData } from '../data/seed';
 import { useStore } from '../data/store';
+import { useAccount } from '../data/account';
 import { useProgress } from '../data/useProgress';
 import { streakText } from '../components/ProgressWidgets';
 import { challengeFor } from '../logic/game/challenge';
@@ -13,6 +14,7 @@ import type { Routine } from '../types';
 /** Start screen: one tap on a routine starts the workout. */
 export function HomeScreen() {
   const { data, update, replace } = useStore();
+  const { account } = useAccount();
   const navigate = useNavigate();
   const active = data.activeWorkout;
   const progress = useProgress();
@@ -44,7 +46,8 @@ export function HomeScreen() {
           <button className="btn ghost" onClick={startOwn}>Start my own</button>
         </div>
       )}
-      {needsBackupReminder(data) && (
+      {/* With an account the data is already saved off the phone: no reminder. */}
+      {account === null && needsBackupReminder(data) && (
         <div className="sample-banner" data-testid="backup-reminder" role="status">
           <span className="grow">💾 Keep your workouts safe: export a backup.</span>
           <button className="btn ghost" onClick={() => exportBackup(data, update)}>Export</button>

@@ -3,6 +3,8 @@ import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'r
 import { TabBar } from './components/TabBar';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { StoreProvider, useAppState, useStore } from './data/store';
+import { AccountProvider } from './data/account';
+import { AccountScreen } from './screens/AccountScreen';
 import { WelcomeScreen } from './screens/WelcomeScreen';
 import { setUnits } from './logic/units';
 import { EquipmentFormScreen } from './screens/gym/EquipmentFormScreen';
@@ -23,11 +25,13 @@ export function App() {
   return (
     <ErrorBoundary>
       <StoreProvider>
-        <HashRouter>
-          <div className="app">
-            <Shell />
-          </div>
-        </HashRouter>
+        <AccountProvider>
+          <HashRouter>
+            <div className="app">
+              <Shell />
+            </div>
+          </HashRouter>
+        </AccountProvider>
       </StoreProvider>
     </ErrorBoundary>
   );
@@ -57,6 +61,7 @@ function Shell() {
         <Route path="/gym/new" element={<EquipmentFormScreen />} />
         <Route path="/gym/:id" element={<EquipmentFormScreen />} />
         <Route path="/profile" element={<ProfileScreen />} />
+        <Route path="/account" element={<AccountScreen />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <TabBarUnlessTraining />

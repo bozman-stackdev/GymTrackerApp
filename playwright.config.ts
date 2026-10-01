@@ -12,7 +12,8 @@ export default defineConfig({
     launchOptions: existsSync(localChromium) ? { executablePath: localChromium } : {},
   },
   webServer: [
-    { command: 'npm run dev -- --port 5173 --strictPort', url: 'http://localhost:5173', reuseExistingServer: true },
+    // Accounts use the fake backend here (e2e/account.spec.ts); the published app uses Supabase or none.
+    { command: 'npm run dev -- --port 5173 --strictPort', url: 'http://localhost:5173', reuseExistingServer: true, env: { VITE_BACKEND: 'fake' } },
     // The production build (with the offline service worker) for e2e/offline.spec.ts.
     { command: 'npm run build && npx vite preview --port 4173 --strictPort', url: 'http://localhost:4173', reuseExistingServer: true },
   ],

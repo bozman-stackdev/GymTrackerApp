@@ -27,10 +27,19 @@ for (const scheme of ['light', 'dark'] as const) {
     await checkA11y(page, 'summary');
 
     for (const [path, name] of [['/#/history', 'history'], ['/#/exercises', 'exercises'], ['/#/exercises/leg-press', 'exercise'],
-      ['/#/exercises/new', 'exercise form'], ['/#/routines/push', 'routine'], ['/#/profile', 'profile']] as const) {
+      ['/#/exercises/new', 'exercise form'], ['/#/routines/push', 'routine'], ['/#/profile', 'profile'],
+      ['/#/account?mode=signup', 'create account'], ['/#/account?mode=login', 'log in']] as const) {
       await page.goto(path);
       await checkA11y(page, name);
     }
+
+    // A form with an error message showing.
+    await page.goto('/#/account?mode=login');
+    await page.getByLabel('Email').fill('nobody@example.com');
+    await page.getByLabel('Password', { exact: true }).fill('wrong-password');
+    await page.getByRole('button', { name: 'Log in' }).click();
+    await page.getByRole('alert').waitFor();
+    await checkA11y(page, 'log in error');
 
     await page.goto('/#/scan');
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');

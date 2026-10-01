@@ -1,4 +1,6 @@
 import { useRef, useState } from 'react';
+import { AccountForm } from '../components/AccountForm';
+import { useAccount } from '../data/account';
 import { useAppState } from '../data/store';
 import { readBackupFile } from '../data/backup';
 import { createSampleData, createStarterData } from '../data/seed';
@@ -8,6 +10,8 @@ export function WelcomeScreen() {
   const { replace, loadError } = useAppState();
   const file = useRef<HTMLInputElement>(null);
   const [importError, setImportError] = useState<string | null>(null);
+  const { available, connect } = useAccount();
+  const [loggingIn, setLoggingIn] = useState(false);
 
   const restore = async (f: File | undefined) => {
     if (!f) return;
@@ -17,6 +21,18 @@ export function WelcomeScreen() {
       setImportError(err instanceof Error ? err.message : 'Could not read that file.');
     }
   };
+
+  if (loggingIn) {
+    return (
+      <main className="screen full">
+        <header className="header">
+          <button className="icon-btn" aria-label="Back" onClick={() => setLoggingIn(false)}>←</button>
+          <h1>Welcome back</h1>
+        </header>
+        <AccountForm initialMode="login" onSignedIn={connect} />
+      </main>
+    );
+  }
 
   return (
     <main className="screen full welcome">
@@ -38,12 +54,14 @@ export function WelcomeScreen() {
       <button className="btn block" onClick={() => replace(createSampleData())}>Try with sample data</button>
       <p className="muted small center welcome-note">5 weeks of example workouts, to see challenges and progress.</p>
 
+      {available && <button className="btn block" onClick={() => setLoggingIn(true)}>Log in to my account</button>}
+
       <input ref={file} type="file" accept="application/json,.json" hidden data-testid="restore-input" onChange={(e) => restore(e.target.files?.[0])} />
       <button className="btn ghost block" onClick={() => file.current?.click()}>Restore a backup</button>
       {importError && <p className="warn center" role="alert">{importError}</p>}
 
       <p className="muted small center">
-        Everything stays on this phone. No account needed.
+        {available ? 'Everything stays on this phone unless you create an account. No account needed.' : 'Everything stays on this phone. No account needed.'}
         <br />Tip: add the app to your Home Screen, so your phone keeps your data (and it opens like an app).
       </p>
     </main>

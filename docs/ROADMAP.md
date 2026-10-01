@@ -32,6 +32,8 @@ user who loses data.
 | Machine photos | **Never stored** | Sent once to the recognition service, then discarded (by decision) |
 | App settings (units, UI) | Local, or with the profile | — |
 
+**Status: step 1 (accounts + sync) is built, see docs/ACCOUNTS.md. It's switched on once Supabase is set up.**
+
 **Recommended approach: offline-first sync.**
 1. Add accounts (email magic link or Apple/Google sign-in). Auth must arrive with sync, never before.
 2. Keep localStorage/SQLite as the working copy. On *Finish workout*, queue the session for upload, and retry when online.
@@ -95,8 +97,11 @@ Honest assessment after Phases 1–5. The core loop works and is fast (2 taps to
 13. **Analytics**: none (good for privacy). Consider privacy-friendly, opt-in usage counts before a public launch.
 
 ### Deliberately not doing
-Social features, leaderboards, messaging, subscriptions, daily streaks. They conflict with
-"spend less time tracking your workout and more time doing it".
+Messaging, subscriptions, daily streaks. They conflict with "spend less time tracking your workout and more time doing it".
+
+**Changed (side quest):** friends/groups and leaderboards are now planned, on top of accounts. Groups joined by invite
+code, not a global board, ranked by effort (consistency, challenges completed, XP), never by weight lifted, so the
+safety principle holds (nobody is pushed to lift heavier to "win").
 
 ## 5. Photo storage plan (for when equipment photos are wanted)
 

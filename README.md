@@ -35,6 +35,8 @@ saves everything to a file (restore it on another phone from the welcome screen 
 | `npm test` | Unit tests (progression rules, data actions, storage) |
 | `npm run test:e2e` | End-to-end tests in a phone-sized Chromium, incl. offline and accessibility checks (starts servers itself; run `npx playwright install chromium` once first) |
 | `VITE_FEEDBACK_EMAIL=you@example.com npm run build` | Optional: send tester feedback to an email instead of GitHub issues |
+| `VITE_SUPABASE_URL=… VITE_SUPABASE_KEY=… npm run build` | Optional: switch on accounts + sync (docs/ACCOUNTS.md; the deploy reads repo variables `SUPABASE_URL`, `SUPABASE_KEY`) |
+| `VITE_BACKEND=fake npm run dev` | Accounts against a fake in-browser backend (what the e2e tests use; codes are 123456) |
 | `npm run build` | Type-check + production build into `dist/` (static files, host anywhere) |
 
 ## How it works for the user
@@ -45,10 +47,13 @@ saves everything to a file (restore it on another phone from the welcome screen 
    Change it with −/+, by typing, or with one-tap chips (*last set*, *last session*, *suggested*).
 4. After the last planned set, the app moves to the next exercise by itself. The strip at the top shows every exercise's
    progress (`2/3`, `✓`); tap one to jump there. The bar under it shows your last set, rest time and **Undo**.
-5. When everything is done, a big **Finish workout** button appears (or tap **Finish** at the top at any time).
+5. When an exercise has all its sets, **✓ Finish Exercise** moves on to the next one (or offers **+ Add exercise**).
+   Tap **Finish Session** at the top when you're done for the day.
 6. The screen stays on during a workout, where the browser supports it.
 7. **📷 Scan machine** → take a photo → *What are you using?* → tap **Start**, and you're tracking it. Today the suggestions are
    a demo; see [docs/RECOGNITION.md](docs/RECOGNITION.md) for how real recognition plugs in.
+8. **Optional account** (Profile → Account): email + password, backs up and syncs your workouts between phones. It's
+   switched on once Supabase is set up; see [docs/ACCOUNTS.md](docs/ACCOUNTS.md).
 
 ## Project structure
 
@@ -71,13 +76,16 @@ src/
     backup.ts               Export / restore a JSON backup
     seed.ts                 Starter + sample data
     useProgress.ts          React hooks over logic/game
+    account.tsx             Optional account: who is logged in, background sync (docs/ACCOUNTS.md)
   services/                 Replaceable integrations
     recognition/            Photo → exercise: contract, demo, backend adapter (docs/RECOGNITION.md)
+    backend/                Accounts + sync: contract, sync engine, Supabase adapter, fake backend for tests
     image.ts                Photo resizing (photos are never stored)
   components/               Reusable UI (Screen, Stepper, TabBar, ErrorBoundary, TrendChart, ...)
   screens/                  Screens; bigger ones are folders (workout/, history/, exercises/)
   App.tsx                   Routes, welcome screen on first run, save-error banner
-e2e/                        Phone-sized browser tests: flows, first run/backup, offline, accessibility
+e2e/                        Phone-sized browser tests: flows, first run/backup, accounts, offline, accessibility
+supabase/                   Database schema (tables + security rules) and its test script
 public/ + scripts/          App icons (regenerate with `node scripts/make-icons.mjs`)
 docs/                       ARCHITECTURE (decision log), ROADMAP (backend/native/product review), feature docs
 ```

@@ -1,5 +1,8 @@
 import { useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Screen } from '../components/Screen';
+import { syncedAgo, useAccount } from '../data/account';
+import { OFFLINE_MESSAGE } from '../services/backend';
 import { saveProfile } from '../data/actions';
 import { createStarterData, createSampleData } from '../data/seed';
 import { exportBackup, readBackupFile } from '../data/backup';
@@ -32,6 +35,7 @@ export function ProfileScreen() {
   const bmi = valid && p.heightCm && p.weightKg ? p.weightKg / (p.heightCm / 100) ** 2 : null;
   const restoreInput = useRef<HTMLInputElement>(null);
   const [dataMessage, setDataMessage] = useState<string | null>(null);
+  const { available: accountsOn, account, logOut } = useAccount();
 
   const exportNow = () => {
     exportBackup(data, update);
@@ -50,9 +54,11 @@ export function ProfileScreen() {
     }
   };
 
-  const reset = (sample: boolean) => {
-    const msg = sample ? 'Replace ALL your data with sample data?' : 'Delete ALL your data (history, routines, profile)?';
-    if (!confirm(msg)) return;
+  const reset = async (sample: boolean) => {
+    const msg = sample ? 'Replace ALL your data on this phone with sample data?' : 'Delete ALL your data on this phone (history, routines, profile)?';
+    // Logged in: log out first, so clearing this phone never deletes anything from the account.
+    if (!confirm(account ? `${msg}\n\nYou'll be logged out first. Your account keeps its data.` : msg)) return;
+    if (account) await logOut();
     const fresh = sample ? createSampleData() : createStarterData();
     replace(fresh);
     setP(fresh.profile);
@@ -100,15 +106,21 @@ export function ProfileScreen() {
         {saved ? '✓ Saved' : 'Save'}
       </button>
 
+      {accountsOn && <AccountSection />}
+
       <h2>Feedback</h2>
       <a className="btn block" href={feedbackUrl()} target="_blank" rel="noopener noreferrer" data-testid="feedback">💬 Send feedback</a>
       <p className="muted small flush">Includes the app version and device type only - never your workouts.</p>
 
       <h2>Data</h2>
-      <p className="muted small flush">
-        Everything is stored only on this phone, in this browser. Export a backup now and then, or before changing phones.
-        On iPhone, add the app to your Home Screen: Safari may clear data of websites you haven't opened for a week.
-      </p>
+      {account ? (
+        <p className="muted small flush">Your data is on this phone and saved to your account. A backup file is an extra copy you keep yourself.</p>
+      ) : (
+        <p className="muted small flush">
+          Everything is stored only on this phone, in this browser. Export a backup now and then, or before changing phones.
+          On iPhone, add the app to your Home Screen: Safari may clear data of websites you haven't opened for a week.
+        </p>
+      )}
       <button className="btn block" onClick={exportNow}>Export backup</button>
       {data.backup?.lastExportAt && <p className="muted small center flush">Last backup {relativeDay(data.backup.lastExportAt)}</p>}
       <input ref={restoreInput} type="file" accept="application/json,.json" hidden data-testid="profile-restore-input" onChange={(e) => restore(e.target.files?.[0])} />
@@ -117,6 +129,63 @@ export function ProfileScreen() {
       <button className="btn block ghost" onClick={() => reset(true)}>Load sample data</button>
       <button className="btn block ghost danger" onClick={() => reset(false)}>Start fresh (delete all)</button>
     </Screen>
+  );
+}
+
+/** Optional account: create / log in, or who is logged in, sync status, log out, delete. */
+function AccountSection() {
+  const { data } = useStore();
+  const { account, status, syncNow, logOut, deleteAccount } = useAccount();
+  const [message, setMessage] = useState<string | null>(null);
+  if (account === undefined) return null; // still checking
+
+  if (!account) {
+    return (
+      <>
+        <h2>Account</h2>
+        <p className="muted small flush">Optional. A free account keeps your workouts safe and lets you use them on any phone.</p>
+        <div className="row">
+          <Link to="/account?mode=signup" className="btn primary grow">Create account</Link>
+          <Link to="/account?mode=login" className="btn grow">Log in</Link>
+        </div>
+        {message && <p className="small center flush" role="status">{message}</p>}
+      </>
+    );
+  }
+
+  const remove = async () => {
+    if (!confirm('Delete your account and everything saved in it? This cannot be undone.\n\nThe data on this phone is kept.')) return;
+    try {
+      await deleteAccount();
+      setMessage('Your account was deleted. Your data is still on this phone.');
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Could not delete the account. Try again.');
+    }
+  };
+  const statusText =
+    data.isSample ? 'Sample data is not synced.'
+    : status.state === 'syncing' ? 'Syncing…'
+    : status.state === 'error' && status.message === OFFLINE_MESSAGE ? "Offline: changes will sync when you're back online."
+    : status.state === 'error' ? `⚠️ ${status.message}`
+    : status.lastSyncAt ? `✓ Synced ${syncedAgo(status.lastSyncAt)}` : 'Not synced yet';
+
+  return (
+    <>
+      <h2>Account</h2>
+      <div className="card stack" data-testid="account">
+        <div>
+          <div className="title">{account.displayName || 'Your account'}</div>
+          <div className="muted small">{account.email}</div>
+        </div>
+        <div className={`small${status.state === 'error' ? ' warn' : ''}`} data-testid="sync-status" role="status">{statusText}</div>
+        <div className="row">
+          <button className="btn grow" disabled={status.state === 'syncing' || !!data.isSample} onClick={() => void syncNow()}>Sync now</button>
+          <button className="btn grow" onClick={() => void logOut().then(() => setMessage(null))}>Log out</button>
+        </div>
+      </div>
+      <button className="btn ghost danger block" onClick={() => void remove()}>Delete account</button>
+      {message && <p className="small center flush" role="status">{message}</p>}
+    </>
   );
 }
 

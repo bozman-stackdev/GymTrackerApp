@@ -106,6 +106,8 @@ h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .06em; color: v
 
 /* ---------- Forms ---------- */
 label.field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: var(--text-2); }
+.account-field { display: flex; flex-direction: column; gap: 6px; }
+.field-label { font-size: 14px; color: var(--text-2); }
 .input {
   min-height: var(--tap); padding: 0 14px; border-radius: 12px; border: 1px solid var(--border);
   background: var(--surface); color: var(--text); font-size: 18px; width: 100%;
@@ -336,3 +338,4 @@ details > summary { cursor: pointer; min-height: 44px; display: flex; gap: 8px; 
 button.slot { cursor: pointer; font: inherit; font-size: 15px; line-height: 1.4; margin: 0; }
 .set-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .set-chip { min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); font-variant-numeric: tabular-nums; cursor: pointer; }
+.account-links { gap: 0; }

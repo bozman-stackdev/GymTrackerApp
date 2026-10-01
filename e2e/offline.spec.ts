@@ -29,3 +29,19 @@ test('works with no internet connection after the first visit, and is installabl
   await expect(page.getByRole('heading', { name: 'What are you using?' })).toBeVisible();
   await context.setOffline(false);
 });
+
+test('built without a backend (as published until Supabase is set up): no account features anywhere', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: 'Start my own' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Log in to my account' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Start my own' }).click();
+  await page.getByRole('link', { name: 'Profile' }).click();
+  await expect(page.getByRole('heading', { name: 'Data' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Account' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Create account' })).toHaveCount(0);
+  await page.goto('/#/account?mode=signup');
+  await expect(page).toHaveURL(/#\/profile$/);
+  // The account code isn't even downloaded.
+  const scripts = await page.evaluate(() => performance.getEntriesByType('resource').map((r) => r.name).filter((n) => n.endsWith('.js')));
+  expect(scripts.some((s) => /supabase|memory/i.test(s))).toBe(false);
+});
