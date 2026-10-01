@@ -126,9 +126,9 @@ export function nextUnfinished(session: WorkoutSession, from: number): number | 
 }
 
 /**
- * "Finish exercise": go to the next exercise with sets still to do, or, when there is none, to the
+ * "Finish Exercise": go to the next exercise with sets still to do, or, when there is none, to the
  * "between exercises" state (currentIndex === entries.length), where the screen offers "+ Add exercise".
- * The session itself only ends with "Finish session".
+ * The session itself only ends with "Finish Session".
  */
 export function finishExercise(data: AppData): AppData {
   if (!data.activeWorkout) return data;

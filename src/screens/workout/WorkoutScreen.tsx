@@ -10,8 +10,8 @@ import { SetLogger } from './SetLogger';
 /**
  * The in-gym screen, built for a tired user with a few seconds between sets:
  * weight is pre-filled and carried over, so recording a set is ONE tap on the number of reps done.
- * After the last planned set it moves on to the next exercise by itself. "Finish exercise" moves on (or offers
- * "+ Add exercise"); only "Finish session" ends the workout.
+ * After the last planned set it moves on to the next exercise by itself. "Finish Exercise" moves on (or offers
+ * "+ Add exercise"); only "Finish Session" ends the workout.
  */
 export function WorkoutScreen() {
   const { data, update } = useStore();
@@ -51,21 +51,21 @@ export function WorkoutScreen() {
     <main className="screen full workout">
       <header className="header">
         <span className="muted grow">{session.name}</span>
-        <button className="btn finish-btn" onClick={finish}>Finish session</button>
+        <button className="btn finish-btn" onClick={finish}>Finish Session</button>
       </header>
 
       <ExerciseStrip session={session} currentIndex={currentIndex} onSelect={(i) => update((d) => goToExercise(d, i))} />
       <LastSetBar session={session} live={live!} onUndo={(i) => update((d) => undoLastSet(d, i))} />
 
       {exerciseDone && (
-        <button className="btn primary huge" onClick={() => update(finishExercise)}>✓ Finish exercise</button>
+        <button className="btn primary huge" onClick={() => update(finishExercise)}>✓ Finish Exercise</button>
       )}
 
       {entry ? (
         <SetLogger key={currentIndex} exercise={getExercise(entry.exerciseId)} entryIndex={currentIndex} live={live!} />
       ) : (
         <>
-          {hasSets && <p className="muted center flush" data-testid="between">Exercise done. Add the next one, or tap Finish session when you're done.</p>}
+          {hasSets && <p className="muted center flush" data-testid="between">Exercise done. Add the next one, or tap Finish Session when you're done.</p>}
           <Link to="/workout/add" className="btn primary huge">+ Add exercise</Link>
         </>
       )}

@@ -35,7 +35,7 @@ test('missed challenge: "NOT TODAY", never "failed"; next time: same target agai
   await expect(page.locator('body')).not.toContainText(/fail/i);
   await page.screenshot({ path: 'test-results/screens/17-not-today.png' });
 
-  await page.getByRole('button', { name: 'Finish session' }).click();
+  await page.getByRole('button', { name: 'Finish Session' }).click();
   await expect(page.getByTestId('outcome').first()).toContainText('Not today · target 50 kg × 8 · next challenge adjusted');
   await expect(page.getByTestId('rewards')).not.toContainText(/[-−]\s?\d/); // nothing deducted
 
@@ -51,7 +51,7 @@ test('missed challenge: "NOT TODAY", never "failed"; next time: same target agai
   await page.locator('.rep-btn.target').click();
   await expect(page.getByTestId('reward')).toHaveText('🏆 NEW PERSONAL BEST!');
   await expect(page.getByTestId('last-set')).toContainText('+90 XP'); // 25 challenge + 15 comeback + 50 PB
-  await page.getByRole('button', { name: 'Finish session' }).click();
+  await page.getByRole('button', { name: 'Finish Session' }).click();
   await expect(page.getByTestId('rewards')).toContainText('Back on track · Chest Press Machine');
   await expect(page.getByTestId('outcome').first()).toContainText('✓ Back on track: 50 kg × 8 complete');
 });
@@ -90,7 +90,7 @@ test('My gym: machines with settings and last weights; add one; it shows in the 
   await expect(page.getByTestId('equipment')).toContainText('Seat 3');
   await page.getByLabel('Weight', { exact: true }).fill('90');
   await page.locator('.rep-btn.target').click();
-  await page.getByRole('button', { name: 'Finish session' }).click();
+  await page.getByRole('button', { name: 'Finish Session' }).click();
 
   await page.getByRole('link', { name: 'My Gym' }).click();
   await expect(page.getByTestId('equipment-card').filter({ hasText: 'Hammer Strength Leg Press' })).toContainText('Last used: 90 kg');

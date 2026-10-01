@@ -30,7 +30,7 @@ test('fix a mis-tapped set during the workout (tap the set box)', async ({ page 
 test('fix a finished workout from its summary; rewards follow', async ({ page }) => {
   await page.getByRole('button', { name: /^Push/ }).click();
   for (let i = 0; i < 3; i++) await page.getByRole('button', { name: '5 reps', exact: true }).click();
-  await page.getByRole('button', { name: 'Finish session' }).click();
+  await page.getByRole('button', { name: 'Finish Session' }).click();
   await expect(page.getByTestId('rewards')).not.toContainText('Challenge complete');
 
   await page.getByRole('button', { name: 'Edit sets' }).click();
@@ -85,18 +85,18 @@ test('feedback link carries app/device basics only; backup reminder appears and 
   await expect(page.getByTestId('backup-reminder')).toHaveCount(0); // snooze is saved
 });
 
-test('on the go: Finish exercise → add the next one; only "Finish session" ends the workout', async ({ page }) => {
+test('on the go: Finish Exercise → add the next one; only "Finish Session" ends the workout', async ({ page }) => {
   await page.getByRole('button', { name: 'Empty workout' }).click();
   await expect(page.getByRole('heading', { name: 'Add exercise' })).toBeVisible(); // straight to the list
   await page.getByRole('button', { name: /Cable Face Pull/ }).click();
-  await expect(page.getByRole('button', { name: 'Finish session' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Finish Session' })).toBeVisible();
   for (let i = 0; i < 3; i++) await page.locator('.rep-btn.target').click();
 
   // One exercise done: offer to finish the exercise, never the whole workout.
   await expect(page.getByRole('button', { name: /Finish workout/ })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: '✓ Finish exercise' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '✓ Finish Exercise' })).toBeVisible();
   await page.screenshot({ path: 'test-results/screens/onthego-exercise-done.png' });
-  await page.getByRole('button', { name: '✓ Finish exercise' }).click();
+  await page.getByRole('button', { name: '✓ Finish Exercise' }).click();
   await expect(page.getByTestId('between')).toBeVisible();
   await expect(page.locator('.ex-chip.done')).toHaveCount(1);
   await page.screenshot({ path: 'test-results/screens/onthego-between.png' });
@@ -109,13 +109,13 @@ test('on the go: Finish exercise → add the next one; only "Finish session" end
   await page.getByRole('button', { name: /Seated Cable Row/ }).click();
   await expect(page.getByRole('heading', { name: 'Seated Cable Row' })).toBeVisible();
   await page.locator('.rep-btn.target').click();
-  await expect(page.getByRole('button', { name: '✓ Finish exercise' })).toHaveCount(0); // 1 of 3 sets
+  await expect(page.getByRole('button', { name: '✓ Finish Exercise' })).toHaveCount(0); // 1 of 3 sets
 
   // A finished exercise can be reopened from the strip for an extra set.
   await page.getByRole('button', { name: /Cable Face Pull/ }).click();
   await expect(page.getByRole('heading', { name: 'Cable Face Pull' })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Finish session' }).click();
+  await page.getByRole('button', { name: 'Finish Session' }).click();
   await expect(page).toHaveURL(/#\/history\/.+/);
   await expect(page.locator('.list-item')).toHaveCount(2);
 });
