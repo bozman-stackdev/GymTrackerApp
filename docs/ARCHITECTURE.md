@@ -203,3 +203,8 @@ The header is sticky and stretches over the top padding, so Back / Cancel stay t
 builder. `ExercisePicker` takes an optional `onCreate(name)`: "+ Create custom exercise", or "+ Create “search text”" when
 nothing matches (name prefilled). The routine builder shows the form inside the same screen so the unsaved routine is
 kept. The new exercise goes into the library straight away. The workout uses `/exercises/new?start=1&name=…`.
+
+**D49. Finish exercise vs Finish session:** the big green button finishes the *exercise* (`finishExercise`): it moves
+to the next unfinished exercise, or to a "between exercises" state (`currentIndex === entries.length`) offering
+"+ Add exercise". Only the top-right "Finish session" ends the workout, so a workout built as you go is never
+offered "finish" after its first exercise. The between state is a normal saved `currentIndex` and survives reloads.

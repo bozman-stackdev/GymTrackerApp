@@ -57,7 +57,7 @@ test('back and header buttons sit below the status bar on every screen, and work
   // Workout: Finish, and the add-exercise screen's Back.
   await page.getByRole('link', { name: 'Train' }).click();
   await page.getByRole('button', { name: /^Push/ }).click();
-  await expectTappable(page.getByRole('button', { name: 'Finish', exact: true }));
+  await expectTappable(page.getByRole('button', { name: 'Finish session' }));
   await page.screenshot({ path: 'test-results/screens/notch-workout.png' });
   await page.goto('/#/workout/add');
   await expectTappable(back);

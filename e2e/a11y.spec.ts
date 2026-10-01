@@ -23,7 +23,7 @@ for (const scheme of ['light', 'dark'] as const) {
     await page.locator('.rep-btn.target').click(); // reward bar
     await page.getByTestId('challenge').click(); // "Why?" open
     await checkA11y(page, 'workout + reward');
-    await page.getByRole('button', { name: 'Finish', exact: true }).click();
+    await page.getByRole('button', { name: 'Finish session' }).click();
     await checkA11y(page, 'summary');
 
     for (const [path, name] of [['/#/history', 'history'], ['/#/exercises', 'exercises'], ['/#/exercises/leg-press', 'exercise'],

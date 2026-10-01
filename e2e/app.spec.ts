@@ -84,7 +84,7 @@ test('open app -> routine -> set logged in 2 taps; auto-advance, undo, reload, f
   await page.locator('.ex-chip', { hasText: 'Lateral Raise' }).click();
   await expect(page.getByRole('heading', { name: 'Dumbbell Lateral Raise' })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Finish', exact: true }).click();
+  await page.getByRole('button', { name: 'Finish session' }).click();
   await expect(page).toHaveURL(/#\/history\/.+/);
   await expect(page.getByText(`${weight} kg ×`).first()).toBeVisible();
   await page.screenshot({ path: 'test-results/screens/4-summary.png' });
@@ -129,7 +129,7 @@ test("Today's Challenge: hit it → instant reward → summary → progress on p
   await expect(page.getByTestId('reward')).toBeVisible();
 
   // Finish → summary with rewards, next challenges, outcome per exercise.
-  await page.getByRole('button', { name: 'Finish', exact: true }).click();
+  await page.getByRole('button', { name: 'Finish session' }).click();
   await expect(page.getByTestId('rewards')).toContainText('Challenge complete · Chest Press Machine');
   await expect(page.getByTestId('rewards')).toContainText('Personal best · Chest Press Machine');
   // Only 2 sets were kept (6 and 8 reps) - below the 3-set minimum, so no workout XP: challenge + PB only.
@@ -162,7 +162,7 @@ test('a "repeat" challenge pays 10 XP when hit', async ({ page }) => {
   await expect(page.getByTestId('last-set')).toContainText('+10 XP');
 });
 
-test('finishing every exercise shows a one-tap Finish, and reopening the app resumes the workout', async ({ page }) => {
+test('routine: Finish exercise moves on, no big finish button when all done; reopening resumes the workout', async ({ page }) => {
   await page.getByRole('button', { name: /Pull/ }).click();
   await page.goto('/'); // "reopen" the app on the home screen
   await expect(page).toHaveURL(/#\/workout$/);
@@ -176,7 +176,12 @@ test('finishing every exercise shows a one-tap Finish, and reopening the app res
   }
   await expect(page.locator('.ex-chip.done')).toHaveCount(4);
   await page.screenshot({ path: 'test-results/screens/3b-all-done.png' });
-  await page.getByRole('button', { name: '✓ Finish workout' }).click();
+  // The session only ends from the top right.
+  await expect(page.getByRole('button', { name: /Finish workout/ })).toHaveCount(0);
+  await page.getByRole('button', { name: '✓ Finish exercise' }).click();
+  await expect(page.getByTestId('between')).toBeVisible();
+  await expect(page.getByRole('link', { name: '+ Add exercise' })).toBeVisible();
+  await page.getByRole('button', { name: 'Finish session' }).click();
   await expect(page).toHaveURL(/#\/history\/.+/);
   await expect(page.locator('.list-item')).toHaveCount(4);
 });
@@ -236,6 +241,7 @@ test('scan during a workout adds to it; "Other" lets you pick anything; the phot
 
 test('scan → not listed → create exercise → tracking', async ({ page }) => {
   await page.goto('/#/scan');
+  await expect(page.getByTestId('demo-warning')).toContainText("isn't switched on yet");
   await page.getByTestId('photo-input').setInputFiles(photo);
   await page.getByRole('button', { name: 'Other…' }).click();
   await page.getByRole('link', { name: '+ Create new exercise' }).click();

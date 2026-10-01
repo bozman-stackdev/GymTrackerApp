@@ -125,6 +125,17 @@ export function nextUnfinished(session: WorkoutSession, from: number): number | 
   return undefined;
 }
 
+/**
+ * "Finish exercise": go to the next exercise with sets still to do, or, when there is none, to the
+ * "between exercises" state (currentIndex === entries.length), where the screen offers "+ Add exercise".
+ * The session itself only ends with "Finish session".
+ */
+export function finishExercise(data: AppData): AppData {
+  if (!data.activeWorkout) return data;
+  const { session, currentIndex } = data.activeWorkout;
+  return updateActive(data, (s) => s, nextUnfinished(session, currentIndex) ?? session.entries.length);
+}
+
 /** Saves the workout to history. Exercises with no sets are dropped; an empty workout is discarded. */
 export function finishWorkout(data: AppData, now = new Date()): AppData {
   if (!data.activeWorkout) return data;

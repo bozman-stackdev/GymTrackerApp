@@ -5,7 +5,7 @@ import { Screen } from '../components/Screen';
 import { startExercise } from '../data/actions';
 import { useStore } from '../data/store';
 import { likelyExerciseIds } from '../logic/history';
-import { recognizer, type RecognitionResult } from '../services/recognition';
+import { recognitionIsDemo, recognizer, type RecognitionResult } from '../services/recognition';
 import type { Exercise } from '../types';
 
 type Step = 'capture' | 'analysing' | 'choose' | 'other';
@@ -73,6 +73,12 @@ export function ScanScreen() {
           <button className="btn primary huge scan-shutter" onClick={() => camera.current?.click()}>📷 Take a photo</button>
           <button className="btn block" onClick={() => library.current?.click()}>Choose from photos</button>
           <p className="muted center small">Point at the machine you're about to use.</p>
+          {recognitionIsDemo && (
+            <p className="muted center small demo-note" data-testid="demo-warning">
+              Demo mode: photo recognition isn't switched on yet, so suggestions are examples, not what's in your photo.
+              Tap Other… to pick the exercise.
+            </p>
+          )}
         </>
       )}
 

@@ -18,3 +18,6 @@ function pickRecognizer(): MachineRecognizer {
 }
 
 export const recognizer: MachineRecognizer = pickRecognizer();
+
+/** True while no real recognition service is configured (the demo doesn't look at the photo). */
+export const recognitionIsDemo = recognizer === mockRecognizer;

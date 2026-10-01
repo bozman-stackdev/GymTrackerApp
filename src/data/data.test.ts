@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addExerciseToWorkout, editSet, finishWorkout, goToExercise, logSet, startExercise, startWorkout, undoLastSet } from './actions';
+import { addExerciseToWorkout, editSet, finishExercise, finishWorkout, goToExercise, logSet, startExercise, startWorkout, undoLastSet } from './actions';
 import { createSampleData, createStarterData, SAMPLE_ROUTINES } from './seed';
 import { localStorageStore } from './storage';
 import { markBackedUp, needsBackupReminder, snoozeBackupReminder } from './backup';
@@ -95,6 +95,34 @@ describe('workout actions', () => {
     expect(d.activeWorkout!.currentIndex).toBe(4);
     d = goToExercise(d, -1);
     expect(d.activeWorkout!.currentIndex).toBe(0);
+  });
+
+  it('finishExercise: next unfinished exercise, else the "between exercises" state, which survives a reload', () => {
+    const set = { reps: 10, weightKg: 50 };
+    // Routine: jumps to the next unfinished one.
+    let d = startWorkout(createStarterData(), SAMPLE_ROUTINES[0]);
+    d = goToExercise(logSet(logSet(logSet(d, 1, set), 1, set), 1, set), 1);
+    expect(finishExercise(d).activeWorkout!.currentIndex).toBe(2);
+
+    // On the go: one exercise, done -> between state (index = number of exercises).
+    d = startExercise(createStarterData(), 'leg-press');
+    d = logSet(logSet(logSet(d, 0, set), 0, set), 0, set);
+    d = finishExercise(d);
+    expect(d.activeWorkout!.currentIndex).toBe(1);
+    expect(d.activeWorkout!.session.entries[d.activeWorkout!.currentIndex]).toBeUndefined();
+    expect(parseAppData(JSON.parse(JSON.stringify(d))).activeWorkout!.currentIndex).toBe(1);
+
+    // Adding the next exercise makes it current; undo from the between state shows that exercise again.
+    const added = addExerciseToWorkout(d, 'lat-pulldown');
+    expect(added.activeWorkout!.currentIndex).toBe(1);
+    expect(added.activeWorkout!.session.entries[1].exerciseId).toBe('lat-pulldown');
+    const undone = undoLastSet(d, 0);
+    expect(undone.activeWorkout!.currentIndex).toBe(0);
+    expect(undone.activeWorkout!.session.entries[0].sets).toHaveLength(2);
+
+    // Nothing happens without a workout in progress.
+    const none = createStarterData();
+    expect(finishExercise(none)).toBe(none);
   });
 
   it('ignores impossible sets (validation)', () => {
