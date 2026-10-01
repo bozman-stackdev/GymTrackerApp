@@ -14,6 +14,11 @@ const key = import.meta.env.VITE_SUPABASE_KEY as string | undefined;
 const fake = import.meta.env.VITE_BACKEND === 'fake';
 
 export const accountsAvailable = fake || !!(url && key);
+/**
+ * Whether the account service can send email (password reset codes). Off until an email service is set up in
+ * Supabase (docs/ACCOUNTS.md): then build with VITE_ACCOUNT_EMAILS=on (repo variable ACCOUNT_EMAILS).
+ */
+export const accountEmails = fake || import.meta.env.VITE_ACCOUNT_EMAILS === 'on';
 
 let loading: Promise<Backend | null> | null = null;
 

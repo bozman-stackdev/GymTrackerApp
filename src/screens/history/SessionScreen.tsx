@@ -1,5 +1,5 @@
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
-import { LevelBar, streakText } from '../../components/ProgressWidgets';
+import { LevelBar, Streak } from '../../components/ProgressWidgets';
 import { Screen } from '../../components/Screen';
 import { formatDuration } from '../../components/useNow';
 import { useState } from 'react';
@@ -10,9 +10,11 @@ import { useProgress } from '../../data/useProgress';
 import { ACHIEVEMENTS } from '../../logic/game/achievements';
 import { challengeFor, type Challenge, type Outcome } from '../../logic/game/challenge';
 import type { Progress, SessionProgress, XpEvent } from '../../logic/game/progress';
-import { formatDate, formatSets, formatTarget, formatWeight, sessionVolumeKg } from '../../logic/history';
+import { formatDate, formatSets, formatTarget, formatWeight, sessionSetCount, sessionVolumeKg } from '../../logic/history';
 import { getUnits, toDisplay, unitStepKg } from '../../logic/units';
 import type { WorkoutSession } from '../../types';
+import { Icon } from '../../components/Icon';
+import { GAME_CONFIG } from '../../logic/game/config';
 
 /** One finished workout: what you did, what it earned, and what's next. Also the "workout complete" screen. */
 export function SessionScreen() {
@@ -46,7 +48,7 @@ export function SessionScreen() {
         {` · ${Math.round(toDisplay(sessionVolumeKg(session))).toLocaleString()} ${getUnits()} lifted`}
       </p>
 
-      {scored && <WorkoutRewards scored={scored} progress={isLatest ? progress : undefined} />}
+      {scored && <WorkoutRewards scored={scored} session={session} progress={isLatest ? progress : undefined} />}
 
       {editMode && (
         <div className="list" data-testid="edit-sets">
@@ -94,8 +96,8 @@ export function SessionScreen() {
                 <div className="title">{getExercise(e.exerciseId).name}</div>
                 <div className="muted small">{formatSets(e.sets)}</div>
                 {r?.challenge && r.outcome && <OutcomeLine outcome={r.outcome} target={formatTarget(r.challenge)} comeback={r.comeback} />}
-                {r?.weightMastered ? <div className="outcome good" data-testid="mastered">★ Weight mastered: {formatTarget(r.weightMastered)} - next weight unlocked</div>
-                  : r?.newlyMastered && <div className="outcome muted" data-testid="mastered">✓ {formatTarget(r.newlyMastered)} mastered</div>}
+                {r?.weightMastered ? <div className="outcome good with-icon" data-testid="mastered"><Icon name="star" size={14} /> Weight mastered: {formatTarget(r.weightMastered)} - next weight unlocked</div>
+                  : r?.newlyMastered && <div className="outcome muted with-icon" data-testid="mastered"><Icon name="check" size={14} /> {formatTarget(r.newlyMastered)} mastered</div>}
               </div>
             </Link>
           );
@@ -114,12 +116,12 @@ export function SessionScreen() {
 /** Positive for hit/beaten/matched; neutral (never negative) for a miss. */
 function OutcomeLine({ outcome, target, comeback }: { outcome: Outcome; target: string; comeback: boolean }) {
   const text = {
-    hit: comeback ? `✓ Back on track: ${target} complete` : `✓ Target ${target} hit`,
-    exceeded: comeback ? `✓ Back on track: ${target} beaten` : `✓ Target ${target} beaten`,
-    matched: `✓ Matched last session · target was ${target}`,
+    hit: comeback ? `Back on track: ${target} complete` : `Target ${target} hit`,
+    exceeded: comeback ? `Back on track: ${target} beaten` : `Target ${target} beaten`,
+    matched: `Matched last session · target was ${target}`,
     missed: `Not today · target ${target} · next challenge adjusted`,
   }[outcome];
-  return <div className={`outcome${outcome === 'missed' ? ' muted' : ' good'}`} data-testid="outcome">{text}</div>;
+  return <div className={`outcome with-icon${outcome === 'missed' ? ' muted' : ' good'}`} data-testid="outcome">{outcome !== 'missed' && <Icon name="check" size={14} />}{text}</div>;
 }
 
 const EVENT_LABEL: Record<XpEvent['type'], string> = {
@@ -133,8 +135,12 @@ const EVENT_LABEL: Record<XpEvent['type'], string> = {
 };
 
 /** What this workout earned. `progress` is given for the latest workout only (level/streak "now"). */
-function WorkoutRewards({ scored, progress }: { scored: SessionProgress; progress?: Progress }) {
+function WorkoutRewards({ scored, session, progress }: { scored: SessionProgress; session: WorkoutSession; progress?: Progress }) {
   const getExercise = useExerciseLookup();
+  // Nothing earned: say why, instead of a bare "+0 XP".
+  const why = scored.events.length > 0 ? null
+    : sessionSetCount(session) < GAME_CONFIG.minSetsForWorkoutXp ? `Workouts with ${GAME_CONFIG.minSetsForWorkoutXp}+ sets earn XP.`
+    : 'Workout XP counts once a day. Challenges and personal bests always count.';
   return (
     <div className="card stack" data-testid="rewards">
       <div className="row between">
@@ -148,12 +154,13 @@ function WorkoutRewards({ scored, progress }: { scored: SessionProgress; progres
             <span className="muted">+{e.xp}</span>
           </div>
         ))}
+        {why && <div className="muted" data-testid="no-xp-reason">{why}</div>}
       </div>
       {progress && <LevelBar level={progress.level} />}
-      <div className="small">{streakText(progress?.streakWeeks ?? scored.streakWeeks)}</div>
+      <div className="small"><Streak weeks={progress?.streakWeeks ?? scored.streakWeeks} /></div>
       {scored.unlocked.map((id) => {
         const a = ACHIEVEMENTS.find((x) => x.id === id)!;
-        return <div key={id} className="small" data-testid="new-achievement">{a.icon} <strong>New achievement:</strong> {a.title}</div>;
+        return <div key={id} className="small with-icon" data-testid="new-achievement"><Icon name={a.icon} size={18} className="accent" /> <span><strong>New achievement:</strong> {a.title}</span></div>;
       })}
     </div>
   );

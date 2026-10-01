@@ -49,18 +49,18 @@ test('missed challenge: "NOT TODAY", never "failed"; next time: same target agai
 
   // Hit it: challenge + back on track + (first full set at 50 kg) personal best.
   await page.locator('.rep-btn.target').click();
-  await expect(page.getByTestId('reward')).toHaveText('🏆 NEW PERSONAL BEST!');
+  await expect(page.getByTestId('reward')).toHaveText('NEW PERSONAL BEST!');
   await expect(page.getByTestId('last-set')).toContainText('+90 XP'); // 25 challenge + 15 comeback + 50 PB
   await page.getByRole('button', { name: 'Finish Session' }).click();
   await expect(page.getByTestId('rewards')).toContainText('Back on track · Chest Press Machine');
-  await expect(page.getByTestId('outcome').first()).toContainText('✓ Back on track: 50 kg × 8 complete');
+  await expect(page.getByTestId('outcome').first()).toContainText('Back on track: 50 kg × 8 complete');
 });
 
 test('target hit: "TARGET HIT ✓" with the set and XP', async ({ page }) => {
   await page.getByRole('button', { name: /^Push/ }).click();
   await page.locator('.ex-chip', { hasText: 'Lateral Raise' }).click();
   await page.locator('.rep-btn.target').click();
-  await expect(page.getByTestId('reward')).toHaveText('✓ TARGET HIT');
+  await expect(page.getByTestId('reward')).toHaveText('TARGET HIT');
   await expect(page.getByTestId('last-set')).toContainText(/8 kg × \d+ · \+25 XP/);
 });
 
@@ -73,14 +73,14 @@ test('My gym: machines with settings and last weights; add one; it shows in the 
   await page.screenshot({ path: 'test-results/screens/18-my-gym.png', fullPage: true });
 
   // Add a second leg press at another gym.
-  await page.getByRole('link', { name: '+ Add equipment' }).click();
+  await page.getByRole('link', { name: 'Add equipment', exact: true }).click();
   await page.getByPlaceholder('e.g. Life Fitness Leg Press').fill('Hammer Strength Leg Press');
-  await page.getByRole('button', { name: '+ Exercise' }).click();
+  await page.getByRole('button', { name: 'Exercise', exact: true }).click();
   await page.getByRole('button', { name: /Leg Press/ }).first().click();
   await page.getByPlaceholder('e.g. Anytime Fitness Leeds').fill('Work Gym');
   await page.getByPlaceholder('e.g. Seat 5, feet mid-platform').fill('Seat 3');
   await page.getByRole('button', { name: 'Save' }).click();
-  await expect(page.getByText('📍 Work Gym')).toBeVisible();
+  await expect(page.locator('.gym-name', { hasText: 'Work Gym' })).toBeVisible();
 
   // In the workout: the machine line, with a picker now that there are two.
   await page.getByRole('link', { name: 'Train' }).click();
@@ -107,7 +107,7 @@ test('scan suggests your own machine and starts on it', async ({ page }) => {
   await page.getByTestId('photo-input').setInputFiles({ name: 'm.png', mimeType: 'image/png', buffer: png });
   const first = page.getByRole('radio').first();
   await expect(first).toContainText('Lat Pulldown');
-  await expect(first).toContainText('📍 Matrix Lat Pulldown');
+  await expect(first).toContainText('Matrix Lat Pulldown');
   await page.getByRole('button', { name: /^Start Lat Pulldown/ }).click();
   await expect(page.getByTestId('equipment')).toContainText('Matrix Lat Pulldown');
 });

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Icon } from './Icon';
 
 /** Standard page wrapper: optional back arrow, title, and a slot for a right-hand action. */
 export function Screen({ title, back, action, full, children }: {
@@ -16,7 +17,7 @@ export function Screen({ title, back, action, full, children }: {
       <header className="header">
         {back && (
           <button className="icon-btn" aria-label="Back" onClick={() => navigate(-1)}>
-            ←
+            <Icon name="back" size={24} />
           </button>
         )}
         <h1>{title}</h1>

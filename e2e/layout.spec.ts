@@ -79,14 +79,14 @@ test('header stays reachable after scrolling a long screen', async ({ page }) =>
 test('routine: create a custom exercise without losing the routine', async ({ page }) => {
   await page.goto('/#/routines/new');
   await page.getByPlaceholder('e.g. Upper body').fill('Leg day B');
-  await page.getByRole('button', { name: '+ Add exercise' }).click();
+  await page.getByRole('button', { name: 'Add exercise', exact: true }).click();
   await page.getByRole('button', { name: /Face Pull/ }).click();
 
   // No match → create it, with the name already filled in.
-  await page.getByRole('button', { name: '+ Add exercise' }).click();
+  await page.getByRole('button', { name: 'Add exercise', exact: true }).click();
   await page.getByRole('searchbox', { name: 'Search exercises' }).fill('Zercher Squat');
   await expect(page.getByText('No matches.')).toBeVisible();
-  await page.getByRole('button', { name: '+ Create “Zercher Squat”' }).click();
+  await page.getByRole('button', { name: 'Create “Zercher Squat”' }).click();
   await expect(page.getByRole('heading', { name: 'New exercise' })).toBeVisible();
   await expectTappable(page.getByRole('button', { name: 'Cancel' }));
   await expect(page.getByPlaceholder('e.g. Hack Squat')).toHaveValue('Zercher Squat');
@@ -101,8 +101,8 @@ test('routine: create a custom exercise without losing the routine', async ({ pa
   await expect(page.locator('.routine-item').nth(1)).toContainText('3 sets');
 
   // The plain button (list not empty), and Cancel from the form returns to the list without adding anything.
-  await page.getByRole('button', { name: '+ Add exercise' }).click();
-  await page.getByRole('button', { name: '+ Create custom exercise' }).click();
+  await page.getByRole('button', { name: 'Add exercise', exact: true }).click();
+  await page.getByRole('button', { name: 'Create custom exercise' }).click();
   await expect(page.getByPlaceholder('e.g. Hack Squat')).toHaveValue('');
   await page.getByRole('button', { name: 'Cancel' }).click();
   await expect(page.getByRole('heading', { name: 'Add exercise' })).toBeVisible();
@@ -121,7 +121,7 @@ test('workout: "Create" from an empty search starts the new exercise', async ({ 
   await page.getByRole('button', { name: /^Push/ }).click();
   await page.goto('/#/workout/add');
   await page.getByRole('searchbox', { name: 'Search exercises' }).fill('Landmine Press');
-  await page.getByRole('button', { name: '+ Create “Landmine Press”' }).click();
+  await page.getByRole('button', { name: 'Create “Landmine Press”' }).click();
   await expect(page.getByPlaceholder('e.g. Hack Squat')).toHaveValue('Landmine Press');
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page).toHaveURL(/#\/workout$/);

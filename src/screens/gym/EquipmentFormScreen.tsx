@@ -8,6 +8,7 @@ import { validateEquipment } from '../../data/validate';
 import { knownGyms, lastUsage } from '../../logic/equipment';
 import { formatSets, relativeDay } from '../../logic/history';
 import type { Equipment, GymEquipment } from '../../types';
+import { Icon } from '../../components/Icon';
 
 const TYPES: Equipment[] = ['machine', 'cable', 'barbell', 'dumbbell', 'bodyweight'];
 
@@ -87,10 +88,10 @@ export function EquipmentFormScreen() {
           {item.exerciseIds.map((exId) => (
             <button key={exId} className="chip on" aria-label={`Remove ${getExercise(exId).name}`}
               onClick={() => set('exerciseIds', item.exerciseIds.filter((x) => x !== exId))}>
-              {getExercise(exId).name} ✕
+              {getExercise(exId).name} <Icon name="close" size={16} />
             </button>
           ))}
-          <button className="chip" onClick={() => setPicking(true)}>+ Exercise</button>
+          <button className="chip" onClick={() => setPicking(true)}><Icon name="plus" size={16} /> Exercise</button>
         </div>
         {errors.exerciseIds && item.name && <span className="field-error">{errors.exerciseIds}</span>}
       </div>

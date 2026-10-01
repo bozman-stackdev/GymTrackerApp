@@ -3,6 +3,7 @@ import { ExercisePicker } from '../components/ExercisePicker';
 import { Screen } from '../components/Screen';
 import { addExerciseToWorkout } from '../data/actions';
 import { useStore } from '../data/store';
+import { Icon } from '../components/Icon';
 
 /** Add an exercise to the workout in progress - by list or by photo. */
 export function AddExerciseScreen() {
@@ -12,7 +13,7 @@ export function AddExerciseScreen() {
 
   return (
     <Screen title="Add exercise" back full>
-      <Link to="/scan" className="btn primary block">📷 Scan a machine</Link>
+      <Link to="/scan" className="btn primary block"><Icon name="camera" /> Scan a machine</Link>
       <ExercisePicker
         exercises={data.exercises}
         onPick={(e) => {

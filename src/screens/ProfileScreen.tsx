@@ -12,9 +12,11 @@ import { useStore } from '../data/store';
 import { validateProfile } from '../data/validate';
 import { fromDisplay, toDisplay, type Units } from '../logic/units';
 import { useProgress } from '../data/useProgress';
-import { AchievementList, LevelBar, PersonalBestList, streakText } from '../components/ProgressWidgets';
+import { AchievementList, LevelBar, PersonalBestList, Streak } from '../components/ProgressWidgets';
 import { ACHIEVEMENTS } from '../logic/game/achievements';
 import type { Experience, Goal, Profile, Sex } from '../types';
+import { Icon } from '../components/Icon';
+import { plural } from '../logic/history';
 
 const UNITS: [Units, string][] = [['kg', 'kg'], ['lb', 'lb']];
 const SEXES: [Sex, string][] = [['male', 'Male'], ['female', 'Female'], ['other', 'Other'], ['', 'Prefer not to say']];
@@ -70,8 +72,8 @@ export function ProfileScreen() {
       <div className="card stack" data-testid="progress">
         <LevelBar level={progress.level} />
         <div className="row small between">
-          <span>{streakText(progress.streakWeeks)}</span>
-          <span data-testid="challenges-count">🎯 {progress.stats.challengesCompleted} challenges</span>
+          <Streak weeks={progress.streakWeeks} />
+          <span data-testid="challenges-count" className="with-icon"><Icon name="target" size={15} /> {plural(progress.stats.challengesCompleted, 'challenge')}</span>
         </div>
       </div>
       <details className="card">
@@ -103,13 +105,13 @@ export function ProfileScreen() {
       <Chips label="Goal" options={GOALS} value={p.goal} onChange={(v) => change('goal', v)} />
 
       <button className="btn primary huge" disabled={!valid} onClick={() => { update((d) => saveProfile(d, { ...p, name: p.name.trim() })); setSaved(true); }}>
-        {saved ? '✓ Saved' : 'Save'}
+        {saved ? <><Icon name="check" size={22} /> Saved</> : 'Save'}
       </button>
 
       {accountsOn && <AccountSection />}
 
       <h2>Feedback</h2>
-      <a className="btn block" href={feedbackUrl()} target="_blank" rel="noopener noreferrer" data-testid="feedback">💬 Send feedback</a>
+      <a className="btn block" href={feedbackUrl()} target="_blank" rel="noopener noreferrer" data-testid="feedback"><Icon name="message" /> Send feedback</a>
       <p className="muted small flush">Includes the app version and device type only - never your workouts.</p>
 
       <h2>Data</h2>
@@ -167,8 +169,9 @@ function AccountSection() {
     data.isSample ? 'Sample data is not synced.'
     : status.state === 'syncing' ? 'Syncing…'
     : status.state === 'error' && status.message === OFFLINE_MESSAGE ? "Offline: changes will sync when you're back online."
-    : status.state === 'error' ? `⚠️ ${status.message}`
-    : status.lastSyncAt ? `✓ Synced ${syncedAgo(status.lastSyncAt)}` : 'Not synced yet';
+    : status.state === 'error' ? status.message
+    : status.lastSyncAt ? `Synced ${syncedAgo(status.lastSyncAt)}` : 'Not synced yet';
+  const statusIcon = status.state === 'error' ? 'alert' : status.lastSyncAt && !data.isSample ? 'cloud' : null;
 
   return (
     <>
@@ -178,7 +181,9 @@ function AccountSection() {
           <div className="title">{account.displayName || 'Your account'}</div>
           <div className="muted small">{account.email}</div>
         </div>
-        <div className={`small${status.state === 'error' ? ' warn' : ''}`} data-testid="sync-status" role="status">{statusText}</div>
+        <div className={`small with-icon${status.state === 'error' ? ' warn' : ''}`} role="status">
+          {statusIcon && <Icon name={statusIcon} size={16} />}<span data-testid="sync-status">{statusText}</span>
+        </div>
         <div className="row">
           <button className="btn grow" disabled={status.state === 'syncing' || !!data.isSample} onClick={() => void syncNow()}>Sync now</button>
           <button className="btn grow" onClick={() => void logOut().then(() => setMessage(null))}>Log out</button>

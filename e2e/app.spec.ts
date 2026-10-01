@@ -96,7 +96,7 @@ test('open app -> routine -> set logged in 2 taps; auto-advance, undo, reload, f
 });
 
 test("Today's Challenge: hit it → instant reward → summary → progress on profile", async ({ page }) => {
-  await expect(page.getByTestId('home-progress')).toContainText(/Level \d+ · 🔥 \d+-week streak/);
+  await expect(page.getByTestId('home-progress')).toContainText(/Level \d+ · \d+-week streak/);
   await page.getByRole('button', { name: /^Push/ }).click();
 
   // Chest press: 45 kg × 12 twice → the engine's challenge is a weight increase.
@@ -112,10 +112,10 @@ test("Today's Challenge: hit it → instant reward → summary → progress on p
 
   // Hit it: brief reward in place of the last-set bar (challenge + personal best at the suggested weight).
   await page.locator('.rep-btn.target').click();
-  await expect(page.getByTestId('reward')).toHaveText('🏆 NEW PERSONAL BEST!');
+  await expect(page.getByTestId('reward')).toHaveText('NEW PERSONAL BEST!');
   await expect(page.getByTestId('last-set')).toContainText(`+${25 + 50} XP`);
   await expect(page.getByTestId('last-set')).toContainText('Next time: 50 kg ×'); // based on all sets so far (incl. the 6-rep one)
-  await expect(challenge).toContainText('✓ Challenge complete');
+  await expect(challenge).toContainText('Challenge complete');
   await page.screenshot({ path: 'test-results/screens/12-reward.png' });
 
   // The next set is ordinary again; undo would take the reward back (it's all derived from the sets).
@@ -135,7 +135,7 @@ test("Today's Challenge: hit it → instant reward → summary → progress on p
   // Only 2 sets were kept (6 and 8 reps) - below the 3-set minimum, so no workout XP: challenge + PB only.
   await expect(page.getByTestId('session-xp')).toHaveText(`+${25 + 50} XP`);
   await expect(page.getByTestId('rewards')).not.toContainText('Workout complete');
-  await expect(page.getByTestId('outcome').first()).toContainText('✓ Target 50 kg × 8 hit');
+  await expect(page.getByTestId('outcome').first()).toContainText('Target 50 kg × 8 hit');
   await expect(page.getByTestId('next-challenges')).toContainText('Chest Press Machine');
   await expect(page.getByTestId('level')).toBeVisible();
   await page.screenshot({ path: 'test-results/screens/13-summary.png', fullPage: true });
@@ -158,7 +158,7 @@ test('a "repeat" challenge pays 10 XP when hit', async ({ page }) => {
   await expect(page.getByTestId('challenge')).toContainText("Today's challenge · repeat");
   await expect(page.getByTestId('challenge')).toContainText('20 kg × 15');
   await page.locator('.rep-btn.target').click();
-  await expect(page.getByTestId('reward')).toHaveText('✓ TARGET HIT');
+  await expect(page.getByTestId('reward')).toHaveText('TARGET HIT');
   await expect(page.getByTestId('last-set')).toContainText('+10 XP');
 });
 
@@ -178,9 +178,9 @@ test('routine: Finish Exercise moves on, no big finish button when all done; reo
   await page.screenshot({ path: 'test-results/screens/3b-all-done.png' });
   // The session only ends from the top right.
   await expect(page.getByRole('button', { name: /Finish workout/ })).toHaveCount(0);
-  await page.getByRole('button', { name: '✓ Finish Exercise' }).click();
+  await page.getByRole('button', { name: 'Finish Exercise' }).click();
   await expect(page.getByTestId('between')).toBeVisible();
-  await expect(page.getByRole('link', { name: '+ Add exercise' })).toBeVisible();
+  await expect(page.locator('a.btn', { hasText: 'Add exercise' })).toBeVisible();
   await page.getByRole('button', { name: 'Finish Session' }).click();
   await expect(page).toHaveURL(/#\/history\/.+/);
   await expect(page.locator('.list-item')).toHaveCount(4);
@@ -244,7 +244,7 @@ test('scan → not listed → create exercise → tracking', async ({ page }) =>
   await expect(page.getByTestId('demo-warning')).toContainText("isn't switched on yet");
   await page.getByTestId('photo-input').setInputFiles(photo);
   await page.getByRole('button', { name: 'Other…' }).click();
-  await page.getByRole('link', { name: '+ Create new exercise' }).click();
+  await page.getByRole('link', { name: 'Create new exercise' }).click();
   await page.getByPlaceholder('e.g. Hack Squat').fill('Hack Squat');
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page).toHaveURL(/#\/workout$/);
@@ -276,7 +276,7 @@ test('create an exercise and a routine, then start it', async ({ page }) => {
 
   await page.goto('/#/routines/new');
   await page.getByPlaceholder('e.g. Upper body').fill('Leg day B');
-  await page.getByRole('button', { name: '+ Add exercise' }).click();
+  await page.getByRole('button', { name: 'Add exercise', exact: true }).click();
   await page.getByRole('button', { name: /Hack Squat/ }).click();
   await page.getByRole('button', { name: 'More sets' }).click();
   await expectNoHorizontalScroll(page);

@@ -36,6 +36,8 @@ jobs:
           # Both are public values (row-level security protects the data). Not set = no account features.
           VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
           VITE_SUPABASE_KEY: ${{ vars.SUPABASE_KEY }}
+          # Set to "on" once Supabase can send email (password reset codes). Off = no "Forgot password?" button.
+          VITE_ACCOUNT_EMAILS: ${{ vars.ACCOUNT_EMAILS }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

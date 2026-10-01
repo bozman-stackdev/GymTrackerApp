@@ -12,6 +12,7 @@ import { challengeFor } from '../../logic/game/challenge';
 import { buildJourney } from '../../logic/journey';
 import { recommend } from '../../logic/progression';
 import { getUnits, toDisplay } from '../../logic/units';
+import { Icon } from '../../components/Icon';
 
 /** Progress for one exercise: today's suggestion, a trend chart and past sessions. */
 export function ExerciseScreen() {
@@ -31,7 +32,7 @@ export function ExerciseScreen() {
   }));
 
   return (
-    <Screen title={exercise.name} back action={<Link to={`/exercises/${exercise.id}/edit`} className="icon-btn" aria-label="Edit exercise">✎</Link>}>
+    <Screen title={exercise.name} back action={<Link to={`/exercises/${exercise.id}/edit`} className="icon-btn" aria-label="Edit exercise"><Icon name="edit" /></Link>}>
       <div className="chips">
         <span className="tag">{exercise.muscleGroup}</span>
         <span className="tag">{exercise.equipment}</span>
@@ -45,14 +46,14 @@ export function ExerciseScreen() {
       <RecommendationCard rec={rec} />
 
       <button className="btn primary block" onClick={() => { update((d) => startExercise(d, exercise.id)); navigate('/workout'); }}>
-        ▶ {data.activeWorkout ? 'Add to current workout' : 'Start this exercise'}
+        <Icon name="play" size={18} /> {data.activeWorkout ? 'Add to current workout' : 'Start this exercise'}
       </button>
 
       <h2>Equipment</h2>
       <div className="list">
         {equipmentFor(data.equipment, exercise.id).map((e) => <EquipmentCard key={e.id} item={e} />)}
       </div>
-      <Link to={`/gym/new?exercise=${exercise.id}`} className="btn block ghost">+ Add equipment for this exercise</Link>
+      <Link to={`/gym/new?exercise=${exercise.id}`} className="btn block ghost"><Icon name="plus" /> Add equipment for this exercise</Link>
 
       <h2>{usesWeight ? 'Strength trend' : 'Best set (reps)'}</h2>
       <div className="card">

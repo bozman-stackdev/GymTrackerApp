@@ -117,16 +117,16 @@ export function analyse(exercise: Exercise, history: ExercisePerformance[], conf
 
   const lowestAtWeight = (p: ExercisePerformance) => Math.min(...workingSets(p.sets).map((s) => s.reps));
   const bestAtWeight = (p: ExercisePerformance) => Math.max(...workingSets(p.sets).map((s) => s.reps));
-  const atWeight = history.filter((p) => workingWeight(p.sets) === weight);
-  facts.successfulSessionsAtWeight = atWeight.filter((p) => lowestAtWeight(p) >= repMin).length;
+  const weights = history.map((p) => workingWeight(p.sets)); // computed once: this runs for every workout in the replay
+  facts.successfulSessionsAtWeight = history.filter((p, i) => weights[i] === weight && lowestAtWeight(p) >= repMin).length;
 
   // Streaks, counted backwards from the latest session, stopping at the first break or weight change.
-  for (const p of [...history].reverse()) {
-    if (workingWeight(p.sets) !== weight || lowestAtWeight(p) < repMax) break;
+  for (let i = history.length - 1; i >= 0; i--) {
+    if (weights[i] !== weight || lowestAtWeight(history[i]) < repMax) break;
     facts.sessionsAtTopInARow++;
   }
-  for (const p of [...history].reverse()) {
-    if (workingWeight(p.sets) !== weight || bestAtWeight(p) >= repMin) break;
+  for (let i = history.length - 1; i >= 0; i--) {
+    if (weights[i] !== weight || bestAtWeight(history[i]) >= repMin) break;
     facts.sessionsBelowRangeInARow++;
   }
 

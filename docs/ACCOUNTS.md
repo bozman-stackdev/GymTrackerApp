@@ -63,11 +63,20 @@ Welcome → **Log in to my account** → your history appears.
 - **Before inviting testers:** add a short privacy note to the invite (what's stored, where, how to delete:
   Profile → Delete account).
 
+## Later: email (password reset)
+
+Without email, the app hides "Forgot password?". Once you have a domain and an email service (e.g. Resend) connected in
+Supabase (**Authentication** → **Emails** → **SMTP Settings**):
+1. **Templates** (Authentication → Emails → Templates): the installed app can't open email links, so send codes:
+   - **Reset Password**: `<h2>Reset your Gym Tracker password</h2><p>Enter this code in the app: <strong>{{ .Token }}</strong></p>`
+   - **Confirm signup** (if you turn "Confirm email" on): `<h2>Your Gym Tracker code</h2><p>Enter this code in the app: <strong>{{ .Token }}</strong></p>`
+2. GitHub repository variable **`ACCOUNT_EMAILS`** = `on`, then deploy. The "Forgot password?" button appears.
+
 ## Limits (free plan, at the time of writing)
 
 - 500 MB database. One workout is about 1–2 KB, so that's hundreds of thousands of workouts.
 - Free projects pause after a week with no activity and are resumed from the dashboard. Fine for testing; consider the paid plan before launch.
-- No email is sent (no confirmation, no password reset), so **"Forgot password" doesn't work for now**: a tester who forgets their password needs a new account. Email needs a domain plus an email service; we can add it later.
+- No email is sent until the step above is done: a tester who forgets their password needs a new account.
 
 ## Tests
 

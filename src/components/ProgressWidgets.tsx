@@ -4,8 +4,14 @@ import { ACHIEVEMENTS } from '../logic/game/achievements';
 import type { LevelInfo } from '../logic/game/levels';
 import type { PersonalBest } from '../logic/game/progress';
 import { formatDate, formatWeight } from '../logic/history';
+import { Icon } from './Icon';
 
-export const streakText = (weeks: number) => (weeks > 0 ? `🔥 ${weeks}-week streak` : 'Streak starts with your next workout');
+export const streakText = (weeks: number) => (weeks > 0 ? `${weeks}-week streak` : 'Streak starts with your next workout');
+
+/** "5-week streak" with a flame icon. */
+export function Streak({ weeks }: { weeks: number }) {
+  return <span className="with-icon">{weeks > 0 && <Icon name="flame" size={16} className="flame" />}{streakText(weeks)}</span>;
+}
 
 export function LevelBar({ level }: { level: LevelInfo }) {
   return (
@@ -29,7 +35,7 @@ export function AchievementList({ unlocked }: { unlocked: string[] }) {
         const done = unlocked.includes(a.id);
         return (
           <div key={a.id} className={`achievement${done ? ' done' : ''}`} data-testid={done ? 'achievement-done' : 'achievement-locked'}>
-            <span className="achievement-icon" aria-hidden>{done ? a.icon : '🔒'}</span>
+            <span className="achievement-icon" aria-hidden><Icon name={done ? a.icon : 'lock'} size={22} /></span>
             <div>
               <div className="title">{a.title}</div>
               <div className="muted small">{a.description}</div>

@@ -6,6 +6,8 @@ import { Screen } from '../components/Screen';
 import { deleteRoutine, newId, saveExercise, saveRoutine } from '../data/actions';
 import { useExerciseLookup, useStore } from '../data/store';
 import type { Routine } from '../types';
+import { Icon } from '../components/Icon';
+import { plural } from '../logic/history';
 
 /** Create (/routines/new) or edit (/routines/:id) a routine. */
 export function RoutineScreen() {
@@ -70,24 +72,24 @@ export function RoutineScreen() {
           return (
           <div key={item.exerciseId} className="card row routine-item">
             <div className="reorder">
-              <button className="icon-btn" aria-label={`Move ${name} up`} disabled={i === 0} onClick={() => move(i, -1)}>▲</button>
-              <button className="icon-btn" aria-label={`Move ${name} down`} disabled={i === routine.items.length - 1} onClick={() => move(i, 1)}>▼</button>
+              <button className="icon-btn" aria-label={`Move ${name} up`} disabled={i === 0} onClick={() => move(i, -1)}><Icon name="chevronUp" /></button>
+              <button className="icon-btn" aria-label={`Move ${name} down`} disabled={i === routine.items.length - 1} onClick={() => move(i, 1)}><Icon name="chevronDown" /></button>
             </div>
             <div className="grow">
               <div className="title">{name}</div>
               <div className="row small muted sets-control">
-                <button className="icon-btn" aria-label={`Fewer sets of ${name}`} onClick={() => setItems(routine.items.map((it, j) => (j === i ? { ...it, sets: Math.max(1, it.sets - 1) } : it)))}>−</button>
-                <span>{item.sets} sets</span>
-                <button className="icon-btn" aria-label={`More sets of ${name}`} onClick={() => setItems(routine.items.map((it, j) => (j === i ? { ...it, sets: Math.min(10, it.sets + 1) } : it)))}>+</button>
+                <button className="icon-btn" aria-label={`Fewer sets of ${name}`} onClick={() => setItems(routine.items.map((it, j) => (j === i ? { ...it, sets: Math.max(1, it.sets - 1) } : it)))}><Icon name="minus" size={18} /></button>
+                <span>{plural(item.sets, 'set')}</span>
+                <button className="icon-btn" aria-label={`More sets of ${name}`} onClick={() => setItems(routine.items.map((it, j) => (j === i ? { ...it, sets: Math.min(10, it.sets + 1) } : it)))}><Icon name="plus" size={18} /></button>
               </div>
             </div>
-            <button className="icon-btn" aria-label={`Remove ${name}`} onClick={() => setItems(routine.items.filter((_, j) => j !== i))}>✕</button>
+            <button className="icon-btn" aria-label={`Remove ${name}`} onClick={() => setItems(routine.items.filter((_, j) => j !== i))}><Icon name="close" /></button>
           </div>
           );
         })}
       </div>
 
-      <button className="btn block" onClick={() => setPicking({})}>+ Add exercise</button>
+      <button className="btn block" onClick={() => setPicking({})}><Icon name="plus" /> Add exercise</button>
       <button className="btn primary huge" disabled={!routine.name.trim() || routine.items.length === 0} onClick={save}>Save routine</button>
       {existing && <button className="btn ghost danger block" onClick={remove}>Delete routine</button>}
     </Screen>

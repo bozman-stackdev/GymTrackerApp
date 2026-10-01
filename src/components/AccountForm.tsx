@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useAccount } from '../data/account';
-import { BackendError, type Account } from '../services/backend';
+import { accountEmails, BackendError, type Account } from '../services/backend';
 
 export type AccountMode = 'signup' | 'login' | 'confirm' | 'forgot' | 'reset';
 
@@ -125,7 +125,8 @@ export function AccountForm({ initialMode = 'login', onSignedIn, note }: {
       {problem && (email || password || name || code) && <p className="muted small center flush">{problem}</p>}
 
       <div className="stack account-links">
-        {mode === 'login' && <button type="button" className="btn ghost" onClick={() => go('forgot')}>Forgot password?</button>}
+        {/* Without an email service a reset code can't be sent: no button that can only fail. */}
+        {mode === 'login' && accountEmails && <button type="button" className="btn ghost" onClick={() => go('forgot')}>Forgot password?</button>}
         {mode === 'login' && <button type="button" className="btn ghost" onClick={() => go('signup')}>New here? Create an account</button>}
         {mode === 'signup' && <button type="button" className="btn ghost" onClick={() => go('login')}>I already have an account</button>}
         {(mode === 'confirm' || mode === 'forgot' || mode === 'reset') && <button type="button" className="btn ghost" onClick={() => go('login')}>Back to log in</button>}

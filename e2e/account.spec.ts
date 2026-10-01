@@ -28,7 +28,7 @@ async function signUp(page: Page, email = 'alex@example.com', password = 'secret
   await page.getByLabel('Code from the email').fill(CODE);
   await page.getByRole('button', { name: 'Confirm' }).click();
   await expect(page.getByTestId('account')).toContainText('Alex');
-  await expect(page.getByTestId('sync-status')).toContainText('✓ Synced');
+  await expect(page.getByTestId('sync-status')).toContainText('Synced');
 }
 
 async function logOneWorkout(page: Page) {
@@ -38,6 +38,8 @@ async function logOneWorkout(page: Page) {
   await page.locator('.rep-btn.target').click();
   await page.getByRole('button', { name: 'Finish Session' }).click();
   await expect(page).toHaveURL(/#\/history\/.+/);
+  // One set earns no XP: the summary says why instead of a bare "+0 XP".
+  await expect(page.getByTestId('no-xp-reason')).toHaveText('Workouts with 3+ sets earn XP.');
 }
 
 const serverRecords = (page: Page) =>
@@ -51,7 +53,7 @@ test('sign up uploads this phone; a finished workout syncs; a second phone logs 
   await expect.poll(async () => (await serverRecords(page)).filter((r) => r.kind === 'session' && !r.deleted).length).toBe(1);
   await page.getByRole('link', { name: 'Profile' }).click();
   await page.getByTestId('account').scrollIntoViewIfNeeded();
-  await expect(page.getByTestId('sync-status')).toContainText('✓ Synced');
+  await expect(page.getByTestId('sync-status')).toContainText('Synced');
   await page.screenshot({ path: 'test-results/screens/account-2-profile.png' });
 
   // "Second phone": a fresh browser with the same (fake) server.
@@ -126,7 +128,7 @@ test('sample data is replaced by the account on log in; delete account keeps the
   await page.getByLabel('Email').fill('alex@example.com');
   await page.getByLabel('Password', { exact: true }).fill('secret-pass');
   await page.getByRole('button', { name: 'Log in' }).click();
-  await expect(page.getByTestId('sync-status')).toContainText('✓ Synced');
+  await expect(page.getByTestId('sync-status')).toContainText('Synced');
   await page.getByRole('link', { name: 'History' }).click();
   await expect(page.locator('a.list-item')).toHaveCount(0); // the account's (empty) history, not the sample's
   await expect(page.getByTestId('sample-banner')).toHaveCount(0);
@@ -148,6 +150,6 @@ test('offline: changes wait on the phone and sync when the connection is back', 
   await expect(page.getByTestId('sync-status')).toHaveText("Offline: changes will sync when you're back online.");
   expect((await serverRecords(page)).filter((r) => r.kind === 'session')).toHaveLength(0);
   await context.setOffline(false);
-  await expect(page.getByTestId('sync-status')).toContainText('✓ Synced');
+  await expect(page.getByTestId('sync-status')).toContainText('Synced');
   expect((await serverRecords(page)).filter((r) => r.kind === 'session')).toHaveLength(1);
 });

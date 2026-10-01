@@ -19,6 +19,7 @@ import { ProfileScreen } from './screens/ProfileScreen';
 import { RoutineScreen } from './screens/RoutineScreen';
 import { ScanScreen } from './screens/ScanScreen';
 import { WorkoutScreen } from './screens/workout/WorkoutScreen';
+import { Icon } from './components/Icon';
 
 // HashRouter works on any static host (and inside a native wrapper) without server config.
 export function App() {
@@ -43,7 +44,7 @@ function Shell() {
   setUnits(data.profile.units ?? 'kg'); // display units for every formatter, before any screen renders
   return (
     <>
-      {saveError && <div className="alert save-alert" role="alert">⚠️ Not saved: {saveError}</div>}
+      {saveError && <div className="alert save-alert with-icon" role="alert"><Icon name="alert" size={18} /> Not saved: {saveError}</div>}
       <ResumeWorkoutOnLaunch />
       <Routes>
         <Route path="/" element={<HomeScreen />} />

@@ -298,3 +298,27 @@ describe('backup reminder', () => {
     expect(parseAppData(JSON.parse(JSON.stringify(d))).backup).toEqual({ lastExportAt: now.toISOString() });
   });
 });
+
+describe('progress is shared between screens', () => {
+  it('computes once per history change (and per day), not once per screen', async () => {
+    const { progressFor } = await import('./useProgress');
+    const d = createSampleData();
+    const a = progressFor(d.sessions, d.exercises);
+    expect(progressFor(d.sessions, d.exercises)).toBe(a); // same data: same result object, no replay
+    const changed = [...d.sessions];
+    expect(progressFor(changed, d.exercises)).not.toBe(a); // new history: recomputed
+    const tomorrow = new Date(Date.now() + 86_400_000);
+    expect(progressFor(changed, d.exercises, tomorrow)).not.toBe(progressFor(changed, d.exercises)); // a new day: recomputed
+  });
+});
+
+describe('routine "last done" does not depend on the order of workouts', () => {
+  it('uses the latest date even when synced workouts arrive out of order', async () => {
+    const { lastDoneAt, routinesByNextUp } = await import('../logic/history');
+    const d = createSampleData();
+    const shuffled = [...d.sessions].reverse(); // newest first, as a sync could leave them
+    for (const r of d.routines) expect(lastDoneAt(shuffled, r.id)).toBe(lastDoneAt(d.sessions, r.id));
+    expect(routinesByNextUp(d.routines, shuffled).map((r) => r.id)).toEqual(routinesByNextUp(d.routines, d.sessions).map((r) => r.id));
+    expect(lastDoneAt(d.sessions, 'push')).toBe(d.sessions.filter((s) => s.routineId === 'push').map((s) => s.startedAt).sort().at(-1));
+  });
+});

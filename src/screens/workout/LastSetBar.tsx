@@ -5,17 +5,19 @@ import { GAME_CONFIG } from '../../logic/game/config';
 import { challengeXp, type LiveSession } from '../../logic/game/progress';
 import { formatWeight, formatTarget } from '../../logic/history';
 import type { WorkoutSession } from '../../types';
+import { Icon, type IconName } from '../../components/Icon';
 
 type Feedback = 'personal-best' | 'mastered' | 'comeback' | 'hit' | 'matched' | 'not-today';
 
 const TITLES: Record<Feedback, string> = {
-  'personal-best': '🏆 NEW PERSONAL BEST!',
-  mastered: '★ LEVEL MASTERED',
-  comeback: '✓ BACK ON TRACK',
-  hit: '✓ TARGET HIT',
-  matched: '✓ SOLID – MATCHED LAST TIME',
+  'personal-best': 'NEW PERSONAL BEST!',
+  mastered: 'LEVEL MASTERED',
+  comeback: 'BACK ON TRACK',
+  hit: 'TARGET HIT',
+  matched: 'SOLID – MATCHED LAST TIME',
   'not-today': 'NOT TODAY',
 };
+const ICONS: Partial<Record<Feedback, IconName>> = { 'personal-best': 'trophy', mastered: 'star', comeback: 'check', hit: 'check', matched: 'check' };
 
 /**
  * What the latest set earned. Challenge hit / personal best show on the set that did it;
@@ -65,7 +67,7 @@ export function LastSetBar({ session, live, onUndo }: { session: WorkoutSession;
   if (list.length === 0) {
     return (
       <div className="last-bar" data-testid="last-set" aria-live="polite">
-        <span className="last-bar-text">✓ <strong>{text}</strong> <span className="muted">{exercise.name}</span></span>
+        <span className="last-bar-text with-icon"><Icon name="check" size={16} className="accent" /> <strong>{text}</strong> <span className="muted">{exercise.name}</span></span>
         {rest}
         {undo}
       </div>
@@ -84,7 +86,7 @@ export function LastSetBar({ session, live, onUndo }: { session: WorkoutSession;
   return (
     <div className={`last-bar ${supportive ? 'result' : 'reward'}`} data-testid="last-set" aria-live="polite">
       <div className="grow">
-        <div className="reward-title" data-testid="reward">{TITLES[main]}</div>
+        <div className="reward-title with-icon">{ICONS[main] && <Icon name={ICONS[main]} size={18} />}<span data-testid="reward">{TITLES[main]}</span></div>
         <div className="small">
           {main === 'mastered' && mastered ? <strong>{formatTarget(mastered)}</strong> : <strong>{supportive ? `Best ${shown}` : shown}</strong>}
           {xp > 0 && <> · <strong className="xp">+{xp} XP</strong></>}

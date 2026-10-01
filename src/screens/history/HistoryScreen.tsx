@@ -5,8 +5,9 @@ import { useProgress } from '../../data/useProgress';
 import { isSuccess } from '../../logic/game/challenge';
 import { GAME_CONFIG } from '../../logic/game/config';
 import { weekIndex } from '../../logic/game/streak';
-import { formatDate, sessionSetCount } from '../../logic/history';
+import { formatDate, plural, sessionSetCount } from '../../logic/history';
 import type { WorkoutSession } from '../../types';
+import { Icon } from '../../components/Icon';
 
 /** Workouts grouped by week (the same weeks the streak uses), newest first. One line of useful detail each. */
 export function HistoryScreen() {
@@ -33,7 +34,7 @@ export function HistoryScreen() {
           <section key={week} className="stack" style={{ gap: 8 }} aria-label={weekTitle(week, inWeek[0])}>
             <h2 className="row between">
               <span>{weekTitle(week, inWeek[0])}</span>
-              <span className="week-count">{inWeek.length} workout{inWeek.length === 1 ? '' : 's'}{counts ? ' 🔥' : ''}</span>
+              <span className="week-count with-icon">{plural(inWeek.length, 'workout')}{counts && <Icon name="flame" size={15} className="flame" label="counts for your streak" />}</span>
             </h2>
             <div className="list">
               {inWeek.map((s) => {
@@ -45,8 +46,8 @@ export function HistoryScreen() {
                     <div className="grow">
                       <div className="title">{s.name} <span className="muted small">· {formatDate(s.startedAt)}</span></div>
                       <div className="muted small">
-                        {s.entries.length} exercises · {sessionSetCount(s)} sets
-                        {challenges.length > 0 && ` · 🎯 ${hit}/${challenges.length}`}
+                        {plural(s.entries.length, 'exercise')} · {plural(sessionSetCount(s), 'set')}
+                        {challenges.length > 0 && <> · <Icon name="target" size={13} className="inline-icon" label="challenges" /> {hit}/{challenges.length}</>}
                       </div>
                     </div>
                     {scored && scored.xp > 0 && <span className="xp small">+{scored.xp} XP</span>}

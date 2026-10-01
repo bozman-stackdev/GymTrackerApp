@@ -6,10 +6,11 @@ import { createStarterData } from '../data/seed';
 import { useStore } from '../data/store';
 import { useAccount } from '../data/account';
 import { useProgress } from '../data/useProgress';
-import { streakText } from '../components/ProgressWidgets';
+import { Streak } from '../components/ProgressWidgets';
 import { challengeFor } from '../logic/game/challenge';
-import { relativeDay, routinesByNextUp } from '../logic/history';
+import { lastDoneAt, plural, relativeDay, routinesByNextUp } from '../logic/history';
 import type { Routine } from '../types';
+import { Icon } from '../components/Icon';
 
 /** Start screen: one tap on a routine starts the workout. */
 export function HomeScreen() {
@@ -19,8 +20,7 @@ export function HomeScreen() {
   const active = data.activeWorkout;
   const progress = useProgress();
 
-  const lastDone = (routineId: string) =>
-    data.sessions.filter((s) => s.routineId === routineId).at(-1)?.startedAt;
+  const lastDone = (routineId: string) => lastDoneAt(data.sessions, routineId) || undefined;
   // "Next up" (done longest ago) first, so it's one tap away.
   const routines = routinesByNextUp(data.routines, data.sessions);
 
@@ -49,7 +49,7 @@ export function HomeScreen() {
       {/* With an account the data is already saved off the phone: no reminder. */}
       {account === null && needsBackupReminder(data) && (
         <div className="sample-banner" data-testid="backup-reminder" role="status">
-          <span className="grow">💾 Keep your workouts safe: export a backup.</span>
+          <span className="grow with-icon"><Icon name="save" size={18} /> Keep your workouts safe: export a backup.</span>
           <button className="btn ghost" onClick={() => exportBackup(data, update)}>Export</button>
           <button className="btn ghost" onClick={() => update((d) => snoozeBackupReminder(d))}>Later</button>
         </div>
@@ -57,12 +57,12 @@ export function HomeScreen() {
       {active && (
         <Link to="/workout" className="banner">
           <span>Resume {active.session.name}</span>
-          <span aria-hidden>→</span>
+          <Icon name="forward" size={22} />
         </Link>
       )}
 
       <Link to="/profile" className="muted small home-progress" data-testid="home-progress">
-        Level {progress.level.level} · {streakText(progress.streakWeeks)}
+        Level {progress.level.level} · <Streak weeks={progress.streakWeeks} />
       </Link>
 
       <h2>Start a workout</h2>
@@ -77,25 +77,25 @@ export function HomeScreen() {
                   {nextUp && <div className="small next-up-label">Next up</div>}
                   <div className="title routine-name">{r.name}</div>
                   <div className="muted small">
-                    {r.items.length} exercises{last ? ` · last ${relativeDay(last)}` : ''}
+                    {plural(r.items.length, 'exercise')}{last ? ` · last ${relativeDay(last)}` : ''}
                   </div>
-                  {challengesReady(r) > 0 && <div className="small challenges-ready">🎯 {challengesReady(r)} challenge{challengesReady(r) === 1 ? '' : 's'} ready</div>}
+                  {challengesReady(r) > 0 && <div className="small challenges-ready with-icon"><Icon name="target" size={15} /> {plural(challengesReady(r), 'challenge')} ready</div>}
                 </div>
-                <span className="play" aria-hidden>▶</span>
+                <span className="play" aria-hidden><Icon name="play" size={18} /></span>
               </button>
               <Link to={`/routines/${r.id}`} className="icon-btn" aria-label={`Edit ${r.name}`}>
-                ✎
+                <Icon name="edit" />
               </Link>
             </div>
           );
         })}
       </div>
 
-      <div className="row">
-        <Link to="/scan" className="btn grow scan-btn">📷 Scan machine</Link>
-        <button className="btn grow" onClick={() => start()}>Empty workout</button>
+      <div className="row home-actions">
+        <Link to="/scan" className="btn grow scan-btn"><Icon name="camera" /> Scan machine</Link>
+        <button className="btn grow" onClick={() => start()}><Icon name="plus" /> Empty workout</button>
       </div>
-      <Link to="/routines/new" className="btn block ghost">+ New routine</Link>
+      <Link to="/routines/new" className="btn block ghost"><Icon name="plus" /> New routine</Link>
     </Screen>
   );
 }

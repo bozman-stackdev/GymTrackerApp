@@ -7,6 +7,7 @@ import { useStore } from '../data/store';
 import { likelyExerciseIds } from '../logic/history';
 import { recognitionIsDemo, recognizer, type RecognitionResult } from '../services/recognition';
 import type { Exercise } from '../types';
+import { Icon } from '../components/Icon';
 
 type Step = 'capture' | 'analysing' | 'choose' | 'other';
 
@@ -70,7 +71,7 @@ export function ScanScreen() {
 
       {step === 'capture' && (
         <>
-          <button className="btn primary huge scan-shutter" onClick={() => camera.current?.click()}>📷 Take a photo</button>
+          <button className="btn primary huge scan-shutter" onClick={() => camera.current?.click()}><Icon name="camera" size={40} /> Take a photo</button>
           <button className="btn block" onClick={() => library.current?.click()}>Choose from photos</button>
           <p className="muted center small">Point at the machine you're about to use.</p>
           {recognitionIsDemo && (
@@ -93,11 +94,11 @@ export function ScanScreen() {
           <div className="options" role="radiogroup" aria-label="Suggested exercises">
             {options.map((e) => (
               <button key={e.id} role="radio" aria-checked={e.id === selectedId} className={`option${e.id === selectedId ? ' on' : ''}`} onClick={() => setSelectedId(e.id)}>
-                <span className="grow">
-                  {e.name}
-                  {machineFor(e.id) && <span className="muted small option-machine"> · 📍 {machineFor(e.id)!.name}</span>}
+                <span className="grow option-text">
+                  <span>{e.name}</span>
+                  {machineFor(e.id) && <span className="muted small option-machine with-icon"><Icon name="pin" size={14} /> {machineFor(e.id)!.name}</span>}
                 </span>
-                <span className="option-check" aria-hidden>{e.id === selectedId ? '✓' : ''}</span>
+                <span className="option-check" aria-hidden>{e.id === selectedId && <Icon name="check" size={24} />}</span>
               </button>
             ))}
             <button className="option other" onClick={() => setStep('other')}>Other…</button>
@@ -120,9 +121,9 @@ export function ScanScreen() {
       {step === 'other' && (
         <>
           {failed && <p className="warn center">Couldn't analyse the photo. Pick the exercise below.</p>}
-          {options.length > 0 && <button className="btn block ghost" onClick={() => setStep('choose')}>← Back to suggestions</button>}
+          {options.length > 0 && <button className="btn block ghost" onClick={() => setStep('choose')}><Icon name="back" /> Back to suggestions</button>}
           <ExercisePicker exercises={data.exercises} onPick={start} />
-          <Link to="/exercises/new?start=1" className="btn block">+ Create new exercise</Link>
+          <Link to="/exercises/new?start=1" className="btn block"><Icon name="plus" /> Create new exercise</Link>
         </>
       )}
     </Screen>

@@ -6,6 +6,7 @@ import { useLiveSession } from '../../data/useProgress';
 import { ExerciseStrip } from './ExerciseStrip';
 import { LastSetBar } from './LastSetBar';
 import { SetLogger } from './SetLogger';
+import { Icon } from '../../components/Icon';
 
 /**
  * The in-gym screen, built for a tired user with a few seconds between sets:
@@ -58,7 +59,7 @@ export function WorkoutScreen() {
       <LastSetBar session={session} live={live!} onUndo={(i) => update((d) => undoLastSet(d, i))} />
 
       {exerciseDone && (
-        <button className="btn primary huge" onClick={() => update(finishExercise)}>✓ Finish Exercise</button>
+        <button className="btn primary huge" onClick={() => update(finishExercise)}><Icon name="check" size={26} /> Finish Exercise</button>
       )}
 
       {entry ? (
@@ -66,7 +67,7 @@ export function WorkoutScreen() {
       ) : (
         <>
           {hasSets && <p className="muted center flush" data-testid="between">Exercise done. Add the next one, or tap Finish Session when you're done.</p>}
-          <Link to="/workout/add" className="btn primary huge">+ Add exercise</Link>
+          <Link to="/workout/add" className="btn primary huge"><Icon name="plus" size={26} /> Add exercise</Link>
         </>
       )}
 

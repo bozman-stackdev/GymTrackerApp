@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { Exercise } from '../types';
+import { Icon } from './Icon';
 
 /**
  * Searchable exercise list. Reused for adding to a workout, building routines and the scan flow.
@@ -22,7 +23,7 @@ export function ExercisePicker({ exercises, onPick, onCreate, exclude = [] }: {
   const typed = query.trim();
   const create = onCreate && (
     <button className="btn block" onClick={() => onCreate(shown.length === 0 ? typed : '')}>
-      {shown.length === 0 && typed ? `+ Create “${typed}”` : '+ Create custom exercise'}
+      <Icon name="plus" /> {shown.length === 0 && typed ? `Create “${typed}”` : 'Create custom exercise'}
     </button>
   );
 
@@ -48,7 +49,7 @@ export function ExerciseRow({ exercise, detail, onClick }: { exercise: Exercise;
         <div className="title">{exercise.name}</div>
         <div className="muted small">{detail ?? `${exercise.muscleGroup} · ${exercise.equipment}`}</div>
       </div>
-      <span className="muted" aria-hidden>›</span>
+      <Icon name="chevronRight" className="muted" />
     </button>
   );
 }

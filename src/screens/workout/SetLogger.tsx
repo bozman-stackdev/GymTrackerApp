@@ -11,6 +11,7 @@ import { formatWeight, formatSets, formatTarget, lastPerformance, workingWeight 
 import { PROGRESSION_DISCLAIMER, plannedSet, recommend } from '../../logic/progression';
 import type { Exercise } from '../../types';
 import { RepPad } from './RepPad';
+import { Icon } from '../../components/Icon';
 
 /** Logging for the current exercise: weight (pre-filled) + one tap on the reps done. */
 export function SetLogger({ exercise, entryIndex, live }: { exercise: Exercise; entryIndex: number; live: LiveSession }) {
@@ -61,14 +62,14 @@ export function SetLogger({ exercise, entryIndex, live }: { exercise: Exercise; 
         <h1 className="ex-name">{exercise.name}</h1>
         {machine && (
           <div className="equipment-line small muted" data-testid="equipment">
-            <span aria-hidden>📍</span>
+            <Icon name="pin" size={15} />
             {machines.length > 1 ? (
               <select className="equipment-select" aria-label="Equipment" value={machine.id}
                 onChange={(e) => update((d) => setEntryEquipment(d, entryIndex, e.target.value))}>
                 {machines.map((m) => <option key={m.id} value={m.id}>{m.name}{m.gym ? ` (${m.gym})` : ''}</option>)}
               </select>
             ) : <span>{machine.name}</span>}
-            {machine.settings && <span>· {machine.settings}</span>}
+            {machine.settings && <span className="equipment-settings"><Icon name="settings" size={14} /> {machine.settings}</span>}
           </div>
         )}
         <p className="muted last-session" data-testid="last-time">
@@ -137,13 +138,13 @@ export function SetLogger({ exercise, entryIndex, live }: { exercise: Exercise; 
 
 /** "TODAY'S CHALLENGE  60 kg × 9" - the one number to aim for. Tap for why. */
 function ChallengeLine({ challenge, done, showWhy, onWhy }: { challenge: Challenge; done: boolean; showWhy: boolean; onWhy: () => void }) {
-  const label = done ? '✓ Challenge complete'
+  const label = done ? 'Challenge complete'
     : challenge.kind === 'repeat' ? "Today's challenge · repeat"
     : challenge.kind === 'retry' ? "Today's challenge · try again"
     : "Today's challenge";
   return (
     <button className={`challenge${done ? ' done' : ''}`} data-testid="challenge" aria-expanded={showWhy} onClick={onWhy}>
-      <span className="challenge-label">{label}</span>
+      <span className="challenge-label with-icon">{done ? <Icon name="check" size={14} /> : <Icon name="target" size={14} />}{label}</span>
       <span className="challenge-target" data-testid="recommendation">
         {formatTarget(challenge)} <span className="why">{showWhy ? 'Hide' : 'Why?'}</span>
       </span>

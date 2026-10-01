@@ -13,14 +13,22 @@ export interface ExercisePerformance {
 
 /** All finished performances of an exercise, oldest first. */
 export function exerciseHistory(sessions: WorkoutSession[], exerciseId: string): ExercisePerformance[] {
-  return sessions
-    .filter((s) => s.finishedAt)
-    .flatMap((s) =>
-      s.entries
-        .filter((e) => e.exerciseId === exerciseId && e.sets.length > 0)
-        .map((e) => ({ sessionId: s.id, date: s.startedAt, sets: e.sets })),
-    )
-    .sort((a, b) => a.date.localeCompare(b.date));
+  // Hot path (the progress replay calls this for every exercise of every workout): plain loops, no copies.
+  const out: ExercisePerformance[] = [];
+  for (const s of sessions) {
+    if (!s.finishedAt) continue;
+    for (const e of s.entries) {
+      if (e.exerciseId === exerciseId && e.sets.length > 0) out.push({ sessionId: s.id, date: s.startedAt, sets: e.sets });
+    }
+  }
+  // Usually already in order; sort only when it isn't (e.g. workouts synced from another phone). ISO dates sort as text.
+  for (let i = 1; i < out.length; i++) {
+    if (out[i - 1].date > out[i].date) {
+      out.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+      break;
+    }
+  }
+  return out;
 }
 
 export function lastPerformance(sessions: WorkoutSession[], exerciseId: string): ExercisePerformance | undefined {
@@ -29,7 +37,9 @@ export function lastPerformance(sessions: WorkoutSession[], exerciseId: string):
 
 /** The heaviest weight used - treated as the "working weight" of that performance. */
 export function workingWeight(sets: SetLog[]): number {
-  return Math.max(0, ...sets.map((s) => s.weightKg));
+  let w = 0;
+  for (const s of sets) if (s.weightKg > w) w = s.weightKg;
+  return w;
 }
 
 export function workingSets(sets: SetLog[]): SetLog[] {
@@ -63,6 +73,11 @@ export function sessionSetCount(session: WorkoutSession): number {
   return session.entries.reduce((n, e) => n + e.sets.length, 0);
 }
 
+
+/** "1 set", "3 sets". For words with a regular plural. */
+export function plural(n: number, word: string): string {
+  return `${n} ${word}${n === 1 ? '' : 's'}`;
+}
 
 /** One target, e.g. "60 kg × 9" (or "12 reps" for bodyweight). */
 export function formatTarget(t: { weightKg: number; reps: number }): string {
@@ -98,10 +113,17 @@ export function relativeDay(iso: string, now = new Date()): string {
   return formatDate(iso);
 }
 
+/** When a routine was last done ('' = never). Doesn't rely on the order of `sessions` (synced workouts can arrive in any order). */
+export function lastDoneAt(sessions: WorkoutSession[], routineId: string): string {
+  let last = '';
+  for (const s of sessions) if (s.routineId === routineId && s.startedAt > last) last = s.startedAt;
+  return last;
+}
+
 /** Routines ordered "next up" first: the one done longest ago (never done counts as oldest). */
 export function routinesByNextUp(routines: Routine[], sessions: WorkoutSession[]): Routine[] {
-  const lastDone = (id: string) => sessions.filter((s) => s.routineId === id).at(-1)?.startedAt ?? '';
-  return [...routines].sort((a, b) => lastDone(a.id).localeCompare(lastDone(b.id)));
+  const last = new Map(routines.map((r) => [r.id, lastDoneAt(sessions, r.id)]));
+  return [...routines].sort((a, b) => last.get(a.id)!.localeCompare(last.get(b.id)!));
 }
 
 /** Exercises the user is probably about to do: unfinished ones in the current workout, else the next-up routine. */

@@ -4,6 +4,7 @@ import { useAccount } from '../data/account';
 import { useAppState } from '../data/store';
 import { readBackupFile } from '../data/backup';
 import { createSampleData, createStarterData } from '../data/seed';
+import { Icon } from '../components/Icon';
 
 /** First run (or unreadable data): start your own, explore the sample, or restore a backup. */
 export function WelcomeScreen() {
@@ -26,7 +27,7 @@ export function WelcomeScreen() {
     return (
       <main className="screen full">
         <header className="header">
-          <button className="icon-btn" aria-label="Back" onClick={() => setLoggingIn(false)}>←</button>
+          <button className="icon-btn" aria-label="Back" onClick={() => setLoggingIn(false)}><Icon name="back" size={24} /></button>
           <h1>Welcome back</h1>
         </header>
         <AccountForm initialMode="login" onSignedIn={connect} />
@@ -37,7 +38,7 @@ export function WelcomeScreen() {
   return (
     <main className="screen full welcome">
       <div className="welcome-hero">
-        <div className="welcome-icon" aria-hidden>🏋️</div>
+        <img className="welcome-icon" src={`${import.meta.env.BASE_URL}icon.svg`} alt="" width={88} height={88} />
         <h1>Gym Tracker</h1>
         <p className="muted">Spend less time tracking your workout and more time doing it.</p>
       </div>

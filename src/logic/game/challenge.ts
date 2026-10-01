@@ -70,7 +70,8 @@ export function pbScore(exercise: Exercise, set: SetLog): number {
 /** Index of the first set today that is a personal best, or -1. */
 export function personalBestIndex(exercise: Exercise, sets: SetLog[], prior: ExercisePerformance[], challenge: Challenge | null): number {
   const best = (s: SetLog) => (exercise.weightStepKg > 0 ? (s.reps >= exercise.repRange[0] ? s.weightKg : -Infinity) : pbScore(exercise, s));
-  const priorBest = Math.max(...prior.flatMap((p) => p.sets.map(best)));
+  let priorBest = -Infinity;
+  for (const p of prior) for (const s of p.sets) priorBest = Math.max(priorBest, best(s));
   if (!Number.isFinite(priorBest)) return -1; // nothing to beat yet
   const cap = challenge ? challenge.weightKg : workingWeight(prior.at(-1)!.sets);
   return sets.findIndex((s) => s.weightKg <= cap && best(s) > priorBest);
