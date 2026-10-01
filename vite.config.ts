@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string };
 
 export default defineConfig({
-  define: { __APP_VERSION__: JSON.stringify(`${pkg.version} (${new Date().toISOString().slice(0, 10)})`) },
+  define: { __APP_VERSION__: JSON.stringify(`${pkg.version} (${new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC'})`) },
   plugins: [
     react(),
     // Installable + works offline: a service worker caches the whole app (it's small and has no server data).

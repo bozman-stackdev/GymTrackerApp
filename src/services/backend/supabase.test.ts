@@ -1,6 +1,6 @@
 import { AuthError } from '@supabase/supabase-js';
 import { describe, expect, it } from 'vitest';
-import { friendly } from './supabase';
+import { friendly, normalizeSupabaseUrl } from './supabase';
 import { BackendError, OFFLINE_MESSAGE } from './types';
 
 describe('Supabase errors become messages a user can act on', () => {
@@ -27,5 +27,23 @@ describe('Supabase errors become messages a user can act on', () => {
     expect(friendly(new AuthError('Something odd', 500, 'unexpected_failure')).message).toContain('Something odd');
     const mine = new BackendError('already friendly');
     expect(friendly(mine)).toBe(mine);
+  });
+});
+
+describe('the project URL is forgiving about copy-paste slips', () => {
+  it.each([
+    ['https://abcdefghijklmnopqrst.supabase.co', 'https://abcdefghijklmnopqrst.supabase.co'],
+    ['  https://abcdefghijklmnopqrst.supabase.co/  ', 'https://abcdefghijklmnopqrst.supabase.co'],
+    ['https://abcdefghijklmnopqrst.supabase.co/rest/v1/', 'https://abcdefghijklmnopqrst.supabase.co'],
+    ['abcdefghijklmnopqrst.supabase.co', 'https://abcdefghijklmnopqrst.supabase.co'],
+    ['https://supabase.com/dashboard/project/abcdefghijklmnopqrst/settings/api', 'https://abcdefghijklmnopqrst.supabase.co'],
+    ['abcdefghijklmnopqrst', 'https://abcdefghijklmnopqrst.supabase.co'],
+  ])('%s', (raw, expected) => {
+    expect(normalizeSupabaseUrl(raw)).toBe(expected);
+  });
+
+  it('an unreachable server is named in the message', () => {
+    expect(friendly(new TypeError('Load failed'), 'abc.supabase.co').message).toBe(
+      "Couldn't reach the account server (abc.supabase.co). Check your internet and try again.");
   });
 });

@@ -128,6 +128,7 @@ export function ProfileScreen() {
       {dataMessage && <p className="small center" role="status">{dataMessage}</p>}
       <button className="btn block ghost" onClick={() => reset(true)}>Load sample data</button>
       <button className="btn block ghost danger" onClick={() => reset(false)}>Start fresh (delete all)</button>
+      <p className="muted small center flush" data-testid="app-version">Version {__APP_VERSION__}</p>
     </Screen>
   );
 }

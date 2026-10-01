@@ -10,7 +10,7 @@ import { BackendError, OFFLINE_MESSAGE, type Account, type Backend, type RemoteR
 const PAGE = 1000;
 
 /** Supabase errors → messages a user can act on. */
-export function friendly(error: unknown): BackendError {
+export function friendly(error: unknown, host?: string): BackendError {
   if (error instanceof BackendError) return error;
   if (isAuthError(error)) {
     switch (error.code) {
@@ -25,14 +25,32 @@ export function friendly(error: unknown): BackendError {
       case 'over_request_rate_limit':
       case 'over_email_send_rate_limit': return new BackendError('Too many attempts. Please wait a few minutes and try again.');
     }
-    if (error.status === undefined || error.status === 0) return offline();
+    if (error.status === undefined || error.status === 0) return offline(host);
     return new BackendError(`Something went wrong (${error.message}). Please try again.`);
   }
-  if (error instanceof TypeError) return offline(); // fetch failed
+  if (error instanceof TypeError) return offline(host); // fetch failed
   const message = (error as { message?: string } | null)?.message;
   return new BackendError(message ? `Couldn't sync: ${message}` : 'Something went wrong. Please try again.');
 }
-const offline = () => new BackendError(OFFLINE_MESSAGE);
+/** Names the server, so a wrong address in the settings is easy to spot (it's public anyway). */
+const offline = (host?: string) =>
+  new BackendError(host ? `Couldn't reach the account server (${host}). Check your internet and try again.` : OFFLINE_MESSAGE);
+
+/**
+ * The project URL as Supabase expects it: https://<project>.supabase.co, nothing after it.
+ * Forgives common copy-paste slips: the dashboard link, a bare project code, a missing https://, paths like /rest/v1.
+ */
+export function normalizeSupabaseUrl(raw: string): string {
+  const text = raw.trim();
+  const fromDashboard = text.match(/supabase\.com\/dashboard\/project\/([a-z0-9]+)/i);
+  if (fromDashboard) return `https://${fromDashboard[1].toLowerCase()}.supabase.co`;
+  if (/^[a-z0-9]{15,40}$/i.test(text)) return `https://${text.toLowerCase()}.supabase.co`;
+  try {
+    return new URL(/^https?:\/\//i.test(text) ? text : `https://${text}`).origin;
+  } catch {
+    return text;
+  }
+}
 
 const toAccount = (u: User): Account => ({
   id: u.id,
@@ -40,16 +58,18 @@ const toAccount = (u: User): Account => ({
   displayName: typeof u.user_metadata?.display_name === 'string' ? u.user_metadata.display_name : '',
 });
 
-export function supabaseBackend(url: string, key: string): Backend {
-  const sb = createClient(url, key, {
+export function supabaseBackend(rawUrl: string, key: string): Backend {
+  const url = normalizeSupabaseUrl(rawUrl);
+  const host = new URL(url).host;
+  const sb = createClient(url, key.trim(), {
     // Codes are typed into the app, so no tokens in URLs (they would clash with the app's #/routes).
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storageKey: 'gymtracker:auth' },
   });
 
   const run = async <R extends { data: unknown; error: unknown }>(fn: () => PromiseLike<R>): Promise<R['data']> => {
     let result: R;
-    try { result = await fn(); } catch (err) { throw friendly(err); }
-    if (result.error) throw friendly(result.error);
+    try { result = await fn(); } catch (err) { throw friendly(err, host); }
+    if (result.error) throw friendly(result.error, host);
     return result.data;
   };
   const userId = async () => {
