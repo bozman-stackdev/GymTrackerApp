@@ -1,5 +1,7 @@
 # Muscle map
 
+![The muscle map: activity, progress (back view), a muscle's details, the female figure, balance, muscles worked](screenshots/muscle-map.png)
+
 The **Muscles** tab answers two questions at a glance:
 
 - **What am I training?** (*Activity*): a heat map of how much each muscle was trained.
