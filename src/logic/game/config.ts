@@ -26,8 +26,17 @@ export const GAME_CONFIG = {
     mastery: 50,
     /** Completing a challenge after missing the previous one on that exercise ("back on track"). */
     comeback: 15,
+    /**
+     * Cardio, warm-up and cool-down: small, and at most once per workout each, so adding extra cardio never pays more.
+     * Warm-up and cool-down only count when they were planned in the routine (rewarding the plan, not padding).
+     */
+    cardio: 5,
+    warmup: 3,
+    cooldown: 3,
   },
   minSetsForWorkoutXp: 3,
+  /** A workout without enough sets still counts (workout XP) with this much completed cardio: cardio days are workouts. */
+  minCardioMinutesForWorkoutXp: 10,
   /** XP needed to reach level 1, 2, 3, ... Levels beyond the list add `xpPerLevelAfterList` each. */
   levels: [0, 100, 250, 500, 800, 1200, 1700, 2300, 3000],
   xpPerLevelAfterList: 800,

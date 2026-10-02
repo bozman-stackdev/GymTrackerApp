@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Stepper } from '../../components/Stepper';
-import { editSet, logSet, setEntryEquipment, SET_LIMITS } from '../../data/actions';
+import { editSet, logSet, logWarmupSet, setEntryEquipment, SET_LIMITS, undoWarmupSet } from '../../data/actions';
+import { isActivity } from '../../logic/entries';
 import { SetEditor } from '../../components/SetEditor';
 import { unitStepKg, weightNumber } from '../../logic/units';
 import { equipmentFor } from '../../logic/equipment';
@@ -9,14 +10,17 @@ import { challengeFor, isSuccess, scoreExercise, type Challenge } from '../../lo
 import type { LiveSession } from '../../logic/game/progress';
 import { formatWeight, formatSets, formatTarget, lastPerformance, workingWeight } from '../../logic/history';
 import { PROGRESSION_DISCLAIMER, plannedSet, recommend } from '../../logic/progression';
-import type { Exercise } from '../../types';
+import type { ActivityEntry, Exercise, StrengthEntry } from '../../types';
 import { RepPad } from './RepPad';
 import { Icon } from '../../components/Icon';
 
 /** Logging for the current exercise: weight (pre-filled) + one tap on the reps done. */
 export function SetLogger({ exercise, entryIndex, live }: { exercise: Exercise; entryIndex: number; live: LiveSession }) {
   const { data, update } = useStore();
-  const entry = data.activeWorkout!.session.entries[entryIndex];
+  const entry = data.activeWorkout!.session.entries[entryIndex] as StrengthEntry; // the screen only shows this for strength
+  // Warm-up sets for this exercise live in their own warm-up item (never in `entry.sets`): see logWarmupSet.
+  const warmup = data.activeWorkout!.session.entries.find((e): e is ActivityEntry => isActivity(e) && e.kind === 'warmup' && e.warmupFor === exercise.id);
+  const warmupSets = warmup?.warmupSets ?? [];
   const last = lastPerformance(data.sessions, exercise.id);
   const rec = recommend(exercise, data.sessions);
   const plan = plannedSet(rec, entry.sets, last);
@@ -27,6 +31,7 @@ export function SetLogger({ exercise, entryIndex, live }: { exercise: Exercise; 
   const [weight, setWeight] = useState(plan.weightKg);
   const [showWhy, setShowWhy] = useState(false);
   const [editing, setEditing] = useState<number | null>(null); // set being fixed (tap a done set)
+  const [warmingUp, setWarmingUp] = useState(false);
   const usesWeight = exercise.weightStepKg > 0;
   const needsWeight = usesWeight && weight <= 0;
   const setsDone = entry.sets.length;
@@ -43,8 +48,20 @@ export function SetLogger({ exercise, entryIndex, live }: { exercise: Exercise; 
   const machines = equipmentFor(data.equipment, exercise.id);
   const machine = machines.find((m) => m.id === entry.equipmentId) ?? machines[0];
 
+  const toggleWarmup = () => {
+    // Warm-up weight starts at about half the working weight; back to the working weight afterwards.
+    const working = entry.sets.at(-1)?.weightKg ?? plan.weightKg;
+    if (usesWeight) setWeight(warmingUp ? working : Math.max(0, Math.round((working * 0.5) / exercise.weightStepKg) * exercise.weightStepKg));
+    setWarmingUp(!warmingUp);
+  };
+
   const log = (reps: number) => {
     const set = { reps, weightKg: usesWeight ? weight : 0 };
+    if (warmingUp) {
+      update((d) => logWarmupSet(d, entryIndex, set));
+      navigator.vibrate?.(20);
+      return;
+    }
     // A slightly longer buzz when this set earns a reward.
     const scored = scoreExercise(exercise, [...entry.sets, { ...set, loggedAt: '' }], data.sessions);
     const rewarded = scored.challengeSetIndex === setsDone || scored.personalBestSetIndex === setsDone;
@@ -89,6 +106,15 @@ export function SetLogger({ exercise, entryIndex, live }: { exercise: Exercise; 
         )}
       </div>
 
+      {warmupSets.length > 0 && (
+        <div className="warmup-sets" data-testid="warmup-sets" aria-label="Warm-up sets">
+          <span className="muted small">Warm-up</span>
+          {warmupSets.map((s, i) => (
+            <span key={i} className="slot warmup">{s.weightKg > 0 ? `${weightNumber(s.weightKg)}×` : ''}{s.reps}</span>
+          ))}
+          <button className="btn ghost small" onClick={() => update((d) => undoWarmupSet(d, exercise.id))}>Undo</button>
+        </div>
+      )}
       <div className="slots" data-testid="sets-today" aria-label="Sets this workout">
         {Array.from({ length: Math.max(entry.targetSets, setsDone + 1) }, (_, i) => {
           const s = entry.sets[i];
@@ -100,8 +126,11 @@ export function SetLogger({ exercise, entryIndex, live }: { exercise: Exercise; 
               </button>
             );
           }
-          return <span key={i} className={`slot${i === setsDone ? ' next' : ''}`}>{i < entry.targetSets ? `Set ${i + 1}` : 'Extra'}</span>;
+          return <span key={i} className={`slot${i === setsDone && !warmingUp ? ' next' : ''}`}>{i < entry.targetSets ? `Set ${i + 1}` : 'Extra'}</span>;
         })}
+        <button className={`warmup-toggle${warmingUp ? ' on' : ''}`} aria-pressed={warmingUp} onClick={toggleWarmup}>
+          Warm-up
+        </button>
       </div>
 
       {usesWeight && (
@@ -119,7 +148,8 @@ export function SetLogger({ exercise, entryIndex, live }: { exercise: Exercise; 
         </div>
       )}
 
-      <RepPad target={plan.reps} disabled={needsWeight} onPick={log} label={setsDone >= entry.targetSets ? 'Extra set? Tap reps' : 'Tap reps done'} />
+      <RepPad target={plan.reps} highlight={!warmingUp} disabled={needsWeight} onPick={log}
+        label={warmingUp ? 'Warm-up set: tap reps' : setsDone >= entry.targetSets ? 'Extra set? Tap reps' : 'Tap reps done'} />
       {needsWeight && <p className="center warn small">Set the weight first</p>}
       {editing !== null && entry.sets[editing] && (
         <SetEditor

@@ -1,5 +1,6 @@
 import type { AppData, Routine, SetLog, WorkoutSession } from '../types';
 import { formatWeight } from './units';
+import { isStrengthItem, strengthEntries } from './entries';
 
 /** Weight in the user's units (see units.ts). */
 export { formatWeight };
@@ -17,7 +18,7 @@ export function exerciseHistory(sessions: WorkoutSession[], exerciseId: string):
   const out: ExercisePerformance[] = [];
   for (const s of sessions) {
     if (!s.finishedAt) continue;
-    for (const e of s.entries) {
+    for (const e of strengthEntries(s)) {
       if (e.exerciseId === exerciseId && e.sets.length > 0) out.push({ sessionId: s.id, date: s.startedAt, sets: e.sets });
     }
   }
@@ -66,11 +67,11 @@ export function volumeKg(sets: SetLog[]): number {
 }
 
 export function sessionVolumeKg(session: WorkoutSession): number {
-  return session.entries.reduce((sum, e) => sum + volumeKg(e.sets), 0);
+  return strengthEntries(session).reduce((sum, e) => sum + volumeKg(e.sets), 0);
 }
 
 export function sessionSetCount(session: WorkoutSession): number {
-  return session.entries.reduce((n, e) => n + e.sets.length, 0);
+  return strengthEntries(session).reduce((n, e) => n + e.sets.length, 0);
 }
 
 
@@ -129,7 +130,7 @@ export function routinesByNextUp(routines: Routine[], sessions: WorkoutSession[]
 /** Exercises the user is probably about to do: unfinished ones in the current workout, else the next-up routine. */
 export function likelyExerciseIds(data: AppData): string[] {
   if (data.activeWorkout) {
-    return data.activeWorkout.session.entries.filter((e) => e.sets.length < e.targetSets).map((e) => e.exerciseId);
+    return strengthEntries(data.activeWorkout.session).filter((e) => e.sets.length < e.targetSets).map((e) => e.exerciseId);
   }
-  return routinesByNextUp(data.routines, data.sessions)[0]?.items.map((i) => i.exerciseId) ?? [];
+  return routinesByNextUp(data.routines, data.sessions)[0]?.items.filter(isStrengthItem).map((i) => i.exerciseId) ?? [];
 }

@@ -4,7 +4,10 @@ import { Screen } from '../../components/Screen';
 import { formatDuration } from '../../components/useNow';
 import { useState } from 'react';
 import { SetEditor } from '../../components/SetEditor';
-import { deleteSession, editSet } from '../../data/actions';
+import { deleteEntry, deleteSession, editSet } from '../../data/actions';
+import { isStrength, strengthEntries } from '../../logic/entries';
+import { cardioMinutes, describeActivity } from '../../logic/cardio';
+import { entryTitle, KindLabel } from '../../components/activityUi';
 import { useExerciseLookup, useStore } from '../../data/store';
 import { useProgress } from '../../data/useProgress';
 import { ACHIEVEMENTS } from '../../logic/game/achievements';
@@ -31,6 +34,8 @@ export function SessionScreen() {
   const scored = progress.bySession.get(session.id);
   const isLatest = [...data.sessions].sort((a, b) => a.startedAt.localeCompare(b.startedAt)).at(-1)?.id === session.id;
   const resultFor = (exerciseId: string) => scored?.results.find((r) => r.exerciseId === exerciseId);
+  const editingEntry = editing ? session.entries[editing.entry] : undefined;
+  const editingStrength = editingEntry && isStrength(editingEntry) ? editingEntry : undefined;
 
   const remove = () => {
     if (!confirm('Delete this workout from your history?')) return;
@@ -45,7 +50,8 @@ export function SessionScreen() {
       <p className="muted flush">
         {formatDate(session.startedAt)}
         {session.finishedAt && ` · ${formatDuration(Date.parse(session.finishedAt) - Date.parse(session.startedAt))}`}
-        {` · ${Math.round(toDisplay(sessionVolumeKg(session))).toLocaleString()} ${getUnits()} lifted`}
+        {sessionVolumeKg(session) > 0 && ` · ${Math.round(toDisplay(sessionVolumeKg(session))).toLocaleString()} ${getUnits()} lifted`}
+        {cardioMinutes(session) > 0 && ` · ${cardioMinutes(session)} min cardio`}
       </p>
 
       {scored && <WorkoutRewards scored={scored} session={session} progress={isLatest ? progress : undefined} />}
@@ -53,8 +59,8 @@ export function SessionScreen() {
       {editMode && (
         <div className="list" data-testid="edit-sets">
           <p className="muted small flush">Tap a set to fix it. Rewards and your journey update automatically.</p>
-          {session.entries.map((e, ei) => (
-            <div key={e.exerciseId} className="card">
+          {session.entries.map((e, ei) => isStrength(e) ? (
+            <div key={`s${ei}`} className="card">
               <div className="title">{getExercise(e.exerciseId).name}</div>
               <div className="set-chips">
                 {e.sets.map((s, si) => (
@@ -65,11 +71,21 @@ export function SessionScreen() {
                 ))}
               </div>
             </div>
+          ) : (
+            <div key={`a${ei}`} className="card row">
+              <div className="grow">
+                <KindLabel kind={e.kind} />
+                <div className="title">{entryTitle(e, getExercise)}</div>
+                <div className="muted small">{describeActivity(e, formatSets)}</div>
+              </div>
+              <button className="btn ghost danger" aria-label={`Remove ${entryTitle(e, getExercise)}`}
+                onClick={() => { if (confirm(`Remove ${entryTitle(e, getExercise)} from this workout?`)) update((d) => deleteEntry(d, session.id, ei)); }}>Remove</button>
+            </div>
           ))}
         </div>
       )}
-      {editing && session.entries[editing.entry]?.sets[editing.set] && (() => {
-        const ex = getExercise(session.entries[editing.entry].exerciseId);
+      {editing && editingStrength && editingStrength.sets[editing.set] && (() => {
+        const ex = getExercise(editingStrength.exerciseId);
         const save = (patch: { reps: number; weightKg: number } | null) => {
           update((d) => editSet(d, session.id, editing.entry, editing.set, patch));
           setEditing(null);
@@ -77,7 +93,7 @@ export function SessionScreen() {
         return (
           <SetEditor
             title={`${ex.name} · set ${editing.set + 1}`}
-            set={session.entries[editing.entry].sets[editing.set]}
+            set={editingStrength.sets[editing.set]}
             usesWeight={ex.weightStepKg > 0}
             weightStep={unitStepKg(ex.weightStepKg)}
             onSave={save}
@@ -88,10 +104,21 @@ export function SessionScreen() {
       })()}
 
       <div className="list" hidden={editMode}>
-        {session.entries.map((e) => {
+        {session.entries.map((e, ei) => {
+          if (!isStrength(e)) {
+            return (
+              <div key={`a${ei}`} className="list-item static" data-testid="activity-item">
+                <div className="grow">
+                  <KindLabel kind={e.kind} />
+                  <div className="title">{entryTitle(e, getExercise)}</div>
+                  <div className="muted small">{describeActivity(e, formatSets) || 'Done'}</div>
+                </div>
+              </div>
+            );
+          }
           const r = resultFor(e.exerciseId);
           return (
-            <Link key={e.exerciseId} to={`/exercises/${e.exerciseId}`} className="list-item">
+            <Link key={`s${ei}`} to={`/exercises/${e.exerciseId}`} className="list-item">
               <div className="grow">
                 <div className="title">{getExercise(e.exerciseId).name}</div>
                 <div className="muted small">{formatSets(e.sets)}</div>
@@ -132,6 +159,9 @@ const EVENT_LABEL: Record<XpEvent['type'], string> = {
   consistency: 'Consistency milestone',
   mastery: 'Level mastered',
   comeback: 'Back on track',
+  cardio: 'Cardio',
+  warmup: 'Warm-up',
+  cooldown: 'Cool-down',
 };
 
 /** What this workout earned. `progress` is given for the latest workout only (level/streak "now"). */
@@ -170,7 +200,7 @@ function WorkoutRewards({ scored, session, progress }: { scored: SessionProgress
 function NextChallenges({ session }: { session: WorkoutSession }) {
   const { data } = useStore();
   const getExercise = useExerciseLookup();
-  const next = session.entries
+  const next = strengthEntries(session)
     .map((e) => challengeFor(getExercise(e.exerciseId), data.sessions))
     .filter((c): c is Challenge => !!c);
   if (next.length === 0) return null;

@@ -16,10 +16,30 @@ export interface Exercise {
   isCustom?: boolean;
 }
 
-export interface RoutineItem {
+/**
+ * What a workout item is. Strength items are the original kind (no `kind` field in older data = strength).
+ * Cardio, warm-up and cool-down items use activities and metrics instead of sets, and are never seen by the
+ * strength progression engine (see docs/CARDIO.md).
+ */
+export type ActivityKind = 'cardio' | 'warmup' | 'cooldown';
+export type EntryKind = 'strength' | ActivityKind;
+
+export interface StrengthRoutineItem {
+  kind?: 'strength';
   exerciseId: string;
   sets: number;
 }
+
+/** A planned cardio / warm-up / cool-down in a routine, e.g. "Treadmill, 20 min". */
+export interface ActivityRoutineItem {
+  kind: ActivityKind;
+  /** Built-in activity id (logic/activities.ts), or 'other' with `name`. */
+  activityId: string;
+  name?: string;
+  plan?: CardioMetrics;
+}
+
+export type RoutineItem = StrengthRoutineItem | ActivityRoutineItem;
 
 /** A saved workout plan, e.g. "Push day". */
 export interface Routine {
@@ -34,13 +54,50 @@ export interface SetLog {
   loggedAt: string; // ISO date-time
 }
 
-export interface SessionEntry {
+export interface StrengthEntry {
+  kind?: 'strength';
   exerciseId: string;
   targetSets: number;
   sets: SetLog[];
   /** Which machine/station was used (from My gym), if any. */
   equipmentId?: string;
 }
+
+/**
+ * Cardio / warm-up / cool-down metrics. Everything optional: "Run, 20 minutes" is a complete entry.
+ * Stored in metric units (km, km/h); shown in miles when the profile uses lb. Pace is derived, not stored.
+ */
+export interface CardioMetrics {
+  durationMin?: number;
+  distanceKm?: number;
+  speedKmh?: number;
+  inclinePct?: number;
+  /** Machine level / resistance. */
+  level?: number;
+  calories?: number;
+  avgHeartRate?: number;
+}
+
+/** A cardio, warm-up or cool-down item of a workout. */
+export interface ActivityEntry {
+  kind: ActivityKind;
+  /** Built-in activity id (logic/activities.ts), or 'other' with `name`. */
+  activityId: string;
+  name?: string;
+  /** Planned values (from the routine), shown as the target. */
+  plan?: CardioMetrics;
+  /** What was done. */
+  log?: CardioMetrics;
+  /** Warm-up sets for a strength exercise ("light sets of the exercise being trained"). Never progression data. */
+  warmupFor?: string;
+  warmupSets?: SetLog[];
+  /** When it was marked complete. */
+  doneAt?: string;
+  /** Came from the routine (only planned warm-ups / cool-downs earn their small XP). */
+  planned?: boolean;
+}
+
+export type SessionEntry = StrengthEntry | ActivityEntry;
 
 /** A specific machine, bench or station in the user's gym ("My gym"). */
 export interface GymEquipment {

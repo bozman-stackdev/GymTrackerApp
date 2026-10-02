@@ -5,6 +5,7 @@ import type { AppData } from '../../types';
 import { memoryBackend, memoryServer } from './memory';
 import { applyPatch, dataFromAccount, fingerprint, loadSyncState, saveSyncState, stableStringify, syncOnce, toRecords, type SyncState } from './sync';
 import { BackendError, type Backend } from './types';
+import { S } from '../../test/helpers';
 
 /** A phone: its data, its sync state and its connection to the shared server. */
 class Phone {
@@ -83,7 +84,7 @@ describe('sync between two phones', () => {
     expect(await phoneB.sync()).toMatchObject({ uploaded: 2 });
     await phoneA.sync();
     expect(ids(phoneA.data)).not.toContain(gone);
-    expect(phoneA.data.sessions.find((s) => s.id === newId)!.entries[0].sets[0].reps).toBe(12);
+    expect(S(phoneA.data.sessions.find((s) => s.id === newId)!.entries[0]).sets[0].reps).toBe(12);
   });
 
   it('when both phones changed the same routine, the phone that syncs last keeps its version everywhere', async () => {

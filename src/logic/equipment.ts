@@ -3,6 +3,7 @@
  * are derived from workout history (each workout exercise records its equipmentId), never stored separately.
  */
 import type { AppData, GymEquipment, SetLog, WorkoutSession } from '../types';
+import { strengthEntries } from './entries';
 
 /** Machines the user has for an exercise. */
 export function equipmentFor(equipment: GymEquipment[], exerciseId: string): GymEquipment[] {
@@ -16,7 +17,7 @@ export function preferredEquipmentId(data: Pick<AppData, 'equipment' | 'sessions
   const lastUsed = [...data.sessions]
     .filter((s) => s.finishedAt)
     .sort((a, b) => b.startedAt.localeCompare(a.startedAt))
-    .flatMap((s) => s.entries)
+    .flatMap((s) => strengthEntries(s))
     .find((e) => e.exerciseId === exerciseId && e.equipmentId && options.some((o) => o.id === e.equipmentId));
   return lastUsed?.equipmentId ?? options[0].id;
 }
@@ -32,7 +33,7 @@ export function lastUsage(sessions: WorkoutSession[], equipmentId: string): Equi
   let best: EquipmentUsage | undefined;
   for (const s of sessions) {
     if (!s.finishedAt) continue;
-    for (const e of s.entries) {
+    for (const e of strengthEntries(s)) {
       if (e.equipmentId === equipmentId && e.sets.length && (!best || s.startedAt > best.date)) {
         best = { date: s.startedAt, exerciseId: e.exerciseId, sets: e.sets };
       }

@@ -43,6 +43,9 @@ const PATHS = {
   pause: <><rect x="6.5" y="5" width="3.5" height="14" rx="1" /><rect x="14" y="5" width="3.5" height="14" rx="1" /></>,
   hourglass: <><path d="M6 2.5h12" /><path d="M6 21.5h12" /><path d="M7.5 2.5v3.5a4.5 4.5 0 0 0 9 0V2.5" /><path d="M7.5 21.5V18a4.5 4.5 0 0 1 9 0v3.5" /></>,
   bolt: <path d="M13 2 4 14h7l-1 8 9-12h-7Z" />,
+  heartbeat: <path d="M22 12h-4l-3 8L9 4l-3 8H2" />,
+  sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2.5" /><path d="M12 19.5V22" /><path d="m4.9 4.9 1.8 1.8" /><path d="m17.3 17.3 1.8 1.8" /><path d="M2 12h2.5" /><path d="M19.5 12H22" /><path d="m4.9 19.1 1.8-1.8" /><path d="m17.3 6.7 1.8-1.8" /></>,
+  snowflake: <><path d="M12 2v20" /><path d="m4.4 7 15.2 10" /><path d="m4.4 17 15.2-10" /><path d="m9 3.5 3 3 3-3" /><path d="m9 20.5 3-3 3 3" /></>,
   cloud: <path d="M17.5 19H8a6 6 0 1 1 5.7-7.9H15a4 4 0 0 1 2.5 7.9Z" />,
 } satisfies Record<string, ReactNode>;
 

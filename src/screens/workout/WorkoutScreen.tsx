@@ -7,6 +7,11 @@ import { ExerciseStrip } from './ExerciseStrip';
 import { LastSetBar } from './LastSetBar';
 import { SetLogger } from './SetLogger';
 import { Icon } from '../../components/Icon';
+import { hasContent, isStrength } from '../../logic/entries';
+import { ActivityLogger } from './ActivityLogger';
+import { AddActivityRow } from '../../components/AddItemChoices';
+import { KIND_LABEL } from '../../logic/activities';
+import type { WorkoutSession } from '../../types';
 
 /**
  * The in-gym screen, built for a tired user with a few seconds between sets:
@@ -34,8 +39,8 @@ export function WorkoutScreen() {
 
   const { session, currentIndex } = active;
   const entry = session.entries[currentIndex];
-  const hasSets = session.entries.some((e) => e.sets.length > 0);
-  const exerciseDone = !!entry && entry.sets.length >= entry.targetSets;
+  const hasSets = session.entries.some(hasContent);
+  const exerciseDone = !!entry && isStrength(entry) && entry.sets.length >= entry.targetSets;
 
   const finish = () => {
     if (!confirm(hasSets ? 'Finish and save this session?' : 'No sets logged. End the session without saving?')) return;
@@ -62,16 +67,26 @@ export function WorkoutScreen() {
         <button className="btn primary huge" onClick={() => update(finishExercise)}><Icon name="check" size={26} /> Finish Exercise</button>
       )}
 
-      {entry ? (
-        <SetLogger key={currentIndex} exercise={getExercise(entry.exerciseId)} entryIndex={currentIndex} live={live!} />
+      {entry && isStrength(entry) ? (
+        // Keyed by exercise (not position): logging the first warm-up set inserts an item before it.
+        <SetLogger key={entry.exerciseId} exercise={getExercise(entry.exerciseId)} entryIndex={currentIndex} live={live!} />
+      ) : entry ? (
+        <ActivityLogger entry={entry} entryIndex={currentIndex} />
       ) : (
         <>
-          {hasSets && <p className="muted center flush" data-testid="between">Exercise done. Add the next one, or tap Finish Session when you're done.</p>}
+          {hasSets && <p className="muted center flush" data-testid="between">{lastDoneLabel(session)} done. Add the next one, or tap Finish Session when you're done.</p>}
           <Link to="/workout/add" className="btn primary huge"><Icon name="plus" size={26} /> Add exercise</Link>
+          <AddActivityRow />
         </>
       )}
 
       <button className="btn ghost danger small" onClick={discard}>Discard workout</button>
     </main>
   );
+}
+
+/** "Exercise done" after lifting, "Cardio done" after a run (the last item completed in the workout). */
+function lastDoneLabel(session: WorkoutSession): string {
+  const last = [...session.entries].reverse().find(hasContent);
+  return !last || isStrength(last) ? 'Exercise' : KIND_LABEL[last.kind];
 }

@@ -10,6 +10,8 @@ import { Streak } from '../components/ProgressWidgets';
 import { challengeFor } from '../logic/game/challenge';
 import { lastDoneAt, plural, relativeDay, routinesByNextUp } from '../logic/history';
 import type { Routine } from '../types';
+import { isStrengthItem } from '../logic/entries';
+import { routineSummary } from '../logic/routines';
 import { Icon } from '../components/Icon';
 
 /** Start screen: one tap on a routine starts the workout. */
@@ -26,7 +28,7 @@ export function HomeScreen() {
 
   // Today's Challenge is the heart of a workout: show how many are waiting in each routine.
   const challengesReady = (r: Routine) =>
-    r.items.filter((i) => { const ex = data.exercises.find((e) => e.id === i.exerciseId); return ex && challengeFor(ex, data.sessions); }).length;
+    r.items.filter(isStrengthItem).filter((i) => { const ex = data.exercises.find((e) => e.id === i.exerciseId); return ex && challengeFor(ex, data.sessions); }).length;
 
   const startOwn = () => {
     if (confirm('Clear the sample data and start with your own (empty history, starter routines)?')) replace(createStarterData());
@@ -78,7 +80,7 @@ export function HomeScreen() {
                   {nextUp && <div className="small next-up-label">Next up</div>}
                   <div className="title routine-name">{r.name}</div>
                   <div className="muted small">
-                    {plural(r.items.length, 'exercise')}{last ? ` · last ${relativeDay(last)}` : ''}
+                    {routineSummary(r)}{last ? ` · last ${relativeDay(last)}` : ''}
                   </div>
                   {ready > 0 && <div className="small challenges-ready with-icon"><Icon name="target" size={15} /> {plural(ready, 'challenge')} ready</div>}
                 </div>

@@ -8,6 +8,7 @@ import { createSampleData } from '../data/seed';
 import type { Exercise, WorkoutSession } from '../types';
 import { lastPerformance } from './history';
 import { PROGRESSION_CONFIG, plannedSet, recommend } from './progression';
+import { S } from '../test/helpers';
 
 const press: Exercise = { id: 'press', name: 'Press', muscleGroup: 'chest', equipment: 'machine', repRange: [8, 12], weightStepKg: 5 };
 const dips: Exercise = { ...press, id: 'dips', equipment: 'bodyweight', weightStepKg: 0 };
@@ -105,7 +106,7 @@ describe('progression scenarios', () => {
 describe('details', () => {
   it('ignores warm-up sets (lighter than the working weight)', () => {
     const h = history([[21, 60, [11, 11]], [14, 60, [12, 12]], [7, 60, [12, 12]]]);
-    h[2].entries[0].sets.unshift({ reps: 5, weightKg: 20, loggedAt: h[2].startedAt });
+    S(h[2].entries[0]).sets.unshift({ reps: 5, weightKg: 20, loggedAt: h[2].startedAt });
     expect(recommend(press, h).rule).toBe('R2');
   });
 

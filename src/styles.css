@@ -13,6 +13,7 @@
   --danger: #f87171;
   --radius: 16px;
   --flame: #fb923c;
+  --flame-text: #fb923c; /* flame for text (darker in light mode for contrast) */
   --shadow: none;
   --tap: 56px; /* minimum size of anything you press */
   /* Notch / Dynamic Island / home bar. The app draws under the status bar (viewport-fit=cover), so every edge pads by these. */
@@ -36,6 +37,7 @@
     --warn: #b45309;
     --danger: #b91c1c; /* 4.5:1+ on light surfaces */
     --flame: #ea580c;
+    --flame-text: #9a3412;
     --shadow: 0 1px 2px rgb(16 24 40 / .06), 0 1px 3px rgb(16 24 40 / .05);
     color-scheme: light;
   }
@@ -385,3 +387,30 @@ span.with-icon { display: inline-flex; }
 .banner .icon { flex: none; }
 .btn .icon { margin: 0 -2px; }
 .home-actions .btn { white-space: nowrap; padding: 0 12px; }
+
+/* ---------- Cardio, warm-ups, cool-downs ---------- */
+.kind-label { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-2); }
+.kind-warmup .icon, .kind-label.kind-warmup { color: var(--flame-text); }
+.kind-cooldown .icon, .kind-label.kind-cooldown { color: #38bdf8; }
+.kind-cardio .icon, .kind-label.kind-cardio { color: var(--accent-text); }
+@media (prefers-color-scheme: light) { .kind-cooldown .icon, .kind-label.kind-cooldown { color: #0369a1; } }
+.kind-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 4px; border-radius: var(--radius); background: var(--surface-2); }
+.kind-tab { min-height: 48px; border: 0; border-radius: 12px; background: transparent; color: var(--text-2); font-weight: 600; font-size: 13px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer; }
+.kind-tab.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+.add-activity-row { gap: 8px; }
+.add-activity-row .btn { padding: 0 8px; white-space: nowrap; font-size: 15px; }
+.metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
+.metric-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.metric-field .input { text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
+.more-metrics > summary { min-height: 40px; }
+.more-metrics .metric-grid { margin-top: 8px; }
+.warmup-sets { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.slot.warmup { flex: none; min-width: 0; padding: 3px 8px; border: 1px solid var(--border); border-style: solid; font-size: 13px; color: var(--text-2); }
+.warmup-sets .btn { min-height: 36px; padding: 0 10px; }
+.warmup-toggle { flex: none; padding: 5px 10px; border-radius: 12px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+  border: 2px solid var(--border); background: transparent; color: var(--text-2); }
+.warmup-toggle.on { border-color: var(--flame); color: var(--flame-text); background: color-mix(in srgb, var(--flame) 12%, transparent); }
+.list-item.static { cursor: default; }
+.list-item.static:active { background: var(--surface); }
+.ex-chip .icon { flex: none; }

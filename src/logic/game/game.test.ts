@@ -12,6 +12,7 @@ import { GAME_CONFIG } from './config';
 import { levelFor, xpForLevel } from './levels';
 import { buildProgress, scoreLiveSession } from './progress';
 import { WeeklyStreak, weekIndex } from './streak';
+import { S } from '../../test/helpers';
 
 const press: Exercise = { id: 'press', name: 'Press', muscleGroup: 'chest', equipment: 'machine', repRange: [8, 12], weightStepKg: 5 };
 const exercises = [press];
@@ -343,6 +344,6 @@ describe('sample data demonstrates the core loop', () => {
     expect(results.some((r) => r.personalBestSetIndex >= 0)).toBe(true);
     expect(p.totalXp).toBeGreaterThan(500);
     expect(d.equipment.length).toBeGreaterThanOrEqual(3);
-    expect(d.sessions.some((s) => s.entries.some((e) => e.equipmentId))).toBe(true);
+    expect(d.sessions.some((s) => s.entries.some((e) => S(e).equipmentId))).toBe(true);
   });
 });

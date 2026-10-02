@@ -4,8 +4,9 @@ import { challengeFor, isSuccess, type ExerciseResult } from '../../logic/game/c
 import { GAME_CONFIG } from '../../logic/game/config';
 import { challengeXp, type LiveSession } from '../../logic/game/progress';
 import { formatWeight, formatTarget } from '../../logic/history';
-import type { WorkoutSession } from '../../types';
+import type { StrengthEntry, WorkoutSession } from '../../types';
 import { Icon, type IconName } from '../../components/Icon';
+import { isStrength } from '../../logic/entries';
 
 type Feedback = 'personal-best' | 'mastered' | 'comeback' | 'hit' | 'matched' | 'not-today';
 
@@ -49,12 +50,13 @@ export function LastSetBar({ session, live, onUndo }: { session: WorkoutSession;
   const now = useNow();
   let latest: { entryIndex: number; setIndex: number; loggedAt: string } | undefined;
   session.entries.forEach((e, i) => {
+    if (!isStrength(e)) return; // the bar (and its rewards) is about working sets only
     const s = e.sets.at(-1);
     if (s && (!latest || s.loggedAt > latest.loggedAt)) latest = { entryIndex: i, setIndex: e.sets.length - 1, loggedAt: s.loggedAt };
   });
   if (!latest) return null;
   const { entryIndex, setIndex, loggedAt } = latest;
-  const entry = session.entries[entryIndex];
+  const entry = session.entries[entryIndex] as StrengthEntry;
   const exercise = getExercise(entry.exerciseId);
   const set = entry.sets[setIndex];
   const text = `${set.weightKg > 0 ? `${formatWeight(set.weightKg)} × ` : ''}${set.reps}`;

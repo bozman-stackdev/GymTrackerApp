@@ -12,8 +12,11 @@ import { isSuccess, pbScore, scoreExercise, type Challenge, type ExerciseResult 
 import { GAME_CONFIG, type GameConfig } from './config';
 import { levelFor, type LevelInfo } from './levels';
 import { WeeklyStreak, weekIndex } from './streak';
+import { activityEntries, hasContent, strengthEntries } from '../entries';
+import { cardioMinutes } from '../cardio';
 
-export type XpEventType = 'workout' | 'challenge' | 'matched' | 'personal-best' | 'consistency' | 'mastery' | 'comeback';
+export type XpEventType = 'workout' | 'challenge' | 'matched' | 'personal-best' | 'consistency' | 'mastery' | 'comeback'
+  | 'cardio' | 'warmup' | 'cooldown';
 
 export interface XpEvent {
   type: XpEventType;
@@ -67,6 +70,16 @@ export function exerciseEvents(r: ExerciseResult, config: GameConfig = GAME_CONF
   return events;
 }
 
+/** Cardio / warm-up / cool-down XP for one workout: each at most once, warm-up and cool-down only when planned. */
+export function activityEvents(session: WorkoutSession, config: GameConfig = GAME_CONFIG): XpEvent[] {
+  const done = activityEntries(session).filter((e) => e.doneAt);
+  const events: XpEvent[] = [];
+  if (done.some((e) => e.kind === 'cardio')) events.push({ type: 'cardio', xp: config.xp.cardio });
+  if (done.some((e) => e.kind === 'warmup' && e.planned)) events.push({ type: 'warmup', xp: config.xp.warmup });
+  if (done.some((e) => e.kind === 'cooldown' && e.planned)) events.push({ type: 'cooldown', xp: config.xp.cooldown });
+  return events;
+}
+
 /**
  * @param sessions finished workouts; may also include the workout in progress (pass it with a `finishedAt`) to
  *                 preview what it has earned so far.
@@ -96,16 +109,18 @@ export function buildProgress(
 
   for (const session of ordered) {
     const events: XpEvent[] = [];
-    const setCount = session.entries.reduce((n, e) => n + e.sets.length, 0);
+    const setCount = strengthEntries(session).reduce((n, e) => n + e.sets.length, 0);
 
-    // Workout XP: once per day, for a real workout (so tiny extra sessions don't pay).
-    if (setCount >= config.minSetsForWorkoutXp && localDay(session.startedAt) !== lastWorkoutXpDay) {
+    // Workout XP: once per day, for a real workout (so tiny extra sessions don't pay). A cardio day counts too.
+    const realWorkout = setCount >= config.minSetsForWorkoutXp || cardioMinutes(session) >= config.minCardioMinutesForWorkoutXp;
+    if (realWorkout && localDay(session.startedAt) !== lastWorkoutXpDay) {
       events.push({ type: 'workout', xp: config.xp.workout });
       lastWorkoutXpDay = localDay(session.startedAt);
     }
     stats.workouts++;
+    events.push(...activityEvents(session, config));
 
-    const results = session.entries
+    const results = strengthEntries(session)
       .filter((e) => byId.has(e.exerciseId) && e.sets.length > 0)
       .map((e) => {
         const ex = byId.get(e.exerciseId)!;
@@ -141,7 +156,7 @@ export function buildProgress(
     const xp = events.reduce((sum, e) => sum + e.xp, 0);
     totalXp += xp;
     bySession.set(session.id, { sessionId: session.id, results, events, xp, unlocked, streakWeeks: stats.streakWeeks });
-    for (const e of session.entries) {
+    for (const e of strengthEntries(session)) {
       if (!priorByExercise.has(e.exerciseId)) priorByExercise.set(e.exerciseId, []);
       priorByExercise.get(e.exerciseId)!.push(session);
     }
@@ -164,7 +179,7 @@ function bestSets(sessions: WorkoutSession[], exercises: Exercise[]): PersonalBe
     const score = (s: SetLog) => pbScore(ex, s);
     let best: PersonalBest | undefined;
     for (const session of sessions) {
-      for (const e of session.entries) {
+      for (const e of strengthEntries(session)) {
         if (e.exerciseId !== ex.id) continue;
         for (const set of e.sets) {
           if (set.reps < ex.repRange[0]) continue;
@@ -194,11 +209,11 @@ export function scoreLiveSession(
   config: GameConfig = GAME_CONFIG,
 ): LiveSession {
   const byId = new Map(exercises.map((e) => [e.id, e]));
-  const results = session.entries
+  const results = strengthEntries(session)
     .filter((e) => byId.has(e.exerciseId) && e.sets.length > 0)
     .map((e) => scoreExercise(byId.get(e.exerciseId)!, e.sets, finished));
   const streak = new WeeklyStreak(config);
   for (const s of finished) if (s.finishedAt) streak.add(s.startedAt);
-  if (session.entries.some((e) => e.sets.length > 0)) streak.add(session.startedAt);
+  if (session.entries.some(hasContent)) streak.add(session.startedAt); // cardio-only workouts count too
   return { results, streakWeeks: streak.current(now) };
 }

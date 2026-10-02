@@ -17,6 +17,7 @@ import { ACHIEVEMENTS } from '../logic/game/achievements';
 import type { Experience, Goal, Profile, Sex } from '../types';
 import { Icon } from '../components/Icon';
 import { plural } from '../logic/history';
+import { cardioStats, formatMetric, formatMinutes } from '../logic/cardio';
 
 const UNITS: [Units, string][] = [['kg', 'kg'], ['lb', 'lb']];
 const SEXES: [Sex, string][] = [['male', 'Male'], ['female', 'Female'], ['other', 'Other'], ['', 'Prefer not to say']];
@@ -85,6 +86,8 @@ export function ProfileScreen() {
         <div style={{ marginTop: 8 }}><PersonalBestList bests={progress.personalBests} /></div>
       </details>
 
+      <CardioStatsCard />
+
       <h2>About you</h2>
       <label className="field">
         Name
@@ -132,6 +135,28 @@ export function ProfileScreen() {
       <button className="btn block ghost danger" onClick={() => reset(false)}>Start fresh (delete all)</button>
       <p className="muted small center flush" data-testid="app-version">Version {__APP_VERSION__}</p>
     </Screen>
+  );
+}
+
+/** Simple cardio statistics, only once there's cardio in the history. Kept apart from strength progress. */
+function CardioStatsCard() {
+  const { data } = useStore();
+  const stats = cardioStats(data.sessions);
+  if (stats.sessions === 0) return null;
+  const rows: [string, string][] = [
+    ['Cardio sessions', String(stats.sessions)],
+    ['Total cardio time', formatMinutes(stats.totalMinutes)],
+    ...(stats.runningKm > 0 ? [['Running distance', formatMetric('distanceKm', stats.runningKm, 'running')] as [string, string]] : []),
+    ...(stats.longest ? [['Longest session', `${stats.longest.name}, ${formatMinutes(stats.longest.minutes)}`] as [string, string]] : []),
+    ...(stats.mostFrequent ? [['Most frequent', `${stats.mostFrequent.name} (${stats.mostFrequent.count}×)`] as [string, string]] : []),
+  ];
+  return (
+    <>
+      <h2>Cardio</h2>
+      <div className="card reward-list small" data-testid="cardio-stats">
+        {rows.map(([k, v]) => <div key={k} className="reward-row"><span className="muted">{k}</span><strong>{v}</strong></div>)}
+      </div>
+    </>
   );
 }
 

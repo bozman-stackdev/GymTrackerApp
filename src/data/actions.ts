@@ -3,7 +3,9 @@
  * They never touch storage or React, so they are easy to test and reuse in a native app later.
  */
 import { preferredEquipmentId } from '../logic/equipment';
-import type { AppData, Exercise, GymEquipment, Profile, Routine, SetLog, WorkoutSession } from '../types';
+import { cleanMetrics } from '../logic/activities';
+import { hasContent, isEntryDone, isStrength, isStrengthItem } from '../logic/entries';
+import type { ActivityEntry, ActivityKind, AppData, CardioMetrics, Exercise, GymEquipment, Profile, Routine, SessionEntry, SetLog, StrengthEntry, WorkoutSession } from '../types';
 
 export function newId(): string {
   // crypto.randomUUID is unavailable on plain-http LAN addresses, so keep a simple fallback.
@@ -18,9 +20,9 @@ export function startWorkout(data: AppData, routine?: Routine, now = new Date())
     name: routine?.name ?? 'Workout',
     routineId: routine?.id,
     startedAt: now.toISOString(),
-    entries: (routine?.items ?? []).map((i) => ({
-      exerciseId: i.exerciseId, targetSets: i.sets, sets: [], equipmentId: preferredEquipmentId(data, i.exerciseId),
-    })),
+    entries: (routine?.items ?? []).map((i): SessionEntry => (isStrengthItem(i)
+      ? { exerciseId: i.exerciseId, targetSets: i.sets, sets: [], equipmentId: preferredEquipmentId(data, i.exerciseId) }
+      : { kind: i.kind, activityId: i.activityId, ...(i.name ? { name: i.name } : {}), ...(i.plan ? { plan: i.plan } : {}), planned: true })),
   };
   return { ...data, activeWorkout: { session, currentIndex: 0 } };
 }
@@ -36,16 +38,16 @@ function updateActive(data: AppData, fn: (s: WorkoutSession) => WorkoutSession, 
 /** Adds an exercise to the current workout (or jumps to it if it's already there) and makes it current. */
 export function addExerciseToWorkout(data: AppData, exerciseId: string, sets = 3, equipmentId?: string): AppData {
   if (!data.activeWorkout) return data;
-  const existing = data.activeWorkout.session.entries.findIndex((e) => e.exerciseId === exerciseId);
+  const existing = data.activeWorkout.session.entries.findIndex((e) => isStrength(e) && e.exerciseId === exerciseId);
   if (existing >= 0) return equipmentId ? setEntryEquipment(goToExercise(data, existing), existing, equipmentId) : goToExercise(data, existing);
   const index = data.activeWorkout.session.entries.length;
-  const entry = { exerciseId, targetSets: sets, sets: [], equipmentId: equipmentId ?? preferredEquipmentId(data, exerciseId) };
+  const entry: StrengthEntry = { exerciseId, targetSets: sets, sets: [], equipmentId: equipmentId ?? preferredEquipmentId(data, exerciseId) };
   return updateActive(data, (s) => ({ ...s, entries: [...s.entries, entry] }), index);
 }
 
 /** Which machine is used for an exercise in the workout in progress. */
 export function setEntryEquipment(data: AppData, entryIndex: number, equipmentId: string | undefined): AppData {
-  return updateActive(data, (s) => ({ ...s, entries: s.entries.map((e, i) => (i === entryIndex ? { ...e, equipmentId } : e)) }));
+  return updateActive(data, (s) => ({ ...s, entries: s.entries.map((e, i) => (i === entryIndex && isStrength(e) ? { ...e, equipmentId } : e)) }));
 }
 
 /** Start tracking one exercise now: added to the current workout, or a new workout is started for it. */
@@ -72,13 +74,14 @@ export function isValidSet({ reps, weightKg }: Omit<SetLog, 'loggedAt'>): boolea
 }
 
 export function logSet(data: AppData, entryIndex: number, set: Omit<SetLog, 'loggedAt'>, now = new Date()): AppData {
-  if (!isValidSet(set) || !data.activeWorkout?.session.entries[entryIndex]) return data;
+  const target = data.activeWorkout?.session.entries[entryIndex];
+  if (!isValidSet(set) || !target || !isStrength(target)) return data;
   const logged = updateActive(data, (s) => ({
     ...s,
-    entries: s.entries.map((e, i) => (i === entryIndex ? { ...e, sets: [...e.sets, { ...set, loggedAt: now.toISOString() }] } : e)),
+    entries: s.entries.map((e, i) => (i === entryIndex && isStrength(e) ? { ...e, sets: [...e.sets, { ...set, loggedAt: now.toISOString() }] } : e)),
   }));
   const session = logged.activeWorkout!.session;
-  const entry = session.entries[entryIndex];
+  const entry = session.entries[entryIndex] as StrengthEntry;
   if (entry.sets.length !== entry.targetSets) return logged;
   return goToExercise(logged, nextUnfinished(session, entryIndex) ?? entryIndex);
 }
@@ -87,7 +90,7 @@ export function logSet(data: AppData, entryIndex: number, set: Omit<SetLog, 'log
 export function undoLastSet(data: AppData, entryIndex: number): AppData {
   return updateActive(
     data,
-    (s) => ({ ...s, entries: s.entries.map((e, i) => (i === entryIndex ? { ...e, sets: e.sets.slice(0, -1) } : e)) }),
+    (s) => ({ ...s, entries: s.entries.map((e, i) => (i === entryIndex && isStrength(e) ? { ...e, sets: e.sets.slice(0, -1) } : e)) }),
     entryIndex,
   );
 }
@@ -103,24 +106,24 @@ export function editSet(
   if (patch && !isValidSet(patch)) return data;
   const edit = (s: WorkoutSession): WorkoutSession => ({
     ...s,
-    entries: s.entries.map((e, i) => (i !== entryIndex ? e : {
+    entries: s.entries.map((e, i) => (i !== entryIndex || !isStrength(e) ? e : {
       ...e,
       sets: patch ? e.sets.map((x, j) => (j === setIndex ? { ...x, ...patch } : x)) : e.sets.filter((_, j) => j !== setIndex),
     })),
   });
   if (data.activeWorkout?.session.id === sessionId) return updateActive(data, edit);
   const sessions = data.sessions
-    .map((s) => (s.id === sessionId ? { ...edit(s), entries: edit(s).entries.filter((e) => e.sets.length > 0) } : s))
+    .map((s) => (s.id === sessionId ? { ...edit(s), entries: edit(s).entries.filter(hasContent) } : s))
     .filter((s) => s.entries.length > 0);
   return { ...data, sessions };
 }
 
-/** Index of the next exercise with sets still to do (looking forward first, then from the top). */
+/** Index of the next item still to do - exercise with sets left, or activity not completed (forward first, then from the top). */
 export function nextUnfinished(session: WorkoutSession, from: number): number | undefined {
   const n = session.entries.length;
   for (let step = 1; step < n; step++) {
     const i = (from + step) % n;
-    if (session.entries[i].sets.length < session.entries[i].targetSets) return i;
+    if (!isEntryDone(session.entries[i])) return i;
   }
   return undefined;
 }
@@ -136,17 +139,112 @@ export function finishExercise(data: AppData): AppData {
   return updateActive(data, (s) => s, nextUnfinished(session, currentIndex) ?? session.entries.length);
 }
 
-/** Saves the workout to history. Exercises with no sets are dropped; an empty workout is discarded. */
+/** Saves the workout to history. Exercises with no sets and activities not completed are dropped; an empty workout is discarded. */
 export function finishWorkout(data: AppData, now = new Date()): AppData {
   if (!data.activeWorkout) return data;
   const session = data.activeWorkout.session;
-  const entries = session.entries.filter((e) => e.sets.length > 0);
+  const entries = session.entries.filter(hasContent);
   if (entries.length === 0) return { ...data, activeWorkout: null };
   return {
     ...data,
     sessions: [...data.sessions, { ...session, entries, finishedAt: now.toISOString() }],
     activeWorkout: null,
   };
+}
+
+// ---------- Cardio, warm-ups, cool-downs ----------
+
+/** Adds a cardio / warm-up / cool-down item to the workout in progress and makes it current. */
+export function addActivityToWorkout(data: AppData, kind: ActivityKind, activityId: string, name?: string, plan?: CardioMetrics): AppData {
+  if (!data.activeWorkout) return data;
+  const entry: ActivityEntry = { kind, activityId, ...(name?.trim() ? { name: name.trim() } : {}), ...(plan ? { plan } : {}) };
+  const index = data.activeWorkout.session.entries.length;
+  return updateActive(data, (s) => ({ ...s, entries: [...s.entries, entry] }), index);
+}
+
+/** Start an activity now: added to the current workout, or a new workout is started for it. */
+export function startActivity(data: AppData, kind: ActivityKind, activityId: string, name?: string, now = new Date()): AppData {
+  return addActivityToWorkout(data.activeWorkout ? data : startWorkout(data, undefined, now), kind, activityId, name);
+}
+
+/** Marks an activity done with what was recorded (only known, sane metrics are kept), then moves to the next item. */
+export function completeActivity(data: AppData, entryIndex: number, log: CardioMetrics | undefined, now = new Date()): AppData {
+  const target = data.activeWorkout?.session.entries[entryIndex];
+  if (!target || isStrength(target)) return data;
+  const clean = cleanMetrics(log);
+  const done = updateActive(data, (s) => ({
+    ...s,
+    entries: s.entries.map((e, i) => (i === entryIndex && !isStrength(e)
+      ? { ...omit(e, 'log'), ...(clean ? { log: clean } : {}), doneAt: now.toISOString() } : e)),
+  }));
+  const session = done.activeWorkout!.session;
+  return updateActive(done, (s) => s, nextUnfinished(session, entryIndex) ?? session.entries.length);
+}
+
+/** Back to "not done" (e.g. tapped Complete by mistake). The recorded values are kept as a starting point. */
+export function reopenActivity(data: AppData, entryIndex: number): AppData {
+  return updateActive(
+    data,
+    (s) => ({ ...s, entries: s.entries.map((e, i) => (i === entryIndex && !isStrength(e) ? omit(e, 'doneAt') : e)) }),
+    entryIndex,
+  );
+}
+
+/**
+ * Logs a warm-up set for a strength exercise. Warm-up sets go into a separate warm-up entry placed just before the
+ * exercise (created on the first one), so the strength entry - and therefore progression, challenges, personal
+ * bests and XP - never sees them. Returns the data with the strength exercise still current.
+ */
+export function logWarmupSet(data: AppData, strengthIndex: number, set: Omit<SetLog, 'loggedAt'>, now = new Date()): AppData {
+  const active = data.activeWorkout;
+  const strength = active?.session.entries[strengthIndex];
+  if (!active || !strength || !isStrength(strength) || !isValidSet(set)) return data;
+  const logged = { ...set, loggedAt: now.toISOString() };
+  const entries = active.session.entries;
+  const existing = entries.findIndex((e) => !isStrength(e) && e.kind === 'warmup' && e.warmupFor === strength.exerciseId);
+  if (existing >= 0) {
+    return updateActive(data, (s) => ({
+      ...s,
+      entries: s.entries.map((e, i) => (i === existing && !isStrength(e) ? { ...e, warmupSets: [...(e.warmupSets ?? []), logged], doneAt: now.toISOString() } : e)),
+    }));
+  }
+  const warmup: ActivityEntry = { kind: 'warmup', activityId: 'warmup-sets', warmupFor: strength.exerciseId, warmupSets: [logged], doneAt: now.toISOString() };
+  return updateActive(
+    data,
+    (s) => ({ ...s, entries: [...s.entries.slice(0, strengthIndex), warmup, ...s.entries.slice(strengthIndex)] }),
+    active.currentIndex >= strengthIndex ? active.currentIndex + 1 : active.currentIndex, // the exercise moved down by one
+  );
+}
+
+/** Removes the last warm-up set of an exercise (the warm-up entry goes when it's empty). */
+export function undoWarmupSet(data: AppData, exerciseId: string): AppData {
+  const active = data.activeWorkout;
+  if (!active) return data;
+  const index = active.session.entries.findIndex((e) => !isStrength(e) && e.kind === 'warmup' && e.warmupFor === exerciseId);
+  if (index < 0) return data;
+  const e = active.session.entries[index] as ActivityEntry;
+  const sets = (e.warmupSets ?? []).slice(0, -1);
+  if (sets.length > 0) {
+    return updateActive(data, (s) => ({ ...s, entries: s.entries.map((x, i) => (i === index ? { ...e, warmupSets: sets } : x)) }));
+  }
+  return updateActive(
+    data,
+    (s) => ({ ...s, entries: s.entries.filter((_, i) => i !== index) }),
+    active.currentIndex > index ? active.currentIndex - 1 : active.currentIndex,
+  );
+}
+
+/** Removes one item from a finished workout (e.g. a cardio entry recorded by mistake). An empty workout is removed. */
+export function deleteEntry(data: AppData, sessionId: string, entryIndex: number): AppData {
+  const sessions = data.sessions
+    .map((s) => (s.id === sessionId ? { ...s, entries: s.entries.filter((_, i) => i !== entryIndex) } : s))
+    .filter((s) => s.entries.length > 0);
+  return { ...data, sessions };
+}
+
+function omit<T extends object, K extends keyof T>(o: T, key: K): Omit<T, K> {
+  const { [key]: _drop, ...rest } = o;
+  return rest;
 }
 
 export function discardWorkout(data: AppData): AppData {

@@ -4,6 +4,7 @@ import { formatSets } from './history';
 import { nextLevel } from './journey';
 import { recommend } from './progression';
 import { formatWeight, fromDisplay, LB_PER_KG, setUnits, snapWeight, toDisplay, unitStepKg } from './units';
+import { S } from '../test/helpers';
 
 afterEach(() => setUnits('kg'));
 
@@ -44,6 +45,6 @@ describe('units (stored in kg, shown in kg or lb)', () => {
     expect(rec.reason).toContain('135 lb × 12+');
     expect(rec.weightKg).toBe(lb(145));
     expect(formatWeight(nextLevel(press, { weightKg: lb(145), reps: 12 }).weightKg)).toBe('155 lb');
-    expect(formatSets(h[0].entries[0].sets)).toBe('135 lb × 11 · 11 · 10');
+    expect(formatSets(S(h[0].entries[0]).sets)).toBe('135 lb × 11 · 11 · 10');
   });
 });

@@ -2,7 +2,8 @@
  * Sample data so the prototype is testable immediately.
  * History is generated relative to "now" so it always looks recent.
  */
-import type { AppData, Exercise, GymEquipment, Profile, Routine, SetLog, WorkoutSession } from '../types';
+import type { AppData, Exercise, GymEquipment, Profile, Routine, SessionEntry, SetLog, WorkoutSession } from '../types';
+import { isStrengthItem } from '../logic/entries';
 
 export const SAMPLE_EXERCISES: Exercise[] = [
   // Push
@@ -95,7 +96,8 @@ export function createSampleData(now = new Date()): AppData {
     start.setHours(18, 0, 0, 0);
     let minute = 0;
 
-    const entries = routine.items
+    const entries: SessionEntry[] = routine.items
+      .filter(isStrengthItem)
       .filter((item) => !RECENTLY_ADDED.has(item.exerciseId) || daysAgo <= 10)
       .map((item) => {
         const ex = exercises.find((e) => e.id === item.exerciseId)!;
@@ -124,6 +126,19 @@ export function createSampleData(now = new Date()): AppData {
         }
         return { exerciseId: ex.id, targetSets: item.sets, sets, equipmentId: SAMPLE_EQUIPMENT.find((e) => e.exerciseIds.includes(ex.id))?.id };
       });
+
+    // The last three visits also show cardio: a mobility warm-up, a steady treadmill finisher, a stretch.
+    const fromEnd = VISIT_DAYS_AGO.length - visit;
+    if (fromEnd <= 3) {
+      const at = (min: number) => new Date(start.getTime() + min * 60_000).toISOString();
+      entries.unshift({ kind: 'warmup', activityId: 'mobility', log: { durationMin: 5 }, doneAt: at(0) });
+      minute += 20;
+      entries.push({ kind: 'cardio', activityId: 'treadmill', log: { durationMin: 20, inclinePct: fromEnd === 3 ? 4 : 5, speedKmh: 6.5 }, doneAt: at(minute) });
+      if (fromEnd === 1) {
+        minute += 5;
+        entries.push({ kind: 'cooldown', activityId: 'stretching', log: { durationMin: 5 }, doneAt: at(minute) });
+      }
+    }
 
     sessions.push({
       id: `sample-${visit}`,

@@ -5,6 +5,7 @@ import { localStorageStore } from './storage';
 import { markBackedUp, needsBackupReminder, snoozeBackupReminder } from './backup';
 import { parseAppData, validateExercise, validateProfile } from './validate';
 import { EMPTY_PROFILE, SAMPLE_EXERCISES } from './seed';
+import { S } from '../test/helpers';
 
 /** Minimal in-memory stand-in for localStorage. */
 function memoryStorage(): Storage {
@@ -27,7 +28,7 @@ describe('workout actions', () => {
     d = logSet(d, 0, { reps: 10, weightKg: 50 });
     d = logSet(d, 0, { reps: 9, weightKg: 50 });
     d = undoLastSet(d, 0);
-    expect(d.activeWorkout!.session.entries[0].sets.map((s) => s.reps)).toEqual([10]);
+    expect(S(d.activeWorkout!.session.entries[0]).sets.map((s) => s.reps)).toEqual([10]);
 
     d = addExerciseToWorkout(d, 'pull-up');
     expect(d.activeWorkout!.currentIndex).toBe(5);
@@ -52,7 +53,7 @@ describe('workout actions', () => {
 
     d = undoLastSet(d, 0);
     expect(d.activeWorkout!.currentIndex).toBe(0);
-    expect(d.activeWorkout!.session.entries[0].sets).toHaveLength(2);
+    expect(S(d.activeWorkout!.session.entries[0]).sets).toHaveLength(2);
   });
 
   it('skips finished exercises and wraps around; extra sets do not jump', () => {
@@ -75,12 +76,12 @@ describe('workout actions', () => {
 
   it('startExercise starts a new workout, or adds to the current one', () => {
     let d = startExercise(createStarterData(), 'leg-press');
-    expect(d.activeWorkout!.session.entries.map((e) => e.exerciseId)).toEqual(['leg-press']);
+    expect(d.activeWorkout!.session.entries.map((e) => S(e).exerciseId)).toEqual(['leg-press']);
     d = logSet(d, 0, { reps: 10, weightKg: 100 });
     d = startExercise(d, 'lat-pulldown');
-    expect(d.activeWorkout!.session.entries.map((e) => e.exerciseId)).toEqual(['leg-press', 'lat-pulldown']);
+    expect(d.activeWorkout!.session.entries.map((e) => S(e).exerciseId)).toEqual(['leg-press', 'lat-pulldown']);
     expect(d.activeWorkout!.currentIndex).toBe(1);
-    expect(d.activeWorkout!.session.entries[0].sets).toHaveLength(1); // nothing lost
+    expect(S(d.activeWorkout!.session.entries[0]).sets).toHaveLength(1); // nothing lost
   });
 
   it('discards a workout with no sets instead of saving it', () => {
@@ -115,10 +116,10 @@ describe('workout actions', () => {
     // Adding the next exercise makes it current; undo from the between state shows that exercise again.
     const added = addExerciseToWorkout(d, 'lat-pulldown');
     expect(added.activeWorkout!.currentIndex).toBe(1);
-    expect(added.activeWorkout!.session.entries[1].exerciseId).toBe('lat-pulldown');
+    expect(S(added.activeWorkout!.session.entries[1]).exerciseId).toBe('lat-pulldown');
     const undone = undoLastSet(d, 0);
     expect(undone.activeWorkout!.currentIndex).toBe(0);
-    expect(undone.activeWorkout!.session.entries[0].sets).toHaveLength(2);
+    expect(S(undone.activeWorkout!.session.entries[0]).sets).toHaveLength(2);
 
     // Nothing happens without a workout in progress.
     const none = createStarterData();
@@ -137,7 +138,7 @@ describe('workout actions', () => {
   it('does not mutate the previous state', () => {
     const before = startWorkout(createStarterData(), SAMPLE_ROUTINES[0]);
     logSet(before, 0, { reps: 10, weightKg: 50 });
-    expect(before.activeWorkout!.session.entries[0].sets).toHaveLength(0);
+    expect(S(before.activeWorkout!.session.entries[0]).sets).toHaveLength(0);
   });
 });
 
@@ -162,7 +163,7 @@ describe('storage', () => {
   it('rejects data with the wrong shape, with a readable message', () => {
     const storage = memoryStorage();
     const bad = createSampleData();
-    (bad.sessions[0].entries[0].sets[0] as { reps: unknown }).reps = 'lots';
+    (S(bad.sessions[0].entries[0]).sets[0] as { reps: unknown }).reps = 'lots';
     storage.setItem('gymtracker:data', JSON.stringify(bad));
     expect(localStorageStore(storage).load()).toMatchObject({ status: 'unreadable', error: expect.stringContaining('a set in workout #1') });
   });
@@ -194,7 +195,7 @@ describe('validation', () => {
     ['a future version', { ...createStarterData(), version: 2 }, 'unsupported version 2'],
     ['missing lists', { version: 1, profile: {} }, 'missing lists'],
     ['a broken exercise', { ...createStarterData(), exercises: [{ id: 'x', name: 'X', repRange: [8], weightStepKg: 5 }] }, 'rep range of "X"'],
-    ['negative weight', (() => { const d = createSampleData(); d.sessions[2].entries[0].sets[0].weightKg = -5; return d; })(), 'a set in workout #3'],
+    ['negative weight', (() => { const d = createSampleData(); S(d.sessions[2].entries[0]).sets[0].weightKg = -5; return d; })(), 'a set in workout #3'],
   ])('rejects %s', (_name, input, message) => {
     expect(() => parseAppData(input)).toThrow(message);
   });
@@ -235,9 +236,9 @@ describe('editing logged sets', () => {
     d = logSet(logSet(d, 0, set), 0, set);
     const id = d.activeWorkout!.session.id;
     d = editSet(d, id, 0, 0, { reps: 8, weightKg: 52.5 });
-    expect(d.activeWorkout!.session.entries[0].sets.map((s) => [s.weightKg, s.reps])).toEqual([[52.5, 8], [50, 10]]);
+    expect(S(d.activeWorkout!.session.entries[0]).sets.map((s) => [s.weightKg, s.reps])).toEqual([[52.5, 8], [50, 10]]);
     d = editSet(d, id, 0, 1, null);
-    expect(d.activeWorkout!.session.entries[0].sets).toHaveLength(1);
+    expect(S(d.activeWorkout!.session.entries[0]).sets).toHaveLength(1);
   });
 
   it('fixes a finished workout; removes an exercise (and the workout) when its last set is deleted', () => {
@@ -246,8 +247,8 @@ describe('editing logged sets', () => {
     const id = d.activeWorkout!.session.id;
     d = finishWorkout(d);
     d = editSet(d, id, 1, 0, { reps: 12, weightKg: 50 });
-    expect(d.sessions[0].entries[1].sets[0].reps).toBe(12);
-    const loggedAt = d.sessions[0].entries[1].sets[0].loggedAt;
+    expect(S(d.sessions[0].entries[1]).sets[0].reps).toBe(12);
+    const loggedAt = S(d.sessions[0].entries[1]).sets[0].loggedAt;
     expect(loggedAt).toBeTruthy(); // time kept, so history order is unchanged
     d = editSet(d, id, 1, 0, null);
     expect(d.sessions[0].entries).toHaveLength(1);

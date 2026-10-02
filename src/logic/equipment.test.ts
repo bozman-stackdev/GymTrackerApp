@@ -4,6 +4,7 @@ import { createSampleData, createStarterData, SAMPLE_EQUIPMENT, SAMPLE_ROUTINES 
 import { parseAppData, validateEquipment } from '../data/validate';
 import type { GymEquipment } from '../types';
 import { equipmentFor, knownGyms, lastUsage, preferredEquipmentId } from './equipment';
+import { S } from '../test/helpers';
 
 const item = (over: Partial<GymEquipment> = {}): GymEquipment => ({
   id: 'e1', name: 'Life Fitness Leg Press', exerciseIds: ['leg-press'], type: 'machine', gym: 'Home Gym',
@@ -27,7 +28,7 @@ describe('equipment library', () => {
     d = finishWorkout(logSet(logSet(logSet(d, 0, { reps: 10, weightKg: 100 }), 0, { reps: 10, weightKg: 100 }), 0, { reps: 9, weightKg: 100 }));
     expect(preferredEquipmentId(d, 'leg-press')).toBe('e2');
     const next = startWorkout(d, { id: 'r', name: 'Legs', items: [{ exerciseId: 'leg-press', sets: 3 }] });
-    expect(next.activeWorkout!.session.entries[0].equipmentId).toBe('e2');
+    expect(S(next.activeWorkout!.session.entries[0]).equipmentId).toBe('e2');
   });
 
   it('"last used" and "previous session" come from workout history', () => {

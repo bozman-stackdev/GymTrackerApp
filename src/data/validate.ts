@@ -27,11 +27,38 @@ function checkSession(s: unknown, i: number, finished: boolean): asserts s is Wo
   check(isObj(s) && isStr(s.id) && isDate(s.startedAt) && Array.isArray(s.entries), `workout #${i + 1}`);
   if (finished) check(isDate(s.finishedAt), `finish time of workout #${i + 1}`);
   for (const e of s.entries as unknown[]) {
-    check(isObj(e) && isStr(e.exerciseId) && isNum(e.targetSets, 0, 50) && Array.isArray(e.sets), `exercise in workout #${i + 1}`);
-    for (const set of e.sets as unknown[]) {
-      check(isObj(set) && isNum(set.reps, 0, 1000) && isNum(set.weightKg, 0, 2000), `a set in workout #${i + 1}`);
+    check(isObj(e), `exercise in workout #${i + 1}`);
+    if (e.kind === undefined || e.kind === 'strength') {
+      check(isStr(e.exerciseId) && isNum(e.targetSets, 0, 50) && Array.isArray(e.sets), `exercise in workout #${i + 1}`);
+      checkSets(e.sets, i);
+    } else {
+      // Cardio / warm-up / cool-down (docs/CARDIO.md).
+      check(ACTIVITY_KINDS.includes(e.kind as string) && isStr(e.activityId), `activity in workout #${i + 1}`);
+      check(e.name === undefined || typeof e.name === 'string', `activity name in workout #${i + 1}`);
+      check(checkMetrics(e.plan) && checkMetrics(e.log), `activity values in workout #${i + 1}`);
+      check(e.doneAt === undefined || isDate(e.doneAt), `activity time in workout #${i + 1}`);
+      check(e.warmupFor === undefined || isStr(e.warmupFor), `warm-up in workout #${i + 1}`);
+      if (e.warmupSets !== undefined) {
+        check(Array.isArray(e.warmupSets), `warm-up sets in workout #${i + 1}`);
+        checkSets(e.warmupSets, i);
+      }
     }
   }
+}
+
+const ACTIVITY_KINDS: string[] = ['cardio', 'warmup', 'cooldown'];
+
+function checkSets(sets: unknown[], i: number) {
+  for (const set of sets) {
+    check(isObj(set) && isNum(set.reps, 0, 1000) && isNum(set.weightKg, 0, 2000), `a set in workout #${i + 1}`);
+  }
+}
+
+/** Optional metrics object: every present value a sane non-negative number. */
+function checkMetrics(m: unknown): boolean {
+  if (m === undefined) return true;
+  if (!isObj(m)) return false;
+  return Object.values(m).every((v) => v === undefined || isNum(v, 0, 100_000));
 }
 
 /** Validates + migrates. Throws DataError with a readable message. */
@@ -44,6 +71,12 @@ export function parseAppData(input: unknown): AppData {
   input.sessions.forEach((s, i) => checkSession(s, i, true));
   for (const [i, r] of (input.routines as unknown[]).entries()) {
     check(isObj(r) && isStr(r.id) && typeof r.name === 'string' && Array.isArray(r.items), `routine #${i + 1}`);
+    for (const item of r.items as unknown[]) {
+      const ok = isObj(item) && (item.kind === undefined || item.kind === 'strength'
+        ? isStr(item.exerciseId) && isNum(item.sets, 0, 50)
+        : ACTIVITY_KINDS.includes(item.kind as string) && isStr(item.activityId) && checkMetrics(item.plan));
+      check(ok, `an item of routine #${i + 1}`);
+    }
   }
   if (input.equipment !== undefined) {
     check(Array.isArray(input.equipment), 'equipment list');

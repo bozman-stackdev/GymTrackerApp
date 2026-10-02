@@ -251,3 +251,23 @@ use plain loops and compute each workout's working weight once. Measured: 3 year
 chronological: `lastDoneAt()` (routines, "next up") takes the latest date, `exerciseHistory()` sorts when needed.
 
 **D58. Form controls are 16px+** (iOS zooms into smaller fields on focus). `e2e/layout.spec.ts` checks every field.
+
+## Day 2 - Cardio, warm-ups and cool-downs
+
+**D59. One ordered list, two entry shapes.** `SessionEntry = StrengthEntry | ActivityEntry` (and the same for routine
+items). A missing `kind` means strength, so existing data, backups and synced records need no migration. The union lets
+the compiler find every place that reads `sets` (about 130 call sites). Each one now goes through `isStrength()`, or
+through `strengthEntries()` / `activityEntries()`. Details: [CARDIO.md](CARDIO.md).
+
+**D60. Warm-up sets are a separate warm-up entry** (`warmupFor` + `warmupSets`), inserted just before the exercise. They
+are never extra sets on the strength entry. That keeps progression, challenges, mastery, personal bests, volume and XP
+untouched, with no "is this a warm-up?" checks scattered through the engine.
+
+**D61. Cardio progression is its own small module** (`logic/cardio.ts`). It only gives hints: never automatic, never a
+challenge. It needs 2 sessions, adds at most +10% time, and suggests incline after 3 steady treadmill sessions.
+
+**D62. Activity XP is once per workout**, and warm-ups and cool-downs only pay when planned in the routine. Adding more
+activities never pays more. 10+ minutes of cardio makes a real workout (workout XP, streak).
+
+**D63. Older app versions** (an old tab or cached PWA) skip synced workouts that contain activities: their validator
+doesn't know the shape, so it rejects the record and the sync carries on. They pick the workouts up after updating.

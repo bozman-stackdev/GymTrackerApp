@@ -1,30 +1,38 @@
 import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useExerciseLookup } from '../../data/store';
+import { isEntryDone, isStrength } from '../../logic/entries';
 import type { WorkoutSession } from '../../types';
 import { Icon } from '../../components/Icon';
+import { entryTitle, KIND_ICON } from '../../components/activityUi';
 
-/** Every exercise in the workout, with progress. Tap to jump. Doubles as "what have I done". */
+/** Every item of the workout, with progress. Tap to jump. Doubles as "what have I done". */
 export function ExerciseStrip({ session, currentIndex, onSelect }: { session: WorkoutSession; currentIndex: number; onSelect: (i: number) => void }) {
   const getExercise = useExerciseLookup();
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    ref.current?.querySelectorAll('.ex-chip')[currentIndex]?.scrollIntoView?.({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+    ref.current?.querySelector(`[data-index="${currentIndex}"]`)?.scrollIntoView?.({ inline: 'center', block: 'nearest', behavior: 'smooth' });
   }, [currentIndex]);
 
   return (
     <nav className="ex-strip" ref={ref} aria-label="Exercises in this workout">
       {session.entries.map((e, i) => {
-        const done = e.sets.length >= e.targetSets;
+        // Warm-up sets are shown on their exercise, not as a separate item.
+        if (!isStrength(e) && e.warmupFor) return null;
+        const done = isEntryDone(e);
         return (
           <button
-            key={e.exerciseId}
-            className={`ex-chip${done ? ' done' : ''}${i === currentIndex ? ' current' : ''}`}
+            key={isStrength(e) ? `s:${e.exerciseId}` : `a:${i}:${e.activityId}`}
+            data-index={i}
+            className={`ex-chip${done ? ' done' : ''}${i === currentIndex ? ' current' : ''}${isStrength(e) ? '' : ` kind-${e.kind}`}`}
             aria-current={i === currentIndex}
             onClick={() => onSelect(i)}
           >
-            <span className="ex-chip-name">{getExercise(e.exerciseId).name}</span>
-            <span className="ex-chip-count">{done ? <Icon name="check" size={16} label="done" /> : `${e.sets.length}/${e.targetSets}`}</span>
+            {!isStrength(e) && <Icon name={KIND_ICON[e.kind]} size={16} />}
+            <span className="ex-chip-name">{entryTitle(e, getExercise)}</span>
+            <span className="ex-chip-count">
+              {done ? <Icon name="check" size={16} label="done" /> : isStrength(e) ? `${e.sets.length}/${e.targetSets}` : null}
+            </span>
           </button>
         );
       })}

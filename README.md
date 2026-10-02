@@ -102,6 +102,9 @@ docs/                       ARCHITECTURE (decision log), ROADMAP (backend/native
 - **Rewards**: target hit, back on track, weight mastered, personal best, consistency. XP → levels → achievements.
 - **My Gym**: your machines with settings, last weights and previous session. Shown during the workout.
 - **Fix mistakes**: tap any logged set (or *Edit sets* on a workout summary) to change or delete it.
+- **Cardio, warm-ups, cool-downs**: add them to routines or mid-workout, in any order; only the fields that make sense
+  (treadmill: speed, incline...); *Last session* and a gentle hint; **Warm-up** sets that never affect progression.
+  Details: [docs/CARDIO.md](docs/CARDIO.md).
 - **kg or lb** (Profile). **Send feedback** (Profile). A gentle **backup reminder** every couple of weeks.
 
 ## Today's Challenge, XP and streaks
