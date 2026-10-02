@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Stepper } from '../../components/Stepper';
 import { editSet, logSet, logWarmupSet, setEntryEquipment, SET_LIMITS, undoWarmupSet } from '../../data/actions';
 import { isActivity } from '../../logic/entries';
@@ -13,6 +13,11 @@ import { PROGRESSION_DISCLAIMER, plannedSet, recommend } from '../../logic/progr
 import type { ActivityEntry, Exercise, StrengthEntry } from '../../types';
 import { RepPad } from './RepPad';
 import { Icon } from '../../components/Icon';
+import { useMuscleInput } from '../../data/useMuscles';
+import { analyseMuscles } from '../../logic/muscles/analysis';
+import { muscleName, musclesFor } from '../../logic/muscles/catalog';
+import { exerciseShare } from '../../logic/muscles/insights';
+import { PROGRESS_LABEL } from '../../logic/muscles/labels';
 
 /** Logging for the current exercise: weight (pre-filled) + one tap on the reps done. */
 export function SetLogger({ exercise, entryIndex, live }: { exercise: Exercise; entryIndex: number; live: LiveSession }) {
@@ -104,6 +109,7 @@ export function SetLogger({ exercise, entryIndex, live }: { exercise: Exercise; 
             {rec.reason} <span className="disclaimer">{PROGRESSION_DISCLAIMER}</span>
           </p>
         )}
+        {showWhy && <ChallengeMuscles exercise={exercise} />}
       </div>
 
       {warmupSets.length > 0 && (
@@ -179,5 +185,28 @@ function ChallengeLine({ challenge, done, showWhy, onWhy }: { challenge: Challen
         {formatTarget(challenge)} <span className="why">{showWhy ? 'Hide' : 'Why?'}</span>
       </span>
     </button>
+  );
+}
+
+/**
+ * Muscle-map context in "Why?": what the exercise works, and how much of its main muscle's recent training it gives.
+ * Information only - Today's Challenge comes from the progression engine alone and is never changed by the map.
+ */
+function ChallengeMuscles({ exercise }: { exercise: Exercise }) {
+  const input = useMuscleInput();
+  const { primary, secondary } = musclesFor(exercise);
+  const context = useMemo(() => {
+    const share = exerciseShare(exercise.id, input);
+    if (!share || share.share < 0.3) return null;
+    return { ...share, progress: analyseMuscles(input, '4w').progress[share.muscle].level };
+  }, [exercise.id, input]);
+  const names = (ids: typeof primary) => ids.map(muscleName).join(', ');
+  return (
+    <p className="muted small why-text" data-testid="challenge-muscles">
+      Works {names(primary)}{secondary.length ? `, plus ${names(secondary).toLowerCase()}` : ''}.
+      {context && ` Your main ${muscleName(context.muscle).toLowerCase()} exercise lately (${Math.round(context.share * 100)}% of its sets in 4 weeks)`}
+      {context && context.progress !== 'none' && ` · ${muscleName(context.muscle).toLowerCase()} training progress: ${PROGRESS_LABEL[context.progress].toLowerCase()}`}
+      {context && '.'}
+    </p>
   );
 }

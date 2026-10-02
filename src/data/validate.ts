@@ -2,7 +2,9 @@
  * Checks that saved or imported data has the shape the app expects, and upgrades older versions.
  * Used on every load and on backup import, so bad data is rejected with a clear message instead of crashing screens.
  */
-import type { AppData, Exercise, GymEquipment, Profile, WorkoutSession } from '../types';
+import type { AppData, Exercise, ExerciseMuscles, GymEquipment, Profile, WorkoutSession } from '../types';
+import { isMuscleId } from '../logic/muscles/catalog';
+import { SAMPLE_EXERCISES } from './seed';
 
 export class DataError extends Error {}
 
@@ -21,6 +23,26 @@ function checkExercise(e: unknown, i: number): asserts e is Exercise {
   const r = e.repRange;
   check(Array.isArray(r) && r.length === 2 && isNum(r[0], 1, 100) && isNum(r[1], 1, 100), `rep range of "${String(e.name)}"`);
   check(isNum(e.weightStepKg, 0, 100), `weight step of "${String(e.name)}"`);
+  const m = e.muscles;
+  check(m === undefined || (isObj(m) && Array.isArray(m.primary) && m.primary.every(isStr)
+    && (m.secondary === undefined || (Array.isArray(m.secondary) && m.secondary.every(isStr)))
+    && (m.weights === undefined || (isObj(m.weights) && Object.values(m.weights).every((v) => isNum(v, 0, 1))))), `muscles of "${String(e.name)}"`);
+}
+
+/**
+ * The muscles to keep for an exercise: its own (unknown muscle ids from a newer app version dropped), else the
+ * library's for a built-in exercise saved before the muscle map existed. Custom exercises without any are left
+ * as they are: the muscle map works them out from the name and group (logic/muscles/catalog.ts).
+ */
+function migrateMuscles(e: Exercise): ExerciseMuscles | undefined {
+  const own = e.muscles;
+  if (own) {
+    const primary = own.primary.filter(isMuscleId);
+    const secondary = (own.secondary ?? []).filter(isMuscleId);
+    const weights = own.weights && Object.fromEntries(Object.entries(own.weights).filter(([k]) => isMuscleId(k)));
+    if (primary.length) return { primary, secondary, ...(weights && Object.keys(weights).length ? { weights } : {}) };
+  }
+  return SAMPLE_EXERCISES.find((x) => x.id === e.id)?.muscles;
 }
 
 function checkSession(s: unknown, i: number, finished: boolean): asserts s is WorkoutSession {
@@ -95,7 +117,12 @@ export function parseAppData(input: unknown): AppData {
 /** Upgrade older saved shapes to the current one. Add a step whenever AppData.version changes. */
 function migrate(data: AppData): AppData {
   // Earlier versions could save machine photos on exercises. Photos are no longer kept: drop them to free space.
-  const exercises = data.exercises.map(({ photo: _photo, ...e }: Exercise & { photo?: string }) => e);
+  // Exercises saved before the muscle map get their muscles from the library (built-in ones; see migrateMuscles).
+  const exercises = data.exercises.map(({ photo: _photo, ...e }: Exercise & { photo?: string }) => {
+    const { muscles: _old, ...rest } = e;
+    const muscles = migrateMuscles(e);
+    return muscles ? { ...rest, muscles } : rest;
+  });
   // Rebuild with known fields only, so stray fields in an imported file are not kept.
   return {
     version: 1,
@@ -107,6 +134,7 @@ function migrate(data: AppData): AppData {
     activeWorkout: data.activeWorkout ?? null,
     ...(data.isSample ? { isSample: true } : {}),
     ...(isObj(data.backup) ? { backup: { lastExportAt: str(data.backup.lastExportAt), remindAfter: str(data.backup.remindAfter) } } : {}),
+    ...(data.premiumPreview === true ? { premiumPreview: true } : {}),
   };
 }
 

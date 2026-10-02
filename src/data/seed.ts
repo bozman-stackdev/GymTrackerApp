@@ -2,34 +2,39 @@
  * Sample data so the prototype is testable immediately.
  * History is generated relative to "now" so it always looks recent.
  */
-import type { AppData, Exercise, GymEquipment, Profile, Routine, SessionEntry, SetLog, WorkoutSession } from '../types';
+import type { AppData, Exercise, ExerciseMuscles, GymEquipment, Profile, Routine, SessionEntry, SetLog, WorkoutSession } from '../types';
 import { isStrengthItem } from '../logic/entries';
 
+/** Primary and secondary muscles (primary count 1.0 per set, secondary 0.5; `weights` overrides). Feeds the muscle map. */
+const mu = (primary: ExerciseMuscles['primary'], secondary: ExerciseMuscles['secondary'] = [], weights?: ExerciseMuscles['weights']): ExerciseMuscles =>
+  ({ primary, secondary, ...(weights ? { weights } : {}) });
+
+/** The built-in exercise library: the source of truth for each exercise's muscles too. */
 export const SAMPLE_EXERCISES: Exercise[] = [
   // Push
-  { id: 'chest-press-machine', name: 'Chest Press Machine', muscleGroup: 'chest', equipment: 'machine', repRange: [8, 12], weightStepKg: 5 },
-  { id: 'incline-db-press', name: 'Incline Dumbbell Press', muscleGroup: 'chest', equipment: 'dumbbell', repRange: [8, 12], weightStepKg: 2 },
-  { id: 'shoulder-press-machine', name: 'Shoulder Press Machine', muscleGroup: 'shoulders', equipment: 'machine', repRange: [8, 12], weightStepKg: 5 },
-  { id: 'lateral-raise', name: 'Dumbbell Lateral Raise', muscleGroup: 'shoulders', equipment: 'dumbbell', repRange: [12, 15], weightStepKg: 1 },
-  { id: 'triceps-pushdown', name: 'Cable Triceps Pushdown', muscleGroup: 'arms', equipment: 'cable', repRange: [10, 15], weightStepKg: 2.5 },
+  { id: 'chest-press-machine', name: 'Chest Press Machine', muscleGroup: 'chest', equipment: 'machine', repRange: [8, 12], weightStepKg: 5, muscles: mu(['chest'], ['front-delts', 'triceps']) },
+  { id: 'incline-db-press', name: 'Incline Dumbbell Press', muscleGroup: 'chest', equipment: 'dumbbell', repRange: [8, 12], weightStepKg: 2, muscles: mu(['chest'], ['front-delts', 'triceps'], { 'front-delts': 0.6 }) },
+  { id: 'shoulder-press-machine', name: 'Shoulder Press Machine', muscleGroup: 'shoulders', equipment: 'machine', repRange: [8, 12], weightStepKg: 5, muscles: mu(['front-delts'], ['side-delts', 'triceps']) },
+  { id: 'lateral-raise', name: 'Dumbbell Lateral Raise', muscleGroup: 'shoulders', equipment: 'dumbbell', repRange: [12, 15], weightStepKg: 1, muscles: mu(['side-delts'], ['upper-back'], { 'upper-back': 0.25 }) },
+  { id: 'triceps-pushdown', name: 'Cable Triceps Pushdown', muscleGroup: 'arms', equipment: 'cable', repRange: [10, 15], weightStepKg: 2.5, muscles: mu(['triceps']) },
   // Pull
-  { id: 'lat-pulldown', name: 'Lat Pulldown', muscleGroup: 'back', equipment: 'cable', repRange: [8, 12], weightStepKg: 5 },
-  { id: 'seated-cable-row', name: 'Seated Cable Row', muscleGroup: 'back', equipment: 'cable', repRange: [8, 12], weightStepKg: 5 },
-  { id: 'face-pull', name: 'Cable Face Pull', muscleGroup: 'shoulders', equipment: 'cable', repRange: [12, 15], weightStepKg: 2.5 },
-  { id: 'db-curl', name: 'Dumbbell Biceps Curl', muscleGroup: 'arms', equipment: 'dumbbell', repRange: [8, 12], weightStepKg: 1 },
+  { id: 'lat-pulldown', name: 'Lat Pulldown', muscleGroup: 'back', equipment: 'cable', repRange: [8, 12], weightStepKg: 5, muscles: mu(['lats'], ['biceps', 'upper-back']) },
+  { id: 'seated-cable-row', name: 'Seated Cable Row', muscleGroup: 'back', equipment: 'cable', repRange: [8, 12], weightStepKg: 5, muscles: mu(['upper-back', 'lats'], ['biceps', 'rear-delts']) },
+  { id: 'face-pull', name: 'Cable Face Pull', muscleGroup: 'shoulders', equipment: 'cable', repRange: [12, 15], weightStepKg: 2.5, muscles: mu(['rear-delts'], ['upper-back']) },
+  { id: 'db-curl', name: 'Dumbbell Biceps Curl', muscleGroup: 'arms', equipment: 'dumbbell', repRange: [8, 12], weightStepKg: 1, muscles: mu(['biceps'], ['forearms']) },
   // Legs
-  { id: 'leg-press', name: 'Leg Press', muscleGroup: 'legs', equipment: 'machine', repRange: [8, 12], weightStepKg: 10 },
-  { id: 'leg-extension', name: 'Leg Extension', muscleGroup: 'legs', equipment: 'machine', repRange: [10, 15], weightStepKg: 5 },
-  { id: 'lying-leg-curl', name: 'Lying Leg Curl', muscleGroup: 'legs', equipment: 'machine', repRange: [10, 15], weightStepKg: 5 },
-  { id: 'calf-raise-machine', name: 'Standing Calf Raise', muscleGroup: 'legs', equipment: 'machine', repRange: [10, 15], weightStepKg: 5 },
-  { id: 'hanging-knee-raise', name: 'Hanging Knee Raise', muscleGroup: 'core', equipment: 'bodyweight', repRange: [10, 15], weightStepKg: 0 },
+  { id: 'leg-press', name: 'Leg Press', muscleGroup: 'legs', equipment: 'machine', repRange: [8, 12], weightStepKg: 10, muscles: mu(['quads'], ['glutes', 'hamstrings']) },
+  { id: 'leg-extension', name: 'Leg Extension', muscleGroup: 'legs', equipment: 'machine', repRange: [10, 15], weightStepKg: 5, muscles: mu(['quads']) },
+  { id: 'lying-leg-curl', name: 'Lying Leg Curl', muscleGroup: 'legs', equipment: 'machine', repRange: [10, 15], weightStepKg: 5, muscles: mu(['hamstrings'], ['calves'], { calves: 0.25 }) },
+  { id: 'calf-raise-machine', name: 'Standing Calf Raise', muscleGroup: 'legs', equipment: 'machine', repRange: [10, 15], weightStepKg: 5, muscles: mu(['calves']) },
+  { id: 'hanging-knee-raise', name: 'Hanging Knee Raise', muscleGroup: 'core', equipment: 'bodyweight', repRange: [10, 15], weightStepKg: 0, muscles: mu(['abs'], ['obliques', 'forearms']) },
   // Not in a routine yet
-  { id: 'back-squat', name: 'Barbell Back Squat', muscleGroup: 'legs', equipment: 'barbell', repRange: [5, 8], weightStepKg: 2.5 },
-  { id: 'bench-press', name: 'Barbell Bench Press', muscleGroup: 'chest', equipment: 'barbell', repRange: [5, 8], weightStepKg: 2.5 },
-  { id: 'pec-deck', name: 'Pec Deck Fly', muscleGroup: 'chest', equipment: 'machine', repRange: [10, 15], weightStepKg: 5 },
-  { id: 'hip-thrust-machine', name: 'Hip Thrust Machine', muscleGroup: 'legs', equipment: 'machine', repRange: [8, 12], weightStepKg: 10 },
-  { id: 'assisted-pull-up', name: 'Assisted Pull-up Machine', muscleGroup: 'back', equipment: 'machine', repRange: [6, 10], weightStepKg: 5 },
-  { id: 'pull-up', name: 'Pull-up', muscleGroup: 'back', equipment: 'bodyweight', repRange: [5, 10], weightStepKg: 0 },
+  { id: 'back-squat', name: 'Barbell Back Squat', muscleGroup: 'legs', equipment: 'barbell', repRange: [5, 8], weightStepKg: 2.5, muscles: mu(['quads', 'glutes'], ['hamstrings', 'adductors', 'lower-back']) },
+  { id: 'bench-press', name: 'Barbell Bench Press', muscleGroup: 'chest', equipment: 'barbell', repRange: [5, 8], weightStepKg: 2.5, muscles: mu(['chest'], ['triceps', 'front-delts']) },
+  { id: 'pec-deck', name: 'Pec Deck Fly', muscleGroup: 'chest', equipment: 'machine', repRange: [10, 15], weightStepKg: 5, muscles: mu(['chest'], ['front-delts'], { 'front-delts': 0.25 }) },
+  { id: 'hip-thrust-machine', name: 'Hip Thrust Machine', muscleGroup: 'legs', equipment: 'machine', repRange: [8, 12], weightStepKg: 10, muscles: mu(['glutes'], ['hamstrings']) },
+  { id: 'assisted-pull-up', name: 'Assisted Pull-up Machine', muscleGroup: 'back', equipment: 'machine', repRange: [6, 10], weightStepKg: 5, muscles: mu(['lats'], ['biceps', 'upper-back']) },
+  { id: 'pull-up', name: 'Pull-up', muscleGroup: 'back', equipment: 'bodyweight', repRange: [5, 10], weightStepKg: 0, muscles: mu(['lats'], ['biceps', 'upper-back', 'forearms']) },
 ];
 
 export const SAMPLE_ROUTINES: Routine[] = [

@@ -13,6 +13,11 @@ import { buildJourney } from '../../logic/journey';
 import { recommend } from '../../logic/progression';
 import { getUnits, toDisplay } from '../../logic/units';
 import { Icon } from '../../components/Icon';
+import { MiniMaps, involvementTone } from '../../components/body/MiniMaps';
+import { bodyTypeOf, useMuscleInput } from '../../data/useMuscles';
+import { involvement, muscleName, musclesFor } from '../../logic/muscles/catalog';
+import { exerciseShare } from '../../logic/muscles/insights';
+import type { Exercise } from '../../types';
 
 /** Progress for one exercise: today's suggestion, a trend chart and past sessions. */
 export function ExerciseScreen() {
@@ -38,6 +43,8 @@ export function ExerciseScreen() {
         <span className="tag">{exercise.equipment}</span>
         <span className="tag">{exercise.repRange[0]}–{exercise.repRange[1]} reps</span>
       </div>
+
+      <MusclesWorked exercise={exercise} />
 
       <h2>Journey</h2>
       <JourneyView exercise={exercise} journey={buildJourney(exercise, data.sessions, challenge)} />
@@ -72,5 +79,27 @@ export function ExerciseScreen() {
         {history.length === 0 && <p className="muted">Not done yet.</p>}
       </div>
     </Screen>
+  );
+}
+
+/** Which muscles the exercise trains (from the exercise library), on a small front/back map. */
+function MusclesWorked({ exercise }: { exercise: Exercise }) {
+  const { data } = useStore();
+  const input = useMuscleInput();
+  const { primary, secondary } = musclesFor(exercise);
+  const share = exerciseShare(exercise.id, input);
+  const names = (ids: typeof primary) => ids.map(muscleName).join(', ');
+  return (
+    <div className="card muscles-worked" data-testid="muscles-worked">
+      <MiniMaps body={bodyTypeOf(data.profile)} tone={involvementTone(involvement(exercise))} label={`Muscles worked: ${names(primary)}${secondary.length ? `; also ${names(secondary)}` : ''}`} />
+      <div className="stack tight">
+        <div><div className="caps small">Main</div><div className="title">{names(primary)}</div></div>
+        {secondary.length > 0 && <div><div className="caps small">Also works</div><div>{names(secondary)}</div></div>}
+        {share && share.share >= 0.3 && (
+          <p className="muted small flush">{Math.round(share.share * 100)}% of your {muscleName(share.muscle).toLowerCase()} sets in the last 4 weeks.</p>
+        )}
+        <Link to="/muscles" className="small accent with-icon">Muscle map <Icon name="chevronRight" size={16} /></Link>
+      </div>
+    </div>
   );
 }

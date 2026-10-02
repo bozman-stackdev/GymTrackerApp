@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate, useNavigationType } from 'react-router-dom';
 import { TabBar } from './components/TabBar';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { StoreProvider, useAppState, useStore } from './data/store';
@@ -19,6 +19,7 @@ import { ProfileScreen } from './screens/ProfileScreen';
 import { RoutineScreen } from './screens/RoutineScreen';
 import { ScanScreen } from './screens/ScanScreen';
 import { WorkoutScreen } from './screens/workout/WorkoutScreen';
+import { MusclesScreen } from './screens/muscles/MusclesScreen';
 import { Icon } from './components/Icon';
 
 // HashRouter works on any static host (and inside a native wrapper) without server config.
@@ -46,6 +47,7 @@ function Shell() {
     <>
       {saveError && <div className="alert save-alert with-icon" role="alert"><Icon name="alert" size={18} /> Not saved: {saveError}</div>}
       <ResumeWorkoutOnLaunch />
+      <ScrollToTopOnNewScreen />
       <Routes>
         <Route path="/" element={<HomeScreen />} />
         <Route path="/workout" element={<WorkoutScreen />} />
@@ -61,6 +63,7 @@ function Shell() {
         <Route path="/routines/:id" element={<RoutineScreen />} />
         <Route path="/gym/new" element={<EquipmentFormScreen />} />
         <Route path="/gym/:id" element={<EquipmentFormScreen />} />
+        <Route path="/muscles" element={<MusclesScreen />} />
         <Route path="/profile" element={<ProfileScreen />} />
         <Route path="/account" element={<AccountScreen />} />
         <Route path="*" element={<Navigate to="/" replace />} />
@@ -68,6 +71,18 @@ function Shell() {
       <TabBarUnlessTraining />
     </>
   );
+}
+
+/** A new screen opens at the top (not at the previous screen's scroll position); Back keeps where you were. */
+function ScrollToTopOnNewScreen() {
+  const { pathname } = useLocation();
+  const type = useNavigationType();
+  const shown = useRef(pathname);
+  useEffect(() => {
+    if (pathname !== shown.current && type !== 'POP') window.scrollTo(0, 0);
+    shown.current = pathname;
+  }, [pathname, type]);
+  return null;
 }
 
 /** The workout screens are distraction-free: no tab bar. */

@@ -2,8 +2,13 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { LevelBar, Streak } from '../../components/ProgressWidgets';
 import { Screen } from '../../components/Screen';
 import { formatDuration } from '../../components/useNow';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { SetEditor } from '../../components/SetEditor';
+import { MiniMaps } from '../../components/body/MiniMaps';
+import { bodyTypeOf } from '../../data/useMuscles';
+import { analyseMuscles } from '../../logic/muscles/analysis';
+import { muscleName, MUSCLE_IDS } from '../../logic/muscles/catalog';
+import { activityTone } from '../muscles/parts';
 import { deleteEntry, deleteSession, editSet } from '../../data/actions';
 import { isStrength, strengthEntries } from '../../logic/entries';
 import { cardioMinutes, describeActivity } from '../../logic/cardio';
@@ -55,6 +60,7 @@ export function SessionScreen() {
       </p>
 
       {scored && <WorkoutRewards scored={scored} session={session} progress={isLatest ? progress : undefined} />}
+      {!editMode && <MusclesTrained session={session} />}
 
       {editMode && (
         <div className="list" data-testid="edit-sets">
@@ -165,6 +171,24 @@ const EVENT_LABEL: Record<XpEvent['type'], string> = {
 };
 
 /** What this workout earned. `progress` is given for the latest workout only (level/streak "now"). */
+/** The muscles this workout trained, on a small map; opens the muscle map for this workout. */
+function MusclesTrained({ session }: { session: WorkoutSession }) {
+  const { data } = useStore();
+  const a = useMemo(() => analyseMuscles({ sessions: [session], exercises: data.exercises }, 'workout', session.id), [session, data.exercises]);
+  const top = MUSCLE_IDS.filter((m) => a.activity[m].sets > 0).sort((x, y) => a.activity[y].sets - a.activity[x].sets).slice(0, 3);
+  if (top.length === 0) return null; // cardio only
+  return (
+    <Link to={`/muscles?period=workout&session=${session.id}`} className="card muscles-worked muscles-trained" data-testid="muscles-trained">
+      <MiniMaps body={bodyTypeOf(data.profile)} tone={(m) => activityTone(a.activity[m].level)} label={`Muscles in this workout: ${top.map(muscleName).join(', ')}`} />
+      <div className="stack tight grow">
+        <div className="caps small">Muscles in this workout</div>
+        <div className="title">{top.map(muscleName).join(', ')}</div>
+        <span className="small accent with-icon">Open the muscle map <Icon name="chevronRight" size={16} /></span>
+      </div>
+    </Link>
+  );
+}
+
 function WorkoutRewards({ scored, session, progress }: { scored: SessionProgress; session: WorkoutSession; progress?: Progress }) {
   const getExercise = useExerciseLookup();
   // Nothing earned: say why, instead of a bare "+0 XP".

@@ -1,4 +1,5 @@
 /** Achievements: a plain list. Add one by adding an entry - `test` sees running totals after each workout. */
+import type { MuscleGroup } from '../../types';
 import { GAME_CONFIG } from './config';
 
 export interface GameStats {
@@ -12,9 +13,19 @@ export interface GameStats {
   levelsMastered: number;
   /** Workouts where every challenge was completed. */
   successfulSessions: number;
+  /** Weights mastered / challenges completed per muscle group (by the exercise's primary muscles; see logic/muscles). */
+  masteredByGroup: Partial<Record<MuscleGroup, number>>;
+  challengesByGroup: Partial<Record<MuscleGroup, number>>;
+  /** Workouts with every planned set done that trained quads, hamstrings and glutes. */
+  completeLegDays: number;
+  /** Weeks where pushing, pulling and legs were all trained, none less than half as much as the most-trained. */
+  balancedWeeks: number;
 }
 
-export type AchievementIcon = 'flag' | 'target' | 'dumbbell' | 'ten' | 'repeat' | 'star' | 'circleCheck' | 'trophy' | 'calendar' | 'medal' | 'arrowUp';
+export type AchievementIcon = 'flag' | 'target' | 'dumbbell' | 'ten' | 'repeat' | 'star' | 'circleCheck' | 'trophy' | 'calendar' | 'medal' | 'arrowUp'
+  | 'muscle' | 'trendUp' | 'balance' | 'body';
+
+const M = GAME_CONFIG.muscleAchievements;
 
 export interface Achievement {
   id: string;
@@ -40,4 +51,16 @@ export const ACHIEVEMENTS: Achievement[] = [
   },
   { id: 'twenty-five-workouts', icon: 'medal', title: '25 Workouts', description: 'Finish 25 workouts', test: (s) => s.workouts >= 25 },
   { id: 'first-weight-increase', icon: 'arrowUp', title: 'First Weight Increase', description: 'Complete a challenge at a heavier weight', test: (s) => s.weightIncreases >= 1 },
+  // Muscle map. Progress and following the plan - never simply training more.
+  { id: 'chest-milestone', icon: 'muscle', title: 'First Chest Milestone', description: 'Master a weight on a chest exercise', test: (s) => (s.masteredByGroup.chest ?? 0) >= 1 },
+  {
+    id: 'back-progression', icon: 'trendUp', title: 'Back Progression', description: `Complete ${M.backChallenges} challenges on back exercises`,
+    test: (s) => (s.challengesByGroup.back ?? 0) >= M.backChallenges,
+  },
+  { id: 'leg-day-complete', icon: 'circleCheck', title: 'Leg Day Complete', description: 'Finish every planned set of a workout that trains quads, hamstrings and glutes', test: (s) => s.completeLegDays >= 1 },
+  { id: 'balanced-training', icon: 'balance', title: 'Balanced Training', description: 'A week with pushing, pulling and legs, none trained less than half as much as the most-trained', test: (s) => s.balancedWeeks >= 1 },
+  {
+    id: 'muscle-mastery', icon: 'body', title: 'Muscle Mastery', description: `Master a weight in ${M.groupsToMaster} different muscle groups`,
+    test: (s) => Object.values(s.masteredByGroup).filter((n) => (n ?? 0) > 0).length >= M.groupsToMaster,
+  },
 ];

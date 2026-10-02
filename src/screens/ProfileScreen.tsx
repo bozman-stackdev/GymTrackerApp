@@ -14,12 +14,15 @@ import { fromDisplay, toDisplay, type Units } from '../logic/units';
 import { useProgress } from '../data/useProgress';
 import { AchievementList, LevelBar, PersonalBestList, Streak } from '../components/ProgressWidgets';
 import { ACHIEVEMENTS } from '../logic/game/achievements';
-import type { Experience, Goal, Profile, Sex } from '../types';
+import type { BodyType, Experience, Goal, Profile, Sex } from '../types';
+import { bodyTypeOf, usePlan } from '../data/useMuscles';
+import { PREMIUM_FEATURES } from '../logic/plan';
 import { Icon } from '../components/Icon';
 import { plural } from '../logic/history';
 import { cardioStats, formatMetric, formatMinutes } from '../logic/cardio';
 
 const UNITS: [Units, string][] = [['kg', 'kg'], ['lb', 'lb']];
+const BODIES: [BodyType, string][] = [['male', 'Male'], ['female', 'Female']];
 const SEXES: [Sex, string][] = [['male', 'Male'], ['female', 'Female'], ['other', 'Other'], ['', 'Prefer not to say']];
 const EXPERIENCE: [Experience, string][] = [['beginner', 'Beginner'], ['intermediate', 'Intermediate'], ['advanced', 'Advanced']];
 const GOALS: [Goal, string][] = [['strength', 'Strength'], ['muscle', 'Build muscle'], ['general', 'General fitness']];
@@ -104,6 +107,7 @@ export function ProfileScreen() {
 
       <Chips label="Units" options={UNITS} value={units} onChange={(v) => change('units', v)} />
       <Chips label="Sex" options={SEXES} value={p.sex} onChange={(v) => change('sex', v)} />
+      <Chips label="Body on the muscle map" options={BODIES} value={bodyTypeOf(p)} onChange={(v) => change('bodyMap', v)} />
       <Chips label="Experience" options={EXPERIENCE} value={p.experience} onChange={(v) => change('experience', v)} />
       <Chips label="Goal" options={GOALS} value={p.goal} onChange={(v) => change('goal', v)} />
 
@@ -112,6 +116,8 @@ export function ProfileScreen() {
       </button>
 
       {accountsOn && <AccountSection />}
+
+      <PlanSection />
 
       <h2>Feedback</h2>
       <a className="btn block" href={feedbackUrl()} target="_blank" rel="noopener noreferrer" data-testid="feedback"><Icon name="message" /> Send feedback</a>
@@ -135,6 +141,34 @@ export function ProfileScreen() {
       <button className="btn block ghost danger" onClick={() => reset(false)}>Start fresh (delete all)</button>
       <p className="muted small center flush" data-testid="app-version">Version {__APP_VERSION__}</p>
     </Screen>
+  );
+}
+
+/**
+ * Free or Premium. There are no payments yet: the Premium preview switches the extra muscle-map analysis on for
+ * testing (stored on this phone only). See logic/plan.ts.
+ */
+function PlanSection() {
+  const { update } = useStore();
+  const plan = usePlan();
+  return (
+    <>
+      <h2>Plan</h2>
+      <div className="card stack tight" data-testid="plan">
+        <div className="row between">
+          <strong>{plan === 'premium' ? 'Premium preview' : 'Free'}</strong>
+          <label className="switch">
+            <input type="checkbox" role="switch" checked={plan === 'premium'} aria-checked={plan === 'premium'} aria-label="Premium preview"
+              onChange={(e) => update((d) => ({ ...d, premiumPreview: e.target.checked || undefined }))} />
+            <span aria-hidden />
+          </label>
+        </div>
+        <p className="muted small flush">
+          Premium adds {PREMIUM_FEATURES.map((f) => f.title.toLowerCase()).join(', ')} to the muscle map. It isn't on sale yet:
+          while the app is being tested, the preview turns it on for free.
+        </p>
+      </div>
+    </>
   );
 }
 

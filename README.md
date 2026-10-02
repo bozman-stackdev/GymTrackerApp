@@ -68,6 +68,8 @@ src/
     journey.ts              Exercise journey: levels and mastery
     equipment.ts            My gym queries: machines per exercise, last used (docs/EQUIPMENT.md)
     game/                   Today's Challenge, XP, levels, streaks, achievements (docs/GAMIFICATION.md)
+    muscles/                Muscle map scoring: activity, progress, balance, insights (docs/MUSCLES.md)
+    plan.ts                 Free / Premium features (a preview switch until there are payments)
     history.ts              History helpers and formatting
   data/                     Workout logic + storage
     actions.ts              Pure state changes: startWorkout, logSet (validated), finishWorkout, ...
@@ -102,6 +104,9 @@ docs/                       ARCHITECTURE (decision log), ROADMAP (backend/native
 - **Rewards**: target hit, back on track, weight mastered, personal best, consistency. XP → levels → achievements.
 - **My Gym**: your machines with settings, last weights and previous session. Shown during the workout.
 - **Fix mistakes**: tap any logged set (or *Edit sets* on a workout summary) to change or delete it.
+- **Muscle map** (Muscles tab): *what am I training?* (a heat map of activity) and *where am I progressing?* (training
+  performance per muscle), front and back, male or female figure, any period; tap a muscle for its exercises and
+  performance. Shows recorded training and performance, never muscle growth. Details: [docs/MUSCLES.md](docs/MUSCLES.md).
 - **Cardio, warm-ups, cool-downs**: add them to routines or mid-workout, in any order; only the fields that make sense
   (treadmill: speed, incline...); *Last session* and a gentle hint; **Warm-up** sets that never affect progression.
   Details: [docs/CARDIO.md](docs/CARDIO.md).

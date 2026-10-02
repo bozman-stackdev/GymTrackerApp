@@ -47,6 +47,13 @@ const PATHS = {
   sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2.5" /><path d="M12 19.5V22" /><path d="m4.9 4.9 1.8 1.8" /><path d="m17.3 17.3 1.8 1.8" /><path d="M2 12h2.5" /><path d="M19.5 12H22" /><path d="m4.9 19.1 1.8-1.8" /><path d="m17.3 6.7 1.8-1.8" /></>,
   snowflake: <><path d="M12 2v20" /><path d="m4.4 7 15.2 10" /><path d="m4.4 17 15.2-10" /><path d="m9 3.5 3 3 3-3" /><path d="m9 20.5 3-3 3 3" /></>,
   cloud: <path d="M17.5 19H8a6 6 0 1 1 5.7-7.9H15a4 4 0 0 1 2.5 7.9Z" />,
+  // Muscle map
+  body: <><circle cx="12" cy="4.5" r="2.2" /><path d="M5.5 8.5c2.2.9 4.3 1.3 6.5 1.3s4.3-.4 6.5-1.3" /><path d="M12 9.8v5.4" /><path d="m8.5 21.5 3.5-6.3 3.5 6.3" /></>,
+  muscle: <><path d="M4 20.5c0-3.4 1.4-6 4.5-7.2L13 11.4 11.6 7.3a1.6 1.6 0 0 1 1-2l2.6-.8a1.6 1.6 0 0 1 2 1l1.6 4.4c.8 2.2 0 4.6-2 5.8" /><path d="M16.8 15.7c-.7 3-3.4 4.8-6.6 4.8H4" /><path d="M13 11.4c.9.6 2 .8 3 .4" /></>,
+  trendUp: <><path d="m3 17 6-6 4 4 8-8" /><path d="M15 7h6v6" /></>,
+  balance: <><path d="M12 3.5v17" /><path d="M7.5 20.5h9" /><path d="M5 7.5h14" /><path d="m5 7.5-2.8 6.3a2.8 2.8 0 0 0 5.6 0Z" /><path d="m19 7.5-2.8 6.3a2.8 2.8 0 0 0 5.6 0Z" /></>,
+  info: <><circle cx="12" cy="12" r="9" /><path d="M12 11v5.5" /><path d="M12 7.6h.01" /></>,
+  crown: <path d="m3 7.5 4.6 4.1L12 4.5l4.4 7.1L21 7.5l-2 11H5Z" />,
 } satisfies Record<string, ReactNode>;
 
 export type IconName = keyof typeof PATHS;

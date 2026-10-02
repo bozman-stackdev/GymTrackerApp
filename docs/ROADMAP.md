@@ -83,7 +83,7 @@ Honest assessment after Phases 1–5. The core loop works and is fast (2 taps to
 5. **Rest timer.** The timer counts up, but there's no "rest done" buzz. This is the most requested gym-app feature and fits the
    "don't look at the phone" goal. It needs native notifications to work with the screen locked (Capacitor).
 6. **Challenge meaning.** Today one set at the target counts as done. Testers may expect "all sets". Watch for confusion in Phase 7 (user testing).
-7. **Warm-up sets.** Lighter sets are ignored by the engine, but the UI doesn't label them. A quick "warm-up" toggle could help.
+7. ✅ **Warm-up sets.** A "Warm-up" toggle next to the set boxes (Day 2, docs/CARDIO.md); they never count for progression.
 8. **Managing exercises.** Custom exercises can't be deleted or archived, and the library can't be filtered by muscle group.
 9. **Manual accessibility check** with VoiceOver/TalkBack. The automated checks (axe) pass in light and dark mode, but they only
    catch part of the problems.
@@ -96,7 +96,12 @@ Honest assessment after Phases 1–5. The core loop works and is fast (2 taps to
 13. **Analytics**: none (good for privacy). Consider privacy-friendly, opt-in usage counts before a public launch.
 
 ### Deliberately not doing
-Messaging, subscriptions, daily streaks. They conflict with "spend less time tracking your workout and more time doing it".
+Messaging, daily streaks. They conflict with "spend less time tracking your workout and more time doing it".
+
+**Changed (muscle map):** a Free / Premium split now exists for *depth* features (longer history, progress details,
+trends, comparisons, insights), never for the basic body map or logging (D68). There are no payments yet: Premium is a
+testing preview. Real subscriptions need App Store / Play billing (or Stripe on the web), the entitlement stored on the
+account by the server (not set by the phone), and "restore purchases".
 
 **Changed (side quest):** friends/groups and leaderboards are now planned, on top of accounts. Groups joined by invite
 code, not a global board, ranked by effort (consistency, challenges completed, XP), never by weight lifted, so the

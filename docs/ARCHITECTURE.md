@@ -271,3 +271,36 @@ activities never pays more. 10+ minutes of cardio makes a real workout (workout 
 
 **D63. Older app versions** (an old tab or cached PWA) skip synced workouts that contain activities: their validator
 doesn't know the shape, so it rejects the record and the sync carries on. They pick the workouts up after updating.
+
+## Muscle map
+
+**D64. The exercise library is the source of truth for muscles.** `Exercise.muscles` holds the primary and secondary
+muscles and optional per-muscle weights. There is no separate muscle table. Built-in exercises saved before the
+feature get their muscles from the library on load. Custom or older exercises without any are worked out from their
+name, then their muscle group (`musclesFor`). Unknown ids from a newer version are dropped. Details: [MUSCLES.md](MUSCLES.md).
+
+**D65. Pure scoring service, configurable.** `logic/muscles/` takes workouts in and gives activity, progress and
+balance out. The UI only renders. Every weight and threshold is in `MUSCLE_CONFIG` (primary 1.0, secondary 0.5 per
+set). Cardio, warm-ups and cool-downs are activity entries, and warm-up sets are their own entry, so none of them can
+count.
+
+**D66. Activity is relative; progress is performance.** Activity shows each muscle against the most-trained muscle of
+the period, so it describes emphasis and never prescribes a volume. Progress compares performance with before the
+period, mainly in journey steps (the challenge ladder), so a weight increase with a rep reset counts as progress. It
+adds volume, challenges, mastery and consistency. A muscle's progress comes from its main exercises.
+
+**D67. One drawing, two bodies, mirrored halves.** The figure is points for the left half, smoothed (Catmull-Rom) and
+mirrored, so the sides always match. The female figure is the same drawing with a width profile (shoulders, waist,
+hips), its own chest shape and hair. Both views share the silhouette, so front and back match. Left and right are
+separate shapes labelled with the body's side, scored together.
+
+**D68. A plan layer instead of a payment system.** Free/Premium is one table of features (`logic/plan.ts`). Until
+there are payments, a per-phone "Premium preview" stands in (`AppData.premiumPreview`, not synced). Later, `planOf()`
+reads the account's subscription. The basic map is always free. (ROADMAP previously listed subscriptions as "not
+doing"; this changes that, for depth features only.)
+
+**D69. The muscle map informs Today's Challenge, never overrides it.** "Why?" shows what the exercise works and its
+share of a muscle's recent sets. Targets come from the progression engine only.
+
+**D70. New screens open at the top.** Pushing a new route scrolls to the top; Back (POP) keeps the position. This was
+found while testing the Muscles tab: switching tabs used to keep the previous screen's scroll offset.

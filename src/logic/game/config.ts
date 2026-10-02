@@ -40,6 +40,16 @@ export const GAME_CONFIG = {
   /** XP needed to reach level 1, 2, 3, ... Levels beyond the list add `xpPerLevelAfterList` each. */
   levels: [0, 100, 250, 500, 800, 1200, 1700, 2300, 3000],
   xpPerLevelAfterList: 800,
+  /** Muscle-map achievements (achievements.ts). They reward progress and complete, balanced plans - not volume. */
+  muscleAchievements: {
+    backChallenges: 5,
+    groupsToMaster: 4,
+    /** "Trains" a muscle in a leg day: at least this many weighted sets (3 sets of leg press = 1.5 for glutes). */
+    legDayMinSets: 1.5,
+    /** Balanced week: pushing, pulling and legs each at least this share of the most-trained, and this many sets. */
+    balancedMinShare: 0.5,
+    balancedMinSets: 3,
+  },
   streak: {
     /** A week (Mon–Sun) counts towards the streak with at least this many workouts. More doesn't help. */
     minWorkoutsPerWeek: 2,

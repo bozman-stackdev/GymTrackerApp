@@ -3,8 +3,10 @@ import { newId } from '../data/actions';
 import { useStore } from '../data/store';
 import { validateExercise } from '../data/validate';
 import { formatWeight, fromDisplay, getUnits, unitStepKg } from '../logic/units';
-import type { Equipment, Exercise, MuscleGroup } from '../types';
+import type { Equipment, Exercise, ExerciseMuscles, MuscleGroup } from '../types';
 import { Stepper } from './Stepper';
+import { MusclePicker } from './MusclePicker';
+import { suggestMuscles } from '../logic/muscles/catalog';
 
 const MUSCLES: MuscleGroup[] = ['chest', 'back', 'shoulders', 'arms', 'legs', 'core'];
 const EQUIPMENT: Equipment[] = ['machine', 'cable', 'barbell', 'dumbbell', 'bodyweight'];
@@ -21,6 +23,9 @@ export function ExerciseForm({ initial, initialName = '', onSave }: {
     initial ?? { id: newId(), name: initialName, muscleGroup: 'chest', equipment: 'machine', repRange: [8, 12], weightStepKg: 5, isCustom: true },
   );
   const set = <K extends keyof Exercise>(key: K, value: Exercise[K]) => setForm((f) => ({ ...f, [key]: value }));
+  // Muscles follow the name and group (e.g. "Hack Squat" → quads, glutes) until the user picks them.
+  const [musclesPicked, setMusclesPicked] = useState(!!initial?.muscles);
+  const muscles: ExerciseMuscles = musclesPicked && form.muscles ? form.muscles : suggestMuscles(form.name, form.muscleGroup);
   const [min, max] = form.repRange;
   const errors = validateExercise(form, data.exercises);
   const valid = Object.keys(errors).length === 0;
@@ -52,6 +57,8 @@ export function ExerciseForm({ initial, initialName = '', onSave }: {
         </div>
       </div>
 
+      <MusclePicker value={muscles} onChange={(m) => { set('muscles', m); setMusclesPicked(true); }} />
+
       {/* Min can't pass max and vice versa, so the range is always valid. */}
       <Stepper label="Min reps" value={min} step={1} min={1} max={max} onChange={(v) => set('repRange', [v, max])} />
       <Stepper label="Max reps" value={max} step={1} min={min} max={100} onChange={(v) => set('repRange', [min, v])} />
@@ -64,7 +71,7 @@ export function ExerciseForm({ initial, initialName = '', onSave }: {
         {form.equipment === 'bodyweight' ? 'more reps' : formatWeight(unitStepKg(form.weightStepKg))}.
       </p>
 
-      <button className="btn primary huge" disabled={!valid} onClick={() => valid && onSave({ ...form, name: form.name.trim() })}>Save</button>
+      <button className="btn primary huge" disabled={!valid} onClick={() => valid && onSave({ ...form, name: form.name.trim(), muscles: muscles.primary.length ? muscles : undefined })}>Save</button>
     </>
   );
 }

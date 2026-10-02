@@ -14,6 +14,9 @@ import { levelFor, type LevelInfo } from './levels';
 import { WeeklyStreak, weekIndex } from './streak';
 import { activityEntries, hasContent, strengthEntries } from '../entries';
 import { cardioMinutes } from '../cardio';
+import { primaryGroups, REGIONS } from '../muscles/catalog';
+import { involvementLookup, weightedSets } from '../muscles/analysis';
+import type { MuscleGroup, MuscleId } from '../../types';
 
 export type XpEventType = 'workout' | 'challenge' | 'matched' | 'personal-best' | 'consistency' | 'mastery' | 'comeback'
   | 'cardio' | 'warmup' | 'cooldown';
@@ -95,8 +98,9 @@ export function buildProgress(
 
   const stats: GameStats = {
     workouts: 0, challengesCompleted: 0, personalBests: 0, weightIncreases: 0, maxSessionsOnOneExercise: 0, streakWeeks: 0,
-    levelsMastered: 0, successfulSessions: 0,
+    levelsMastered: 0, successfulSessions: 0, masteredByGroup: {}, challengesByGroup: {}, completeLegDays: 0, balancedWeeks: 0,
   };
+  const muscles = new MuscleStats(exercises, config);
   const trackers = new Map<string, MasteryTracker>();
   const sessionsPerExercise = new Map<string, number>();
   const streak = new WeeklyStreak(config);
@@ -143,6 +147,7 @@ export function buildProgress(
 
     const withChallenge = results.filter((r) => r.challenge);
     if (withChallenge.length > 0 && withChallenge.every((r) => isSuccess(r.outcome))) stats.successfulSessions++;
+    muscles.add(session, results, stats);
 
     streak.add(session.startedAt);
     stats.streakWeeks = streak.endingAt(weekIndex(session.startedAt));
@@ -171,6 +176,61 @@ export function buildProgress(
     achievements,
     bySession,
   };
+}
+
+/**
+ * Running muscle-map stats for the achievements: progress per muscle group (weights mastered, challenges completed),
+ * complete leg days and balanced weeks. Strength sets only; computed from the same replay, so nothing is stored.
+ */
+class MuscleStats {
+  private groups = new Map<string, MuscleGroup[]>();
+  private weeks = new Map<number, Record<MuscleId, number>>();
+  private balanced = new Set<number>();
+  private byId: Map<string, Exercise>;
+  private involvement: ReturnType<typeof involvementLookup>;
+
+  constructor(private exercises: Exercise[], private config: GameConfig) {
+    this.byId = new Map(exercises.map((e) => [e.id, e]));
+    this.involvement = involvementLookup(exercises);
+  }
+
+  private groupsOf(exerciseId: string): MuscleGroup[] {
+    if (!this.groups.has(exerciseId)) {
+      const ex = this.byId.get(exerciseId);
+      this.groups.set(exerciseId, ex ? primaryGroups(ex) : []);
+    }
+    return this.groups.get(exerciseId)!;
+  }
+
+  add(session: WorkoutSession, results: ExerciseResult[], stats: GameStats): void {
+    const cfg = this.config.muscleAchievements;
+    for (const r of results) {
+      for (const g of this.groupsOf(r.exerciseId)) {
+        if (r.weightMastered) stats.masteredByGroup[g] = (stats.masteredByGroup[g] ?? 0) + 1;
+        if (isSuccess(r.outcome)) stats.challengesByGroup[g] = (stats.challengesByGroup[g] ?? 0) + 1;
+      }
+    }
+
+    const entries = strengthEntries(session).filter((e) => this.byId.has(e.exerciseId) && e.sets.length > 0);
+    if (entries.length === 0) return;
+    const sets = weightedSets([session], this.exercises, undefined, this.involvement);
+    const allPlannedDone = entries.every((e) => e.sets.length >= e.targetSets);
+    if (allPlannedDone && (['quads', 'hamstrings', 'glutes'] as MuscleId[]).every((id) => sets[id] >= cfg.legDayMinSets)) stats.completeLegDays++;
+
+    const week = weekIndex(session.startedAt);
+    const total = this.weeks.get(week) ?? ({} as Record<MuscleId, number>);
+    for (const [id, n] of Object.entries(sets) as [MuscleId, number][]) total[id] = (total[id] ?? 0) + n;
+    this.weeks.set(week, total);
+    if (!this.balanced.has(week)) {
+      const region = (id: string) => REGIONS.find((r) => r.id === id)!.muscles.reduce((n, m) => n + (total[m] ?? 0), 0);
+      const amounts = [region('push'), region('pull'), region('lower')];
+      const max = Math.max(...amounts);
+      if (Math.min(...amounts) >= cfg.balancedMinSets && Math.min(...amounts) >= cfg.balancedMinShare * max) {
+        this.balanced.add(week);
+        stats.balancedWeeks++;
+      }
+    }
+  }
 }
 
 /** Best set ever per exercise: heaviest weight for a full set in the rep range (most reps for bodyweight). */

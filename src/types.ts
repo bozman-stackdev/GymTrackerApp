@@ -4,6 +4,25 @@ export type Equipment = 'machine' | 'cable' | 'barbell' | 'dumbbell' | 'bodyweig
 
 export type MuscleGroup = 'chest' | 'back' | 'shoulders' | 'arms' | 'legs' | 'core';
 
+/**
+ * The muscles on the muscle map (names, groups and views in logic/muscles/catalog.ts). The map draws left and right
+ * separately, but scores them together: sets aren't recorded per side.
+ */
+export type MuscleId =
+  | 'chest' | 'front-delts' | 'side-delts' | 'rear-delts' | 'biceps' | 'triceps' | 'forearms'
+  | 'upper-back' | 'lats' | 'lower-back' | 'abs' | 'obliques'
+  | 'glutes' | 'quads' | 'hamstrings' | 'adductors' | 'calves';
+
+/**
+ * Which muscles an exercise trains. Primary muscles count fully, secondary ones less (MUSCLE_CONFIG.involvement);
+ * `weights` overrides that for a muscle (0–1), e.g. a lateral raise barely uses the upper back.
+ */
+export interface ExerciseMuscles {
+  primary: MuscleId[];
+  secondary: MuscleId[];
+  weights?: Partial<Record<MuscleId, number>>;
+}
+
 export interface Exercise {
   id: string;
   name: string;
@@ -14,6 +33,8 @@ export interface Exercise {
   /** Smallest sensible weight jump in kg. 0 = bodyweight (reps-only progression). */
   weightStepKg: number;
   isCustom?: boolean;
+  /** Muscles trained (feeds the muscle map). Missing on older data: worked out from the name and group (musclesFor). */
+  muscles?: ExerciseMuscles;
 }
 
 /**
@@ -151,7 +172,11 @@ export interface Profile {
   goal: Goal;
   /** Display/input units. Everything is stored in kg. */
   units?: 'kg' | 'lb';
+  /** Which body the muscle map shows. Unset: follows `sex` (male if not given). */
+  bodyMap?: BodyType;
 }
+
+export type BodyType = 'male' | 'female';
 
 /** Everything the app stores. Bump `version` and add a migration in storage.ts when this changes shape. */
 export interface AppData {
@@ -167,4 +192,9 @@ export interface AppData {
   isSample?: boolean;
   /** When a backup was last exported, and until when the backup reminder is snoozed. */
   backup?: { lastExportAt?: string; remindAfter?: string };
+  /**
+   * Premium features switched on for testing (Profile → Plan). There are no payments yet: this stands in for a
+   * subscription, which will come from the account instead. Kept on this phone only (not synced). See logic/plan.ts.
+   */
+  premiumPreview?: boolean;
 }
