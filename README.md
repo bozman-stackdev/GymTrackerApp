@@ -107,9 +107,9 @@ docs/                       ARCHITECTURE (decision log), ROADMAP (backend/native
 - **Muscle map** (Muscles tab): *what am I training?* (a heat map of activity) and *where am I progressing?* (training
   performance per muscle), front and back, male or female figure, any period; tap a muscle for its exercises and
   performance. Shows recorded training and performance, never muscle growth. Details: [docs/MUSCLES.md](docs/MUSCLES.md).
-- **Cardio, warm-ups, cool-downs**: add them to routines or mid-workout, in any order; only the fields that make sense
-  (treadmill: speed, incline...); *Last session* and a gentle hint; **Warm-up** sets that never affect progression.
-  Details: [docs/CARDIO.md](docs/CARDIO.md).
+- **Cardio, warm-ups, cool-downs**: add them to routines or mid-workout, in any order. Pick the activity, **START**,
+  **STOP**: the duration is saved (nothing to type; accurate when the screen locks). **Warm-up** sets never affect
+  progression. Details: [docs/CARDIO.md](docs/CARDIO.md).
 - **kg or lb** (Profile). **Send feedback** (Profile). A gentle **backup reminder** every couple of weeks.
 
 ## Today's Challenge, XP and streaks

@@ -27,10 +27,11 @@ export const GAME_CONFIG = {
     /** Completing a challenge after missing the previous one on that exercise ("back on track"). */
     comeback: 15,
     /**
-     * Cardio, warm-up and cool-down: small, and at most once per workout each, so adding extra cardio never pays more.
+     * Cardio, warm-up and cool-down: small, and at most once per workout each, so extra or longer cardio never pays more.
+     * Cardio: any completed cardio (timer stopped after 1+ minute).
      * Warm-up and cool-down only count when they were planned in the routine (rewarding the plan, not padding).
      */
-    cardio: 5,
+    cardio: 10,
     warmup: 3,
     cooldown: 3,
   },

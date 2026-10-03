@@ -176,7 +176,8 @@ test('this workout: strength counts, warm-up sets and cardio do not; the summary
   await page.getByRole('button', { name: 'Finish Exercise' }).click();
   await page.locator('.add-activity-row a', { hasText: 'Cardio' }).click();
   await page.getByTestId('activity-picker').getByRole('button', { name: 'Treadmill', exact: true }).click();
-  await page.getByTestId('activity').getByRole('button', { name: 'Complete' }).click();
+  await page.getByTestId('activity').getByRole('button', { name: 'START' }).click();
+  await page.getByTestId('activity').getByRole('button', { name: 'STOP' }).click();
   await page.getByRole('button', { name: 'Finish Session' }).click();
 
   const card = page.getByTestId('muscles-trained');

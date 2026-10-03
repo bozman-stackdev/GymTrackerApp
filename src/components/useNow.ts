@@ -1,11 +1,23 @@
 import { useEffect, useState } from 'react';
 
-/** Current time, refreshed every second - for the workout and rest timers. */
+/**
+ * Current time, refreshed every second - for the workout, rest and cardio timers. Also refreshed the moment the page is
+ * visible again: browsers pause intervals while the screen is locked, and timers are always worked out from timestamps.
+ */
 export function useNow(): number {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
+    const tick = () => setNow(Date.now());
+    const id = setInterval(tick, 1000);
+    document.addEventListener('visibilitychange', tick);
+    window.addEventListener('pageshow', tick);
+    window.addEventListener('focus', tick);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', tick);
+      window.removeEventListener('pageshow', tick);
+      window.removeEventListener('focus', tick);
+    };
   }, []);
   return now;
 }

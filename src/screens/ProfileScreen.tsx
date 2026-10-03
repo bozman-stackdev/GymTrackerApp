@@ -19,7 +19,7 @@ import { bodyTypeOf, usePlan } from '../data/useMuscles';
 import { PREMIUM_FEATURES } from '../logic/plan';
 import { Icon } from '../components/Icon';
 import { plural } from '../logic/history';
-import { cardioStats, formatMetric, formatMinutes } from '../logic/cardio';
+import { cardioStats, formatDurationWords } from '../logic/cardio';
 
 const UNITS: [Units, string][] = [['kg', 'kg'], ['lb', 'lb']];
 const BODIES: [BodyType, string][] = [['male', 'Male'], ['female', 'Female']];
@@ -179,10 +179,11 @@ function CardioStatsCard() {
   if (stats.sessions === 0) return null;
   const rows: [string, string][] = [
     ['Cardio sessions', String(stats.sessions)],
-    ['Total cardio time', formatMinutes(stats.totalMinutes)],
-    ...(stats.runningKm > 0 ? [['Running distance', formatMetric('distanceKm', stats.runningKm, 'running')] as [string, string]] : []),
-    ...(stats.longest ? [['Longest session', `${stats.longest.name}, ${formatMinutes(stats.longest.minutes)}`] as [string, string]] : []),
+    ['Total cardio time', formatDurationWords(stats.totalSec)],
+    ...(stats.longest ? [['Longest session', `${stats.longest.name}, ${formatDurationWords(stats.longest.sec)}`] as [string, string]] : []),
     ...(stats.mostFrequent ? [['Most frequent', `${stats.mostFrequent.name} (${stats.mostFrequent.count}×)`] as [string, string]] : []),
+    // Time per activity.
+    ...stats.byActivity.map((a) => [a.name, `${formatDurationWords(a.sec)} · ${a.count}×`] as [string, string]),
   ];
   return (
     <>

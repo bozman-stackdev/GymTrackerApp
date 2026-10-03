@@ -59,6 +59,8 @@ function checkSession(s: unknown, i: number, finished: boolean): asserts s is Wo
       check(e.name === undefined || typeof e.name === 'string', `activity name in workout #${i + 1}`);
       check(checkMetrics(e.plan) && checkMetrics(e.log), `activity values in workout #${i + 1}`);
       check(e.doneAt === undefined || isDate(e.doneAt), `activity time in workout #${i + 1}`);
+      check((e.startedAt === undefined || isDate(e.startedAt)) && (e.endedAt === undefined || isDate(e.endedAt))
+        && (e.durationSec === undefined || isNum(e.durationSec, 0, 86_400)), `activity timer in workout #${i + 1}`);
       check(e.warmupFor === undefined || isStr(e.warmupFor), `warm-up in workout #${i + 1}`);
       if (e.warmupSets !== undefined) {
         check(Array.isArray(e.warmupSets), `warm-up sets in workout #${i + 1}`);

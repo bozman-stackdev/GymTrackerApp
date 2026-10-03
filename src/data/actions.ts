@@ -3,9 +3,12 @@
  * They never touch storage or React, so they are easy to test and reuse in a native app later.
  */
 import { preferredEquipmentId } from '../logic/equipment';
-import { cleanMetrics } from '../logic/activities';
+import { elapsedSec, isRunning } from '../logic/cardio';
 import { hasContent, isEntryDone, isStrength, isStrengthItem } from '../logic/entries';
 import type { ActivityEntry, ActivityKind, AppData, CardioMetrics, Exercise, GymEquipment, Profile, Routine, SessionEntry, SetLog, StrengthEntry, WorkoutSession } from '../types';
+/** Longest duration an activity can be adjusted to (10 hours). */
+
+export const MAX_ACTIVITY_SEC = 36_000;
 
 export function newId(): string {
   // crypto.randomUUID is unavailable on plain-http LAN addresses, so keep a simple fallback.
@@ -142,7 +145,8 @@ export function finishExercise(data: AppData): AppData {
 /** Saves the workout to history. Exercises with no sets and activities not completed are dropped; an empty workout is discarded. */
 export function finishWorkout(data: AppData, now = new Date()): AppData {
   if (!data.activeWorkout) return data;
-  const session = data.activeWorkout.session;
+  // A cardio timer still running is stopped now and saved (never lost by finishing first).
+  const session = stopRunning(data.activeWorkout.session, now);
   const entries = session.entries.filter(hasContent);
   if (entries.length === 0) return { ...data, activeWorkout: null };
   return {
@@ -167,27 +171,53 @@ export function startActivity(data: AppData, kind: ActivityKind, activityId: str
   return addActivityToWorkout(data.activeWorkout ? data : startWorkout(data, undefined, now), kind, activityId, name);
 }
 
-/** Marks an activity done with what was recorded (only known, sane metrics are kept), then moves to the next item. */
-export function completeActivity(data: AppData, entryIndex: number, log: CardioMetrics | undefined, now = new Date()): AppData {
-  const target = data.activeWorkout?.session.entries[entryIndex];
-  if (!target || isStrength(target)) return data;
-  const clean = cleanMetrics(log);
-  const done = updateActive(data, (s) => ({
-    ...s,
-    entries: s.entries.map((e, i) => (i === entryIndex && !isStrength(e)
-      ? { ...omit(e, 'log'), ...(clean ? { log: clean } : {}), doneAt: now.toISOString() } : e)),
-  }));
-  const session = done.activeWorkout!.session;
-  return updateActive(done, (s) => s, nextUnfinished(session, entryIndex) ?? session.entries.length);
+/** Stops any running activity timer in a workout, saving its duration (only one timer runs at a time). */
+function stopRunning(session: WorkoutSession, now: Date): WorkoutSession {
+  if (!session.entries.some((e) => !isStrength(e) && isRunning(e))) return session;
+  return { ...session, entries: session.entries.map((e) => (!isStrength(e) && isRunning(e) ? stopped(e, now) : e)) };
 }
 
-/** Back to "not done" (e.g. tapped Complete by mistake). The recorded values are kept as a starting point. */
-export function reopenActivity(data: AppData, entryIndex: number): AppData {
-  return updateActive(
-    data,
-    (s) => ({ ...s, entries: s.entries.map((e, i) => (i === entryIndex && !isStrength(e) ? omit(e, 'doneAt') : e)) }),
-    entryIndex,
-  );
+function stopped(e: ActivityEntry, now: Date): ActivityEntry {
+  return { ...e, endedAt: now.toISOString(), doneAt: now.toISOString(), durationSec: elapsedSec(e.startedAt!, now.getTime()) };
+}
+
+const mapActivity = (data: AppData, entryIndex: number, fn: (e: ActivityEntry) => ActivityEntry, currentIndex?: number): AppData => {
+  const target = data.activeWorkout?.session.entries[entryIndex];
+  if (!target || isStrength(target)) return data;
+  return updateActive(data, (s) => ({ ...s, entries: s.entries.map((e, i) => (i === entryIndex && !isStrength(e) ? fn(e) : e)) }), currentIndex);
+};
+
+/** START: the stopwatch begins now. Another running timer is stopped (and saved) first. */
+export function startActivityTimer(data: AppData, entryIndex: number, now = new Date()): AppData {
+  const target = data.activeWorkout?.session.entries[entryIndex];
+  if (!target || isStrength(target)) return data;
+  const others = updateActive(data, (s) => stopRunning(s, now));
+  return mapActivity(others, entryIndex, (e) => ({
+    ...omit(omit(omit(e, 'endedAt'), 'durationSec'), 'doneAt'), startedAt: now.toISOString(),
+  }), entryIndex);
+}
+
+/** STOP: the duration is worked out from the start time and saved. Stays on the item to show the result. */
+export function stopActivityTimer(data: AppData, entryIndex: number, now = new Date()): AppData {
+  return mapActivity(data, entryIndex, (e) => (isRunning(e) ? stopped(e, now) : e));
+}
+
+/** Optional fix after STOP (e.g. forgot to stop): set the duration in seconds. */
+export function adjustActivityDuration(data: AppData, entryIndex: number, sec: number): AppData {
+  const clean = Math.max(0, Math.min(MAX_ACTIVITY_SEC, Math.round(sec)));
+  return mapActivity(data, entryIndex, (e) => (e.doneAt ? { ...e, durationSec: clean } : e));
+}
+
+/** Restart: back to the ready state (00:00:00), nothing saved for it. */
+export function restartActivity(data: AppData, entryIndex: number): AppData {
+  return mapActivity(data, entryIndex, (e) => omit(omit(omit(omit(e, 'startedAt'), 'endedAt'), 'durationSec'), 'doneAt'), entryIndex);
+}
+
+/** DONE: on to the next item still to do (or the "what next?" state). */
+export function doneActivity(data: AppData, entryIndex: number): AppData {
+  const session = data.activeWorkout?.session;
+  if (!session) return data;
+  return updateActive(data, (s) => s, nextUnfinished(session, entryIndex) ?? session.entries.length);
 }
 
 /**

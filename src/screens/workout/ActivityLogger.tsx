@@ -2,98 +2,100 @@ import { useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { KindLabel } from '../../components/activityUi';
 import { Stepper } from '../../components/Stepper';
-import { completeActivity, goToExercise, reopenActivity } from '../../data/actions';
+import { useNow } from '../../components/useNow';
+import { adjustActivityDuration, doneActivity, goToExercise, restartActivity, startActivityTimer, stopActivityTimer } from '../../data/actions';
 import { useExerciseLookup, useStore } from '../../data/store';
-import { activityById, activityName, METRIC_LIMITS, type Metric } from '../../logic/activities';
-import { cardioSuggestion, formatMetrics, fromShownMetric, lastActivity, METRIC_LABEL, metricUnit, toShownMetric } from '../../logic/cardio';
+import { activityName, KIND_LABEL } from '../../logic/activities';
+import {
+  activityDurationSec, durationChange, elapsedSec, formatChange, formatClock, formatDuration, isRunning, lastActivity, MIN_CARDIO_SEC,
+} from '../../logic/cardio';
 import { isStrength } from '../../logic/entries';
+import { GAME_CONFIG } from '../../logic/game/config';
 import { formatSets } from '../../logic/history';
-import type { ActivityEntry, CardioMetrics } from '../../types';
+import type { ActivityEntry } from '../../types';
 
 /**
- * A cardio / warm-up / cool-down item in the workout: last time, an optional gentle hint, only the fields that make
- * sense for the activity (prefilled), and one tap on Complete. "Run, 20 minutes" is one stepper and one tap.
+ * A cardio / warm-up / cool-down item: a stopwatch. START → do it → STOP → saved. Nothing to type.
+ * The time is always worked out from the start timestamp (saved with the workout), so it stays right when the
+ * screen locks, the browser is in the background, or the app is reopened.
  */
 export function ActivityLogger({ entry, entryIndex }: { entry: ActivityEntry; entryIndex: number }) {
-  return entry.warmupFor ? <WarmupSetsView entry={entry} /> : <MetricsLogger key={entryIndex} entry={entry} entryIndex={entryIndex} />;
+  return entry.warmupFor ? <WarmupSetsView entry={entry} /> : <ActivityTimer entry={entry} entryIndex={entryIndex} />;
 }
 
-function MetricsLogger({ entry, entryIndex }: { entry: ActivityEntry; entryIndex: number }) {
+function ActivityTimer({ entry, entryIndex }: { entry: ActivityEntry; entryIndex: number }) {
   const { data, update } = useStore();
-  const activity = activityById(entry.activityId);
-  const last = lastActivity(data.sessions, entry.activityId, entry.kind);
-  const suggestion = entry.kind === 'cardio' ? cardioSuggestion(data.sessions, entry.activityId) : null;
-  const [values, setValues] = useState<CardioMetrics>(() => entry.log ?? entry.plan ?? last?.metrics ?? {});
+  const previous = lastActivity(data.sessions, entry.activityId, entry.kind);
+  const running = isRunning(entry);
   const done = !!entry.doneAt;
-
-  const set = (metric: Metric, v: number | undefined) => setValues((m) => ({ ...m, [metric]: v && v > 0 ? v : undefined }));
-  const fields = activity.metrics.filter((m) => m !== 'durationMin');
-  // Keep the screen calm: up to three main fields; heart rate and calories (and any others) behind "More".
-  const main: Metric[] = fields.filter((m) => m !== 'avgHeartRate' && m !== 'calories').slice(0, 3);
-  const more = fields.filter((m) => !main.includes(m));
+  const hint = previous ? `Previous: ${formatDuration(previous.durationSec)}` : entry.plan?.durationMin ? `Plan: ${entry.plan.durationMin} min` : null;
 
   return (
-    <section className="stack logger" data-testid="activity">
+    <section className="stack logger activity-timer" data-testid="activity" data-state={done ? 'done' : running ? 'running' : 'ready'}>
       <div>
         <KindLabel kind={entry.kind} />
         <h1 className="ex-name">{activityName(entry)}</h1>
-        <p className="muted last-session" data-testid="last-time">
-          Last session: <strong>{last ? formatMetrics(last.metrics, entry.activityId) || 'done' : '—'}</strong>
-        </p>
-        {entry.plan && <p className="small flush" data-testid="plan">Plan: <strong>{formatMetrics(entry.plan, entry.activityId)}</strong></p>}
-        {suggestion && !done && <p className="rec-line flush" data-testid="cardio-suggestion">{suggestion.text}</p>}
+        {!done && hint && <p className="muted last-session" data-testid="last-time">{hint}</p>}
       </div>
 
-      {done ? (
-        <div className="card stack" data-testid="activity-done">
-          <div className="with-icon"><Icon name="check" className="accent" /> <strong>Done</strong>
-            <span className="muted">{formatMetrics(entry.log, entry.activityId)}</span></div>
-          <button className="btn" onClick={() => update((d) => reopenActivity(d, entryIndex))}>Change</button>
-        </div>
-      ) : (
-        <>
-          <Stepper label="Minutes" value={values.durationMin ?? 0} step={1} min={0} max={METRIC_LIMITS.durationMin.max}
-            onChange={(v) => set('durationMin', v)} />
-          {main.length > 0 && (
-            <div className="metric-grid">
-              {main.map((m) => <MetricField key={m} metric={m} activityId={entry.activityId} value={values[m]} onChange={(v) => set(m, v)} />)}
-            </div>
-          )}
-          {more.length > 0 && (
-            <details className="more-metrics">
-              <summary className="muted small">More (optional): {more.map((m) => METRIC_LABEL[m].toLowerCase()).join(', ')}</summary>
-              <div className="metric-grid">
-                {more.map((m) => <MetricField key={m} metric={m} activityId={entry.activityId} value={values[m]} onChange={(v) => set(m, v)} />)}
-              </div>
-            </details>
-          )}
-          <button className="btn primary huge" onClick={() => update((d) => completeActivity(d, entryIndex, values))}>
-            <Icon name="check" size={26} /> Complete
-          </button>
-        </>
-      )}
+      {done ? <DoneCard entry={entry} entryIndex={entryIndex} previousSec={previous?.durationSec} />
+        : running ? (
+          <>
+            <RunningClock startedAt={entry.startedAt!} />
+            <button className="btn huge timer-btn stop" onClick={() => update((d) => stopActivityTimer(d, entryIndex))}>
+              <Icon name="stop" size={26} /> STOP
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="timer-clock" data-testid="timer" aria-label="Timer 0 seconds">00:00:00</div>
+            <button className="btn primary huge timer-btn" onClick={() => update((d) => startActivityTimer(d, entryIndex))}>
+              <Icon name="play" size={26} /> START
+            </button>
+          </>
+        )}
     </section>
   );
 }
 
-/** One optional number field in the user's units (km or mi, km/h or mph, metres for rowing). */
-function MetricField({ metric, activityId, value, onChange }: { metric: Metric; activityId: string; value?: number; onChange: (v: number | undefined) => void }) {
-  const shown = value === undefined ? '' : String(toShownMetric(metric, value, activityId));
-  const [draft, setDraft] = useState<string | null>(null);
-  const unit = metricUnit(metric, activityId);
-  const id = `metric-${metric}`;
+/** The live stopwatch: re-rendered every second, but the value is always now - start (never a counter). */
+export function RunningClock({ startedAt, small }: { startedAt: string; small?: boolean }) {
+  const now = useNow();
+  const sec = elapsedSec(startedAt, now);
+  return small ? <span className="timer-small" data-testid="timer-small">{formatDuration(sec)}</span>
+    : <div className="timer-clock running" data-testid="timer" role="timer" aria-live="off">{formatClock(sec)}</div>;
+}
+
+function DoneCard({ entry, entryIndex, previousSec }: { entry: ActivityEntry; entryIndex: number; previousSec?: number }) {
+  const { data, update } = useStore();
+  const [adjusting, setAdjusting] = useState(false);
+  const sec = activityDurationSec(entry);
+  const change = durationChange(previousSec, sec);
+  // The workout's cardio XP is earned once: show it on the item that earned it.
+  const earner = data.activeWorkout?.session.entries.find((e): e is ActivityEntry =>
+    !isStrength(e) && e.kind === 'cardio' && !!e.doneAt && activityDurationSec(e) >= MIN_CARDIO_SEC);
+  const xp = entry.kind === 'cardio' && earner === entry ? GAME_CONFIG.xp.cardio : 0;
+
   return (
-    <div className="metric-field">
-      <label htmlFor={id} className="field-label">{METRIC_LABEL[metric]}{unit ? ` (${unit})` : ''}</label>
-      <input id={id} className="input" inputMode="decimal" value={draft ?? shown} placeholder="–"
-        onFocus={(e) => { setDraft(shown); e.target.select(); }}
-        onBlur={() => setDraft(null)}
-        onChange={(e) => {
-          setDraft(e.target.value);
-          const n = Number(e.target.value.replace(',', '.'));
-          if (e.target.value.trim() === '') onChange(undefined);
-          else if (Number.isFinite(n) && n >= 0) onChange(Math.min(fromShownMetric(metric, n, activityId), METRIC_LIMITS[metric].max));
-        }} />
+    <div className="card stack timer-done" data-testid="activity-done">
+      <div className="timer-done-title with-icon"><Icon name="check" size={22} className="accent" /> {KIND_LABEL[entry.kind].toUpperCase()} COMPLETE</div>
+      <div className="timer-clock done" data-testid="duration">{formatDuration(sec)}</div>
+      {xp > 0 && <div className="xp center" data-testid="activity-xp">+{xp} XP</div>}
+      {change && (
+        <p className="muted small center flush" data-testid="duration-change">
+          Previous {formatDuration(change.previous)} · Today {formatDuration(change.today)} · <strong>{formatChange(change.change)}</strong>
+        </p>
+      )}
+      <button className="btn primary huge timer-btn" onClick={() => update((d) => doneActivity(d, entryIndex))}>DONE</button>
+      {adjusting ? (
+        <Stepper label="Minutes" value={Math.round(sec / 60)} step={1} min={0} max={600}
+          onChange={(v) => update((d) => adjustActivityDuration(d, entryIndex, v * 60))} />
+      ) : (
+        <div className="row center-row">
+          <button className="btn ghost small" onClick={() => setAdjusting(true)}>Adjust time</button>
+          <button className="btn ghost small" onClick={() => update((d) => restartActivity(d, entryIndex))}>Restart</button>
+        </div>
+      )}
     </div>
   );
 }

@@ -13,7 +13,7 @@ import { GAME_CONFIG, type GameConfig } from './config';
 import { levelFor, type LevelInfo } from './levels';
 import { WeeklyStreak, weekIndex } from './streak';
 import { activityEntries, hasContent, strengthEntries } from '../entries';
-import { cardioMinutes } from '../cardio';
+import { cardioMinutes, MIN_CARDIO_SEC } from '../cardio';
 import { primaryGroups, REGIONS } from '../muscles/catalog';
 import { involvementLookup, weightedSets } from '../muscles/analysis';
 import type { MuscleGroup, MuscleId } from '../../types';
@@ -77,7 +77,11 @@ export function exerciseEvents(r: ExerciseResult, config: GameConfig = GAME_CONF
 export function activityEvents(session: WorkoutSession, config: GameConfig = GAME_CONFIG): XpEvent[] {
   const done = activityEntries(session).filter((e) => e.doneAt);
   const events: XpEvent[] = [];
-  if (done.some((e) => e.kind === 'cardio')) events.push({ type: 'cardio', xp: config.xp.cardio });
+  // Any completed cardio, once per workout (a timer stopped after a few seconds is a mis-tap; older entries without a
+  // timer still count). A longer session never pays more.
+  if (done.some((e) => e.kind === 'cardio' && (e.durationSec === undefined || e.durationSec >= MIN_CARDIO_SEC))) {
+    events.push({ type: 'cardio', xp: config.xp.cardio });
+  }
   if (done.some((e) => e.kind === 'warmup' && e.planned)) events.push({ type: 'warmup', xp: config.xp.warmup });
   if (done.some((e) => e.kind === 'cooldown' && e.planned)) events.push({ type: 'cooldown', xp: config.xp.cooldown });
   return events;

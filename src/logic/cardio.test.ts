@@ -4,8 +4,11 @@
  */
 import { describe, expect, it } from 'vitest';
 import type { ActivityEntry, Exercise, SessionEntry, WorkoutSession } from '../types';
-import { cardioMinutes, cardioStats, cardioSuggestion, formatMetrics, formatMinutes, historyLine, lastActivity } from './cardio';
-import { activityById, cleanMetrics } from './activities';
+import {
+  activityDurationSec, cardioMinutes, cardioStats, describeActivity, durationChange, elapsedSec, formatChange, formatClock, formatDuration,
+  formatDurationWords, formatMinutes, historyLine, lastActivity,
+} from './cardio';
+import { activitiesFor, activityById, cleanMetrics } from './activities';
 import { exerciseHistory, sessionSetCount, sessionVolumeKg } from './history';
 import { recommend } from './progression';
 import { challengeFor } from './game/challenge';
@@ -69,7 +72,7 @@ describe('cardio is separate from strength', () => {
     }
     const perWorkout = GAME_CONFIG.xp.cardio + GAME_CONFIG.xp.warmup + GAME_CONFIG.xp.cooldown;
     expect(b.totalXp - a.totalXp).toBe(perWorkout * plain.length);
-    expect(perWorkout).toBeLessThanOrEqual(11);
+    expect(perWorkout).toBeLessThan(GAME_CONFIG.xp.challenge); // all activity XP together is less than one strength challenge
   });
 
   it('equipment usage only looks at strength sets', () => {
@@ -83,105 +86,132 @@ describe('cardio is separate from strength', () => {
   });
 });
 
-describe('cardio XP is capped', () => {
+describe('cardio XP: +10 for completed cardio, once per workout', () => {
   const now = new Date('2026-06-20T12:00:00');
   const xpOf = (entries: SessionEntry[]) => buildProgress([session('x', '2026-06-01', entries)], [press], now).bySession.get('x')!.events;
+  const timed = (activityId: string, sec: number, extra: Partial<ActivityEntry> = {}): ActivityEntry =>
+    ({ kind: 'cardio', activityId, durationSec: sec, startedAt: at('2026-06-01'), doneAt: at('2026-06-01'), ...extra });
 
-  it('three cardio activities in one workout earn cardio XP once', () => {
-    const events = xpOf([cardio('running', { durationMin: 10 }), cardio('rowing', { durationMin: 10 }), cardio('cycling', { durationMin: 10 })]);
-    expect(events.filter((e) => e.type === 'cardio')).toEqual([{ type: 'cardio', xp: GAME_CONFIG.xp.cardio }]);
+  it('three cardio activities in one workout earn cardio XP once; a longer session never earns more', () => {
+    const events = xpOf([timed('running', 600), timed('rowing', 3600), timed('cycling', 600)]);
+    expect(events.filter((e) => e.type === 'cardio')).toEqual([{ type: 'cardio', xp: 10 }]);
+    expect(GAME_CONFIG.xp.cardio).toBe(10);
+  });
+
+  it('a timer stopped after a few seconds is a mis-tap: saved, but no XP', () => {
+    expect(xpOf([timed('treadmill', 12)])).toEqual([]);
+    expect(xpOf([timed('treadmill', 60)]).map((e) => e.type)).toEqual(['cardio']);
   });
 
   it('a 10-minute cardio day is a real workout (workout XP); 5 minutes alone is not', () => {
-    expect(xpOf([cardio('running', { durationMin: 10 })]).map((e) => e.type)).toEqual(['workout', 'cardio']);
-    expect(xpOf([cardio('running', { durationMin: 5 })]).map((e) => e.type)).toEqual(['cardio']);
+    expect(xpOf([timed('running', 600)]).map((e) => e.type)).toEqual(['workout', 'cardio']);
+    expect(xpOf([timed('running', 300)]).map((e) => e.type)).toEqual(['cardio']);
+  });
+
+  it('older workouts (minutes typed in) still earn the same way', () => {
+    expect(xpOf([cardio('running', { durationMin: 10, speedKmh: 9 })]).map((e) => e.type)).toEqual(['workout', 'cardio']);
   });
 
   it('warm-ups and cool-downs pay only when planned in the routine (adding extra ones never pays)', () => {
-    const w = (planned: boolean): ActivityEntry => ({ kind: 'warmup', activityId: 'mobility', log: { durationMin: 5 }, doneAt: at('2026-06-01'), planned });
-    const c = (planned: boolean): ActivityEntry => ({ kind: 'cooldown', activityId: 'stretching', log: { durationMin: 5 }, doneAt: at('2026-06-01'), planned });
+    const w = (planned: boolean): ActivityEntry => ({ kind: 'warmup', activityId: 'mobility', durationSec: 300, doneAt: at('2026-06-01'), planned });
+    const c = (planned: boolean): ActivityEntry => ({ kind: 'cooldown', activityId: 'stretching', durationSec: 300, doneAt: at('2026-06-01'), planned });
     expect(xpOf([w(false), c(false)])).toEqual([]);
     expect(xpOf([w(true), w(true), c(true)]).map((e) => e.type)).toEqual(['warmup', 'cooldown']);
   });
 
-  it('activities not completed earn nothing', () => {
+  it('activities not completed (never started, or still running) earn nothing', () => {
     expect(xpOf([{ kind: 'cardio', activityId: 'running', plan: { durationMin: 30 } }])).toEqual([]);
+    expect(xpOf([{ kind: 'cardio', activityId: 'running', startedAt: at('2026-06-01') }])).toEqual([]);
+  });
+
+  it('a treadmill session never touches strength scoring', () => {
+    const lifts = [strength('2026-06-01', 60, [10, 10, 10])];
+    const a = buildProgress([session('x', '2026-06-01', lifts)], [press], now).bySession.get('x')!;
+    const b = buildProgress([session('x', '2026-06-01', [...lifts, timed('treadmill', 1422)])], [press], now).bySession.get('x')!;
+    expect(b.results).toEqual(a.results);
+    expect(b.events.filter((e) => e.type !== 'cardio')).toEqual(a.events);
   });
 });
 
-describe('cardio suggestions (gentle, never automatic)', () => {
-  it('no suggestion before two sessions', () => {
-    expect(cardioSuggestion([], 'treadmill')).toBeNull();
-    expect(cardioSuggestion(runs([20]), 'treadmill')).toBeNull();
+describe('durations (the only cardio metric)', () => {
+  it('elapsed time comes from timestamps, so a locked screen or reload changes nothing', () => {
+    const start = '2026-06-01T18:00:00.000Z';
+    expect(elapsedSec(start, Date.parse('2026-06-01T18:23:42.000Z'))).toBe(1422);
+    expect(elapsedSec(start, Date.parse('2026-06-01T17:59:00.000Z'))).toBe(0); // clock before start: never negative
   });
 
-  it('two matching sessions: one more minute; the prefill stays last time', () => {
-    expect(cardioSuggestion(runs([20, 20], 'running'), 'running')).toEqual({ text: 'Try 21 minutes today', prefill: { durationMin: 20 } });
+  it('formats the stopwatch, the result and the comparison', () => {
+    expect(formatClock(272)).toBe('00:04:32');
+    expect(formatClock(3725)).toBe('01:02:05');
+    expect(formatDuration(1422)).toBe('23:42');
+    expect(formatDuration(3910)).toBe('1:05:10');
+    expect(formatDurationWords(1422)).toBe('23 min 42 sec');
+    expect(formatDurationWords(1200)).toBe('20 min');
+    expect(formatDurationWords(45)).toBe('45 sec');
+    expect(formatDurationWords(3900)).toBe('1 h 5 min');
+    expect(durationChange(1200, 1422)).toEqual({ previous: 1200, today: 1422, change: 222 });
+    expect(formatChange(222)).toBe('+3:42');
+    expect(formatChange(-65)).toBe('-1:05');
+    expect(durationChange(undefined, 1422)).toBeNull();
   });
 
-  it('never more than +10%: short sessions just match', () => {
-    expect(cardioSuggestion(runs([8, 8], 'running'), 'running')!.text).toBe('Match last time');
-    expect(cardioSuggestion(runs([10, 10], 'running'), 'running')!.text).toBe('Try 11 minutes today');
+  it('timer results and older typed-in minutes read the same way', () => {
+    expect(activityDurationSec({ durationSec: 1422 })).toBe(1422);
+    expect(activityDurationSec({ log: { durationMin: 20, speedKmh: 6.5 } })).toBe(1200);
+    expect(activityDurationSec({})).toBe(0);
   });
 
-  it('a change since last time: match it', () => {
-    expect(cardioSuggestion(runs([20, 25], 'running'), 'running')!.text).toBe('Match last time');
-  });
-
-  it('a steady treadmill routine (same time and incline 3 times): a little more incline, same time', () => {
-    expect(cardioSuggestion(runs([20, 20, 20], 'treadmill', { inclinePct: 5 }), 'treadmill')!.text).toBe('Keep 20 minutes and try 5.5% incline');
-    expect(cardioSuggestion(runs([20, 20], 'treadmill', { inclinePct: 5 }), 'treadmill')!.text).toBe('Try 21 minutes today');
-  });
-
-  it('warm-up walks are not cardio walks', () => {
-    const s = session('w', '2026-06-01', [{ kind: 'warmup', activityId: 'walking', log: { durationMin: 5 }, doneAt: at('2026-06-01') }]);
+  it('previous duration per activity and kind (a warm-up walk is not a cardio walk); unfinished workouts excluded', () => {
+    const s = session('w', '2026-06-01', [{ kind: 'warmup', activityId: 'walking', durationSec: 332, doneAt: at('2026-06-01') }]);
     expect(lastActivity([s], 'walking', 'cardio')).toBeUndefined();
-    expect(lastActivity([s], 'walking', 'warmup')!.metrics).toEqual({ durationMin: 5 });
-  });
-
-  it('the workout in progress (not finished) is not "last time"', () => {
+    expect(lastActivity([s], 'walking', 'warmup')!.durationSec).toBe(332);
     const live = { ...runs([20])[0], finishedAt: undefined };
     expect(lastActivity([live], 'treadmill', 'cardio')).toBeUndefined();
+    expect(lastActivity(runs([18, 20]), 'treadmill', 'cardio')!.durationSec).toBe(1200);
   });
 });
 
 describe('cardio statistics and display', () => {
   const sessions = [
-    session('a', '2026-06-01', [cardio('treadmill', { durationMin: 20, distanceKm: 3 }), cardio('rowing', { durationMin: 10, distanceKm: 2 })]),
-    session('b', '2026-06-03', [cardio('running', { durationMin: 35, distanceKm: 6.5 }), { kind: 'warmup', activityId: 'running', log: { durationMin: 5, distanceKm: 1 }, doneAt: at('2026-06-03') }]),
-    session('c', '2026-06-05', [cardio('treadmill', { durationMin: 25 }), cardio('other', { durationMin: 15 }, { name: 'Boxing' })]),
+    session('a', '2026-06-01', [cardio('treadmill', { durationMin: 20, distanceKm: 3 }), { kind: 'cardio', activityId: 'rowing', durationSec: 600, doneAt: at('2026-06-01') }]),
+    session('b', '2026-06-03', [cardio('running', { durationMin: 35, distanceKm: 6.5 }), { kind: 'warmup', activityId: 'running', durationSec: 300, doneAt: at('2026-06-03') }]),
+    session('c', '2026-06-05', [{ kind: 'cardio', activityId: 'treadmill', durationSec: 1422, doneAt: at('2026-06-05') }, cardio('other', { durationMin: 15 }, { name: 'Boxing' })]),
   ];
 
-  it('totals cardio only (warm-ups excluded); running distance is running + treadmill', () => {
-    expect(cardioStats(sessions)).toEqual({
-      sessions: 5, totalMinutes: 105, runningKm: 9.5,
-      longest: { name: 'Running', minutes: 35 }, mostFrequent: { name: 'Treadmill', count: 2 },
-    });
+  it('totals cardio only (warm-ups excluded): sessions, total time, time per activity, longest, most frequent', () => {
+    const st = cardioStats(sessions);
+    expect(st).toMatchObject({ sessions: 5, totalSec: 1200 + 600 + 2100 + 1422 + 900, longest: { name: 'Running', sec: 2100 }, mostFrequent: { name: 'Treadmill', count: 2 } });
+    expect(st.byActivity[0]).toEqual({ name: 'Treadmill', sec: 2622, count: 2 });
+    expect(st.byActivity.map((a) => a.name)).toContain('Boxing');
     expect(cardioStats([]).longest).toBeNull();
+  });
+
+  it('summaries show the duration only; older workouts keep their recorded extras, never empty fields', () => {
+    expect(describeActivity({ kind: 'cardio', activityId: 'treadmill', durationSec: 1422, doneAt: at('2026-06-01') })).toBe('23 min 42 sec');
+    expect(describeActivity(cardio('treadmill', { durationMin: 20, speedKmh: 6.5, inclinePct: 5 }))).toBe('20 min · 6.5 km/h · 5% incline');
+    expect(describeActivity(cardio('rowing', { durationMin: 10, distanceKm: 2 }))).toBe('10 min · 2,000 m');
+    setUnits('lb');
+    try {
+      expect(describeActivity(cardio('running', { distanceKm: 1.609344 }))).toBe('1 mi');
+    } finally { setUnits('kg'); }
   });
 
   it('history lines show only what the workout has', () => {
     expect(historyLine(sessions[0])).toBe('30 min cardio');
     expect(historyLine(session('m', '2026-06-01', [strength('2026-06-01', 60, [10, 10]), cardio('running', { durationMin: 25 })]))).toBe('1 exercise · 2 sets · 25 min cardio');
     expect(historyLine(session('p', '2026-06-01', [strength('2026-06-01', 60, [10])]))).toBe('1 exercise · 1 set');
-    expect(cardioMinutes(sessions[1])).toBe(35);
-  });
-
-  it('formats metrics in the user\'s units', () => {
-    expect(formatMetrics({ durationMin: 20, inclinePct: 5, speedKmh: 6.5 }, 'treadmill')).toBe('20 min · 6.5 km/h · 5% incline');
-    expect(formatMetrics({ durationMin: 10, distanceKm: 2 }, 'rowing')).toContain('2,000 m');
-    expect(formatMetrics({ durationMin: 30, distanceKm: 5 }, 'running')).toContain('/km');
-    setUnits('lb');
-    try {
-      expect(formatMetrics({ distanceKm: 1.609344 }, 'running')).toContain('1 mi');
-    } finally { setUnits('kg'); }
-    expect(formatMinutes(45)).toBe('45 min');
+    expect(cardioMinutes(sessions[2])).toBe(39); // 23:42 + 15:00, rounded
     expect(formatMinutes(125)).toBe('2 h 5 min');
   });
 
-  it('keeps only known, sane metrics', () => {
+  it('old metrics are still validated; unknown activities show as Other', () => {
     expect(cleanMetrics({ durationMin: 20, inclinePct: -3, calories: 1e9, bogus: 4 } as never)).toEqual({ durationMin: 20 });
     expect(cleanMetrics({})).toBeUndefined();
     expect(activityById('nope').id).toBe('other');
+  });
+
+  it('the cardio list is the simple one, in order', () => {
+    expect(activitiesFor('cardio').slice(0, 8).map((a) => a.name)).toEqual(['Treadmill', 'Cycling', 'Rowing', 'Cross Trainer', 'Stair Climber', 'Walking', 'Running', 'Swimming']);
+    expect(activitiesFor('cardio').at(-1)!.name).toBe('Other');
   });
 });

@@ -304,3 +304,13 @@ share of a muscle's recent sets. Targets come from the progression engine only.
 
 **D70. New screens open at the top.** Pushing a new route scrolls to the top; Back (POP) keeps the position. This was
 found while testing the Muscles tab: switching tabs used to keep the previous screen's scroll offset.
+
+## Cardio timer (simplified cardio)
+
+**D71. Cardio records duration only, from a start/stop timer.** Speed, incline, distance, level, calories and heart
+rate fields are gone, because typing mid-workout contradicts the app's goal. An activity entry stores `startedAt`,
+`endedAt` and `durationSec`; elapsed time is always `now − startedAt`, never a counter, so it survives a locked
+screen, a backgrounded browser, a reload or a killed tab. Old `log` metrics stay optional and read-only (shown in
+history, counted via `activityDurationSec`); nothing was migrated or deleted. Cardio XP is +10 once per workout for any
+completed cardio of 1+ minute. Duration-based coaching ("try 22 minutes") is deliberately not built yet. Details:
+[CARDIO.md](CARDIO.md).

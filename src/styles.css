@@ -422,11 +422,6 @@ span.with-icon { display: inline-flex; }
 .kind-tab.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
 .add-activity-row { gap: 8px; }
 .add-activity-row .btn { padding: 0 8px; white-space: nowrap; font-size: 15px; }
-.metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
-.metric-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.metric-field .input { text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
-.more-metrics > summary { min-height: 40px; }
-.more-metrics .metric-grid { margin-top: 8px; }
 .warmup-sets { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .slot.warmup { flex: none; min-width: 0; padding: 3px 8px; border: 1px solid var(--border); border-style: solid; font-size: 13px; color: var(--text-2); }
 .warmup-sets .btn { min-height: 36px; padding: 0 10px; }
@@ -579,3 +574,20 @@ span.with-icon { display: inline-flex; }
 .chip.m-main { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 650; }
 .chip.m-also { border: 2px solid var(--accent); color: var(--accent-text); font-weight: 600; }
 .chip-note { margin-left: 6px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+
+/* Cardio stopwatch: big digits, big START / STOP (usable mid-exercise, sweaty hands) */
+.timer-clock { font-size: clamp(56px, 18vw, 84px); font-weight: 800; letter-spacing: -.02em; text-align: center; font-variant-numeric: tabular-nums;
+  line-height: 1.05; padding: 12px 0; color: var(--text-2); }
+.timer-clock.running { color: var(--text); }
+.timer-clock.done { color: var(--text); padding: 0; }
+.btn.huge.timer-btn { min-height: 112px; font-size: 30px; font-weight: 800; letter-spacing: .04em; border-radius: 24px; }
+.btn.timer-btn.stop, .btn.stop { background: #c81e1e; color: #fff; border-color: transparent; } /* 5.6:1 with white, both themes */
+.timer-done { align-items: stretch; text-align: center; }
+.timer-done-title { justify-content: center; font-weight: 800; letter-spacing: .06em; }
+.timer-done .xp { font-weight: 800; color: var(--accent-text); font-size: 20px; }
+.center-row { justify-content: center; }
+.timer-small { font-variant-numeric: tabular-nums; font-weight: 700; }
+.running-bar { display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px; border-radius: var(--radius); background: var(--surface);
+  border: 2px solid #c81e1e; }
+.running-bar-main { display: flex; align-items: center; gap: 8px; min-height: 44px; background: none; border: 0; color: inherit; font: inherit; font-weight: 600; text-align: left; cursor: pointer; }
+.running-bar .btn.small { min-height: 44px; padding: 0 16px; }

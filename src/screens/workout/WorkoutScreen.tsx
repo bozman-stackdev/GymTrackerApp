@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useWakeLock } from '../../components/useWakeLock';
-import { discardWorkout, finishExercise, finishWorkout, goToExercise, undoLastSet } from '../../data/actions';
+import { discardWorkout, finishExercise, finishWorkout, goToExercise, stopActivityTimer, undoLastSet } from '../../data/actions';
 import { useExerciseLookup, useStore } from '../../data/store';
 import { useLiveSession } from '../../data/useProgress';
 import { ExerciseStrip } from './ExerciseStrip';
@@ -8,10 +8,12 @@ import { LastSetBar } from './LastSetBar';
 import { SetLogger } from './SetLogger';
 import { Icon } from '../../components/Icon';
 import { hasContent, isStrength } from '../../logic/entries';
-import { ActivityLogger } from './ActivityLogger';
+import { ActivityLogger, RunningClock } from './ActivityLogger';
+import { isRunning } from '../../logic/cardio';
+import { activityName } from '../../logic/activities';
 import { AddActivityRow } from '../../components/AddItemChoices';
 import { KIND_LABEL } from '../../logic/activities';
-import type { WorkoutSession } from '../../types';
+import type { ActivityEntry, WorkoutSession } from '../../types';
 
 /**
  * The in-gym screen, built for a tired user with a few seconds between sets:
@@ -39,7 +41,10 @@ export function WorkoutScreen() {
 
   const { session, currentIndex } = active;
   const entry = session.entries[currentIndex];
-  const hasSets = session.entries.some(hasContent);
+  // A running cardio timer counts: Finish Session stops and saves it.
+  const hasSets = session.entries.some((e) => hasContent(e) || (!isStrength(e) && isRunning(e)));
+  const runningIndex = session.entries.findIndex((e) => !isStrength(e) && isRunning(e));
+  const runningEntry = runningIndex >= 0 ? (session.entries[runningIndex] as ActivityEntry) : null;
   const exerciseDone = !!entry && isStrength(entry) && entry.sets.length >= entry.targetSets;
 
   const finish = () => {
@@ -61,7 +66,15 @@ export function WorkoutScreen() {
       </header>
 
       <ExerciseStrip session={session} currentIndex={currentIndex} onSelect={(i) => update((d) => goToExercise(d, i))} />
-      <LastSetBar session={session} live={live!} onUndo={(i) => update((d) => undoLastSet(d, i))} />
+      {runningEntry && runningIndex !== currentIndex ? (
+        // The cardio timer stays in sight (and one tap from STOP) while looking at another item.
+        <div className="running-bar" data-testid="running-bar">
+          <button className="grow running-bar-main" onClick={() => update((d) => goToExercise(d, runningIndex))}>
+            <Icon name="heartbeat" size={18} /> {activityName(runningEntry)} <RunningClock startedAt={runningEntry.startedAt!} small />
+          </button>
+          <button className="btn small stop" onClick={() => update((d) => stopActivityTimer(d, runningIndex))}>Stop</button>
+        </div>
+      ) : <LastSetBar session={session} live={live!} onUndo={(i) => update((d) => undoLastSet(d, i))} />}
 
       {exerciseDone && (
         <button className="btn primary huge" onClick={() => update(finishExercise)}><Icon name="check" size={26} /> Finish Exercise</button>

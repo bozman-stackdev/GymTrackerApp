@@ -1,120 +1,98 @@
 # Cardio, warm-ups and cool-downs
 
-A workout can mix strength exercises with **cardio**, **warm-ups** and **cool-downs**, in any order. Cardio has its
-own history and gentle suggestions. Strength progression, Today's Challenge, mastery, personal bests and strength XP
-ignore it completely.
+**SELECT → START → TRAIN → STOP → DONE.** Cardio records one thing, **duration**, with a start/stop timer.
+Nothing is typed during a workout. Warm-ups and cool-downs work the same way. Strength progression never sees any of it.
 
 ## For the user
 
-- **Routine builder:** *Add exercise*, or **Cardio · Warm-up · Cool-down**. Pick an activity (or *Other…* and type a
-  name), set planned minutes with −/+, and reorder everything with ↑ ↓.
-- **During a workout:** the strip shows every item, with a small icon for activities. An activity screen shows:
-  - **LAST SESSION**;
-  - an optional hint;
-  - a **Minutes** stepper;
-  - only the fields that make sense for that activity, prefilled from the plan or last time. Heart rate and calories
-    sit under *More (optional)*.
-  - Then one tap on **Complete**. Tapped it by mistake? Tap the item, then **Change**.
-- **Adding mid-workout:** between exercises, *+ Add exercise* or **Cardio · Warm-up · Cool-down**. The *+* in the strip
-  offers the same four tabs.
-- **Warm-up sets** of a strength exercise: tap **Warm-up** next to the set boxes. Weight drops to about half and the
-  rep pad says *Warm-up set: tap reps*. The sets show as small `25×10` chips with Undo. Tap **Warm-up** again to go
-  back to working sets at the working weight. They never count as working sets.
-- **Summary and History:** activities are listed in order with their kind, e.g. *Treadmill — 21 min · 6.5 km/h · 5%
-  incline*. History rows read *3 exercises · 9 sets · 25 min cardio*. *Edit sets* can remove an activity.
-- **Profile → Cardio** (once you have some): sessions, total time, running distance (running + treadmill), longest
-  session, most frequent activity.
+- **Add:** pick Cardio, Warm-up or Cool-down in a routine, or mid-workout (between exercises, or the *+* in the
+  strip). Then pick the activity. Cardio lists Treadmill, Cycling, Rowing, Cross Trainer, Stair Climber, Walking,
+  Running and Swimming first, then a few more, then *Other…* (type a name once).
+- **Timer screen:** the activity shows straight away with `00:00:00` and a huge **START**. When there's history it
+  says *Previous: 20:00*; otherwise a routine's *Plan: 20 min* is shown.
+- **Running:**
+  - a big live clock and a huge red **STOP**;
+  - the strip chip shows the running time;
+  - on another item, a bar shows *Treadmill 12:03 · Stop*;
+  - the screen stays awake during a workout (where supported).
+- **Done:** *CARDIO COMPLETE ✓*, the time (*23:42*), *+10 XP* and *Previous 20:00 · Today 23:42 · +3:42*, then a
+  huge **DONE**, which moves to the next item. Two optional small links:
+  - **Adjust time:** fix a forgotten STOP with a minutes stepper.
+  - **Restart:** go back to `00:00:00`.
+- **One timer at a time:** starting another activity stops (and saves) the running one. **Finish Session** stops a
+  running timer and saves it.
+- **Summary and history:** *Treadmill — 23 min 42 sec*, and history rows like *3 exercises · 9 sets · 24 min cardio*.
+  *Edit sets* can remove an activity.
+- **Profile → Cardio:** sessions, total time, longest, most frequent, and time per activity.
 
-## Activities and their fields
+## The timer (and why it's accurate)
 
-| Activity | Shown | Under "More" |
-|---|---|---|
-| Running | minutes, distance | heart rate (pace is derived) |
-| Treadmill | minutes, speed, incline, distance | heart rate |
-| Walking | minutes, distance | |
-| Cycling | minutes, distance | heart rate |
-| Stationary Bike | minutes, level, distance | calories, heart rate |
-| Rowing Machine, Ski Erg | minutes, distance in **metres**, level (rowing) | calories, heart rate |
-| Cross Trainer, Stair Climber | minutes, level | calories, heart rate |
-| Swimming | minutes, distance in metres | heart rate |
-| Assault Bike | minutes, distance | calories, heart rate |
-| Dynamic Stretching, Stretching, Mobility, Band Work, Bodyweight Squats, Foam Rolling | minutes | |
-| Other (named by you) | minutes, distance | calories |
+- **Elapsed time comes from timestamps,** never a counter: `now − startedAt`.
+- **The start time is saved with the workout** (on the phone) the moment START is pressed. STOP saves `endedAt` and
+  `durationSec = endedAt − startedAt`.
+- **The display refreshes every second,** and immediately when the page becomes visible again (`visibilitychange`,
+  `pageshow`, `focus`).
 
-Every field is optional; nothing is forced. In lb mode, distance shows in miles and speed in mph (stored in km and
-km/h). The catalogue is `src/logic/activities.ts`: add an activity there and nothing else needs to change. Unknown
-ids show as "Other".
+That makes it correct when:
 
-## Suggestions (cardio only)
+- **the screen locks or the browser is in the background:** browsers pause JavaScript timers, but the start time
+  doesn't change;
+- **the page reloads or the tab is closed:** reopening the app goes straight back to the workout and the timer shows
+  the true elapsed time.
 
-Suggestions are gentle and never applied automatically. Today's fields are always prefilled with **last time's**
-values. Rules are in `CARDIO_RULES` in `src/logic/cardio.ts`:
+Tested with a controlled clock: a 23-minute jump with no ticks shows exactly 23:43.
 
-- With fewer than **2** sessions of that activity, there's no hint.
-- If the last two sessions had the same time, the hint is **"Try N+1 minutes today"**. This only applies to 10+
-  minutes, so +1 minute is never more than **10%**.
-- If the treadmill time and incline were the same **3** times in a row: **"Keep N minutes and try X+0.5% incline"**.
-- Otherwise: **"Match last time"**.
-- Warm-ups and cool-downs never get hints; they are meant to stay easy.
-- Cardio never creates a challenge.
+**Limits of a web app:**
 
-## XP (small, capped, no reason to do extra)
+- **Silent when locked:** no sound or notification while the screen is locked (that needs a native app).
+- **Phone clock:** the time follows the phone's clock. Changing the clock mid-cardio changes the result.
+- **A forgotten STOP keeps counting:** hence *Adjust time*.
+- **Wake lock:** keeping the screen awake depends on browser support (iOS Safari 16.4+).
 
-Each of these counts **at most once per workout**:
+## XP
 
 | What | XP |
 |---|---|
-| Any cardio completed | +5 |
-| Warm-up completed, *if it was planned in the routine* | +3 |
-| Cool-down completed, *if it was planned in the routine* | +3 |
+| Any completed cardio (1 minute or more) | **+10**, once per workout. A longer or extra session never earns more. |
+| Warm-up / cool-down **planned in the routine** | +3 each, once per workout |
+| A timer stopped after a few seconds | Saved, but no XP (a mis-tap) |
+| 10+ minutes of cardio | Counts as a real workout (workout XP, streak), so cardio-only days count |
 
-Extra activities added mid-workout, and warm-up sets, earn nothing. A workout with **10+ minutes** of completed cardio
-counts as a real workout (the usual +10, once a day), so cardio-only days count for the streak and workout XP. Values
-are in `GAME_CONFIG` (`src/logic/game/config.ts`).
+Values are in `GAME_CONFIG` (`src/logic/game/config.ts`).
+
+## Progress (duration only)
+
+- *Previous* and *today* per activity, and the difference (*+3:42*).
+- Total cardio time, time per activity, number of sessions, and the longest session.
+- **No coaching or suggestions** (the old "try 21 minutes / more incline" hints are gone). If progression is added
+  later, it should be duration-based.
 
 ## Data model
 
-`WorkoutSession.entries` stays one ordered list, which is what makes mixing and reordering possible. Each item is one
-of two shapes (`src/types.ts`):
-
 ```ts
-type SessionEntry = StrengthEntry | ActivityEntry;
-
-// STRENGTH - unchanged from before; `kind` is absent (or 'strength'), so all old data is valid as is.
-interface StrengthEntry { kind?: 'strength'; exerciseId; targetSets; sets: SetLog[]; equipmentId? }
-
-// CARDIO / WARM_UP / COOL_DOWN
-interface ActivityEntry {
+interface ActivityEntry {            // inside WorkoutSession.entries (so it belongs to that workout)
   kind: 'cardio' | 'warmup' | 'cooldown';
-  activityId: string;          // 'treadmill', 'mobility', ... or 'other' with a name
+  activityId: string;                // 'treadmill', 'walking'… or 'other' + name
   name?: string;
-  plan?: CardioMetrics;        // from the routine
-  log?: CardioMetrics;         // what was done
-  doneAt?: string;             // set by Complete
-  planned?: boolean;           // came from the routine (only planned warm-ups/cool-downs earn XP)
-  warmupFor?: string;          // warm-up SETS of a strength exercise...
-  warmupSets?: SetLog[];       // ...live here, never in the exercise's `sets`
+  startedAt?: string;                // START
+  endedAt?: string;                  // STOP
+  durationSec?: number;              // the result (or the user's adjustment)
+  doneAt?: string;                   // = endedAt; marks it done everywhere
+  planned?: boolean;                 // came from the routine
+  plan?: { durationMin?: number };   // routine target, shown as "Plan: 20 min"
+  log?: CardioMetrics;               // OLDER workouts only: minutes, distance, speed, incline… (read-only)
+  warmupFor?: string; warmupSets?: SetLog[];   // warm-up SETS of a strength exercise (unchanged)
 }
-
-interface CardioMetrics { durationMin?, distanceKm?, speedKmh?, inclinePct?, level?, calories?, avgHeartRate? }
 ```
 
-Routine items use the same split: `{ exerciseId, sets }` or `{ kind, activityId, name?, plan? }`.
+**Older workouts** (typed-in minutes, speed, incline, distance…) are kept and never deleted:
 
-**How separation is guaranteed:**
+- their duration is read from `log.durationMin` (`activityDurationSec`);
+- the summary shows what they recorded, e.g. *20 min · 6.5 km/h · 5% incline*, never empty fields;
+- they still count for stats and XP.
 
-- It's structural. The strength engine reads `strengthEntries(session)` (`src/logic/entries.ts`); cardio reads
-  `activityEntries(session)`. Warm-up sets are in a different entry, so no strength calculation can see them.
-- The compiler enforces it. Because `SessionEntry` is a union, TypeScript rejects `entry.sets` until code has checked
-  `isStrength(entry)`.
-- Tests confirm it. `src/logic/cardio.test.ts` checks that a warm-up and a treadmill session leave the recommendation,
-  challenge, mastery, personal bests, strength XP and equipment history identical.
+No migration was needed.
 
-**Storage, backup and sync:** activity entries are part of the session JSON. `validate.ts` checks them (known kind,
-numbers in sane ranges), and they back up and sync unchanged.
-
-## Not included (yet)
-
-- Scan (photo recognition) is for strength machines only.
-- No heart-rate zones, GPS or wearable import.
-- Editing the numbers of a finished activity: today it can be removed, but not changed.
+**Separation from strength:** cardio is an activity entry, and the strength engine (progression, Today's Challenge,
+mastery, personal bests, muscle map) reads strength entries only. Tests check that a treadmill session leaves all of
+them unchanged.

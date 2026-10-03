@@ -40,6 +40,7 @@ const PATHS = {
   ten: <><rect x="3" y="4" width="18" height="16" rx="3" /><path d="M8 9v6" /><path d="M7 10l1-1" /><rect x="12" y="9" width="4.5" height="6" rx="2.25" /></>,
   circleCheck: <><circle cx="12" cy="12" r="9" /><path d="m8 12.5 2.8 2.7L16 9.5" /></>,
   halfCircle: <><circle cx="12" cy="12" r="8" /><path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor" /></>,
+  stop: <rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" stroke="none" />,
   pause: <><rect x="6.5" y="5" width="3.5" height="14" rx="1" /><rect x="14" y="5" width="3.5" height="14" rx="1" /></>,
   hourglass: <><path d="M6 2.5h12" /><path d="M6 21.5h12" /><path d="M7.5 2.5v3.5a4.5 4.5 0 0 0 9 0V2.5" /><path d="M7.5 21.5V18a4.5 4.5 0 0 1 9 0v3.5" /></>,
   bolt: <path d="M13 2 4 14h7l-1 8 9-12h-7Z" />,

@@ -2,7 +2,7 @@
  * Sample data so the prototype is testable immediately.
  * History is generated relative to "now" so it always looks recent.
  */
-import type { AppData, Exercise, ExerciseMuscles, GymEquipment, Profile, Routine, SessionEntry, SetLog, WorkoutSession } from '../types';
+import type { ActivityEntry, AppData, Exercise, ExerciseMuscles, GymEquipment, Profile, Routine, SessionEntry, SetLog, WorkoutSession } from '../types';
 import { isStrengthItem } from '../logic/entries';
 
 /** Primary and secondary muscles (primary count 1.0 per set, secondary 0.5; `weights` overrides). Feeds the muscle map. */
@@ -132,16 +132,19 @@ export function createSampleData(now = new Date()): AppData {
         return { exerciseId: ex.id, targetSets: item.sets, sets, equipmentId: SAMPLE_EQUIPMENT.find((e) => e.exerciseIds.includes(ex.id))?.id };
       });
 
-    // The last three visits also show cardio: a mobility warm-up, a steady treadmill finisher, a stretch.
+    // The last three visits also show cardio, recorded with the start/stop timer: a mobility warm-up, a treadmill
+    // finisher that gets a little longer each time, and a stretch.
     const fromEnd = VISIT_DAYS_AGO.length - visit;
     if (fromEnd <= 3) {
       const at = (min: number) => new Date(start.getTime() + min * 60_000).toISOString();
-      entries.unshift({ kind: 'warmup', activityId: 'mobility', log: { durationMin: 5 }, doneAt: at(0) });
-      minute += 20;
-      entries.push({ kind: 'cardio', activityId: 'treadmill', log: { durationMin: 20, inclinePct: fromEnd === 3 ? 4 : 5, speedKmh: 6.5 }, doneAt: at(minute) });
+      const timed = (kind: ActivityEntry['kind'], activityId: string, from: number, sec: number): ActivityEntry =>
+        ({ kind, activityId, startedAt: at(from), endedAt: at(from + sec / 60), doneAt: at(from + sec / 60), durationSec: sec });
+      entries.unshift(timed('warmup', 'mobility', -6, 5 * 60 + 12));
+      entries.push(timed('cardio', 'treadmill', minute + 2, [18 * 60 + 30, 20 * 60, 20 * 60][3 - fromEnd]));
+      minute += 22;
       if (fromEnd === 1) {
-        minute += 5;
-        entries.push({ kind: 'cooldown', activityId: 'stretching', log: { durationMin: 5 }, doneAt: at(minute) });
+        entries.push(timed('cooldown', 'stretching', minute + 1, 5 * 60 + 40));
+        minute += 7;
       }
     }
 

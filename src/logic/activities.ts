@@ -1,10 +1,11 @@
 /**
- * Cardio, warm-up and cool-down activities, and which metrics each one shows. Pure data: the UI shows only the
- * listed fields, so "Run, 20 minutes" is one stepper and the treadmill adds speed and incline.
- * Add an activity or a metric here; nothing else needs to change (unknown ids show as "Other").
+ * Cardio, warm-up and cool-down activities. Pure data. An activity is just a name: the app records only its DURATION,
+ * with a start/stop timer, so nothing has to be typed during a workout (docs/CARDIO.md).
+ * Add an activity here; nothing else needs to change (unknown ids show as "Other").
  */
 import type { ActivityKind, CardioMetrics } from '../types';
 
+/** Metrics older versions recorded (speed, incline...). Kept only to read and show old workouts. */
 export type Metric = keyof CardioMetrics;
 
 export interface Activity {
@@ -12,35 +13,28 @@ export interface Activity {
   name: string;
   /** Where it's offered first. Cardio activities are also offered as warm-ups and cool-downs. */
   group: 'cardio' | 'mobility';
-  /** Shown by default (duration is always first). */
-  metrics: Metric[];
-  /** Distance shown in metres (rowing, swimming) instead of km / miles. */
-  metres?: boolean;
-  /** Counts towards "running distance" in the statistics. */
-  running?: boolean;
 }
 
-const HR: Metric = 'avgHeartRate';
-
+/** In the order the cardio list shows them. */
 export const ACTIVITIES: Activity[] = [
-  { id: 'running', name: 'Running', group: 'cardio', metrics: ['durationMin', 'distanceKm', HR], running: true },
-  { id: 'treadmill', name: 'Treadmill', group: 'cardio', metrics: ['durationMin', 'speedKmh', 'inclinePct', 'distanceKm', HR], running: true },
-  { id: 'walking', name: 'Walking', group: 'cardio', metrics: ['durationMin', 'distanceKm'] },
-  { id: 'cycling', name: 'Cycling', group: 'cardio', metrics: ['durationMin', 'distanceKm', HR] },
-  { id: 'stationary-bike', name: 'Stationary Bike', group: 'cardio', metrics: ['durationMin', 'level', 'distanceKm', 'calories', HR] },
-  { id: 'rowing', name: 'Rowing Machine', group: 'cardio', metrics: ['durationMin', 'distanceKm', 'level', 'calories', HR], metres: true },
-  { id: 'cross-trainer', name: 'Cross Trainer', group: 'cardio', metrics: ['durationMin', 'level', 'calories', HR] },
-  { id: 'stair-climber', name: 'Stair Climber', group: 'cardio', metrics: ['durationMin', 'level', 'calories', HR] },
-  { id: 'swimming', name: 'Swimming', group: 'cardio', metrics: ['durationMin', 'distanceKm', HR], metres: true },
-  { id: 'ski-erg', name: 'Ski Erg', group: 'cardio', metrics: ['durationMin', 'distanceKm', 'calories', HR], metres: true },
-  { id: 'assault-bike', name: 'Assault Bike', group: 'cardio', metrics: ['durationMin', 'calories', 'distanceKm', HR] },
-  { id: 'dynamic-stretching', name: 'Dynamic Stretching', group: 'mobility', metrics: ['durationMin'] },
-  { id: 'stretching', name: 'Stretching', group: 'mobility', metrics: ['durationMin'] },
-  { id: 'mobility', name: 'Mobility', group: 'mobility', metrics: ['durationMin'] },
-  { id: 'band-work', name: 'Band Work', group: 'mobility', metrics: ['durationMin'] },
-  { id: 'bodyweight-squats', name: 'Bodyweight Squats', group: 'mobility', metrics: ['durationMin'] },
-  { id: 'foam-rolling', name: 'Foam Rolling', group: 'mobility', metrics: ['durationMin'] },
-  { id: 'other', name: 'Other', group: 'cardio', metrics: ['durationMin', 'distanceKm', 'calories', HR] },
+  { id: 'treadmill', name: 'Treadmill', group: 'cardio' },
+  { id: 'cycling', name: 'Cycling', group: 'cardio' },
+  { id: 'rowing', name: 'Rowing', group: 'cardio' },
+  { id: 'cross-trainer', name: 'Cross Trainer', group: 'cardio' },
+  { id: 'stair-climber', name: 'Stair Climber', group: 'cardio' },
+  { id: 'walking', name: 'Walking', group: 'cardio' },
+  { id: 'running', name: 'Running', group: 'cardio' },
+  { id: 'swimming', name: 'Swimming', group: 'cardio' },
+  { id: 'stationary-bike', name: 'Stationary Bike', group: 'cardio' },
+  { id: 'ski-erg', name: 'Ski Erg', group: 'cardio' },
+  { id: 'assault-bike', name: 'Assault Bike', group: 'cardio' },
+  { id: 'dynamic-stretching', name: 'Dynamic Stretching', group: 'mobility' },
+  { id: 'stretching', name: 'Stretching', group: 'mobility' },
+  { id: 'mobility', name: 'Mobility', group: 'mobility' },
+  { id: 'band-work', name: 'Band Work', group: 'mobility' },
+  { id: 'bodyweight-squats', name: 'Bodyweight Squats', group: 'mobility' },
+  { id: 'foam-rolling', name: 'Foam Rolling', group: 'mobility' },
+  { id: 'other', name: 'Other', group: 'cardio' },
 ];
 
 const BY_ID = new Map(ACTIVITIES.map((a) => [a.id, a]));
@@ -67,7 +61,7 @@ export function activitiesFor(kind: ActivityKind): Activity[] {
 
 export const KIND_LABEL: Record<ActivityKind, string> = { cardio: 'Cardio', warmup: 'Warm-up', cooldown: 'Cool-down' };
 
-/** Sensible input limits (anything outside is a typo, not a workout). */
+/** Sane ranges for the metrics older versions recorded (used to validate old data only). */
 export const METRIC_LIMITS: Record<Metric, { min: number; max: number; step: number }> = {
   durationMin: { min: 0, max: 600, step: 1 },
   distanceKm: { min: 0, max: 300, step: 0.1 },
@@ -78,7 +72,7 @@ export const METRIC_LIMITS: Record<Metric, { min: number; max: number; step: num
   avgHeartRate: { min: 0, max: 230, step: 1 },
 };
 
-/** Only known metrics, finite and within limits (used for validation and for saving what was typed). */
+/** Only known metrics, finite and within limits (old data and routine plans). */
 export function cleanMetrics(m: unknown): CardioMetrics | undefined {
   if (!m || typeof m !== 'object') return undefined;
   const out: CardioMetrics = {};

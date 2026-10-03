@@ -1,9 +1,10 @@
 /** Workout actions and storage for cardio, warm-ups and cool-downs (mixed workouts). */
 import { describe, expect, it } from 'vitest';
 import {
-  addActivityToWorkout, completeActivity, deleteEntry, finishExercise, finishWorkout, logSet, logWarmupSet, reopenActivity,
-  startWorkout, undoWarmupSet,
+  addActivityToWorkout, adjustActivityDuration, deleteEntry, doneActivity, finishExercise, finishWorkout, logSet, logWarmupSet,
+  restartActivity, startActivityTimer, startWorkout, stopActivityTimer, undoWarmupSet,
 } from './actions';
+import { isRunning } from '../logic/cardio';
 import { createStarterData } from './seed';
 import { parseAppData } from './validate';
 import type { ActivityEntry, AppData, Routine } from '../types';
@@ -24,61 +25,98 @@ const routine: Routine = {
 const A = (d: AppData, i: number) => d.activeWorkout!.session.entries[i] as ActivityEntry;
 const now = new Date('2026-06-01T18:00:00');
 
-describe('mixed workouts', () => {
-  it('a routine with activities starts with them in order, planned, with the plan', () => {
+const t = (sec: number) => new Date(now.getTime() + sec * 1000);
+/** START at t0, STOP `sec` seconds later. */
+const timed = (d: AppData, i: number, from: number, sec: number) => stopActivityTimer(startActivityTimer(d, i, t(from)), i, t(from + sec));
+
+describe('mixed workouts (timer)', () => {
+  it('a routine with activities starts with them in order, planned, with the planned minutes as a target', () => {
     const d = startWorkout(createStarterData(), routine);
     const e = d.activeWorkout!.session.entries;
     expect(e.map((x) => (isStrength(x) ? 'strength' : x.kind))).toEqual(['warmup', 'strength', 'cardio', 'cooldown']);
     expect(A(d, 2)).toEqual({ kind: 'cardio', activityId: 'treadmill', plan: { durationMin: 20 }, planned: true });
   });
 
-  it('warm-up → strength → cardio → cool-down: Complete moves on; the workout is saved in order', () => {
+  it('START → STOP saves the duration from the timestamps; DONE moves on; nothing is typed', () => {
     let d = startWorkout(createStarterData(), routine);
-    d = completeActivity(d, 0, { durationMin: 5 }, now);
-    expect(d.activeWorkout!.currentIndex).toBe(1);
-    d = logSet(logSet(d, 1, { reps: 8, weightKg: 60 }), 1, { reps: 8, weightKg: 60 }); // last planned set: moves on
-    expect(d.activeWorkout!.currentIndex).toBe(2);
-    d = completeActivity(d, 2, { durationMin: 21, inclinePct: 5, speedKmh: 6.5 }, now);
-    d = completeActivity(d, 3, { durationMin: 5 }, now);
-    expect(d.activeWorkout!.currentIndex).toBe(4); // past the end: the "what next?" state
-    d = finishWorkout(d);
-    const saved = d.sessions.at(-1)!;
-    expect(saved.entries).toHaveLength(4);
-    expect((saved.entries[2] as ActivityEntry).log).toEqual({ durationMin: 21, inclinePct: 5, speedKmh: 6.5 });
+    d = startActivityTimer(d, 2, t(0));
+    expect(A(d, 2)).toMatchObject({ startedAt: t(0).toISOString() });
+    expect(A(d, 2).doneAt).toBeUndefined();
+    d = stopActivityTimer(d, 2, t(1422));
+    expect(A(d, 2)).toMatchObject({ durationSec: 1422, endedAt: t(1422).toISOString(), doneAt: t(1422).toISOString() });
+    expect(A(d, 2).log).toBeUndefined(); // no metrics written
+    expect(d.activeWorkout!.currentIndex).toBe(2); // stays to show the result
+    d = doneActivity(d, 2);
+    expect(d.activeWorkout!.currentIndex).toBe(3); // the next item still to do
   });
 
-  it('Complete keeps only sane numbers; Change reopens with the values kept', () => {
+  it('warm-up → strength → strength → cardio → cool-down, saved in order', () => {
+    let d = startWorkout(createStarterData(), {
+      id: 'm', name: 'M', items: [
+        { kind: 'warmup', activityId: 'walking' }, { exerciseId: 'bench-press', sets: 2 }, { exerciseId: 'lat-pulldown', sets: 1 },
+        { kind: 'cardio', activityId: 'treadmill' }, { kind: 'cooldown', activityId: 'cycling' },
+      ],
+    });
+    d = doneActivity(timed(d, 0, 0, 332), 0);
+    expect(d.activeWorkout!.currentIndex).toBe(1);
+    d = logSet(logSet(d, 1, { reps: 8, weightKg: 60 }), 1, { reps: 8, weightKg: 60 });
+    d = logSet(d, 2, { reps: 10, weightKg: 50 });
+    expect(d.activeWorkout!.currentIndex).toBe(3);
+    d = doneActivity(timed(d, 3, 900, 1422), 3);
+    d = doneActivity(timed(d, 4, 2400, 495), 4);
+    expect(d.activeWorkout!.currentIndex).toBe(5); // the "what next?" state
+    d = finishWorkout(d, t(3000));
+    const saved = d.sessions.at(-1)!;
+    expect(saved.entries).toHaveLength(5);
+    expect(saved.entries.map((e) => (isStrength(e) ? e.exerciseId : `${e.kind}:${e.durationSec}`)))
+      .toEqual(['warmup:332', 'bench-press', 'lat-pulldown', 'cardio:1422', 'cooldown:495']);
+  });
+
+  it('only one timer runs: starting another stops (and saves) the first', () => {
     let d = startWorkout(createStarterData(), routine);
-    d = completeActivity(d, 2, { durationMin: 20, inclinePct: -1 }, now);
-    expect(A(d, 2).log).toEqual({ durationMin: 20 });
-    d = reopenActivity(d, 2);
-    expect(A(d, 2).doneAt).toBeUndefined();
-    expect(A(d, 2).log).toEqual({ durationMin: 20 });
-    expect(d.activeWorkout!.currentIndex).toBe(2);
+    d = startActivityTimer(d, 0, t(0));
+    d = startActivityTimer(d, 2, t(300));
+    expect(A(d, 0)).toMatchObject({ durationSec: 300 });
+    expect(isRunning(A(d, 2))).toBe(true);
+  });
+
+  it('Finish Session stops a running timer and saves it (never lost)', () => {
+    let d = startWorkout(createStarterData(), routine);
+    d = startActivityTimer(d, 2, t(0));
+    d = finishWorkout(d, t(1200));
+    expect(d.sessions.at(-1)!.entries).toEqual([expect.objectContaining({ kind: 'cardio', durationSec: 1200 })]);
+  });
+
+  it('Adjust (forgot to stop) and Restart', () => {
+    let d = timed(startWorkout(createStarterData(), routine), 2, 0, 7200);
+    d = adjustActivityDuration(d, 2, 25 * 60);
+    expect(A(d, 2).durationSec).toBe(1500);
+    expect(adjustActivityDuration(d, 2, -5).activeWorkout!.session.entries[2]).toMatchObject({ durationSec: 0 });
+    d = restartActivity(d, 2);
+    expect(A(d, 2)).toEqual({ kind: 'cardio', activityId: 'treadmill', plan: { durationMin: 20 }, planned: true });
   });
 
   it('activities not done are dropped on finish; a cardio-only workout is kept', () => {
-    let d = startWorkout(createStarterData(), routine);
-    d = completeActivity(d, 2, { durationMin: 30 }, now);
-    d = finishWorkout(d);
+    const d = finishWorkout(timed(startWorkout(createStarterData(), routine), 2, 0, 1800));
     expect(d.sessions.at(-1)!.entries).toEqual([expect.objectContaining({ kind: 'cardio', activityId: 'treadmill' })]);
   });
 
   it('two cardio activities can be added to an empty workout', () => {
     let d = startWorkout(createStarterData(), undefined);
     d = addActivityToWorkout(d, 'cardio', 'rowing');
-    d = completeActivity(d, 0, { durationMin: 10, distanceKm: 2 }, now);
+    d = doneActivity(timed(d, 0, 0, 600), 0);
     d = addActivityToWorkout(d, 'cardio', 'other', '  Boxing ');
     expect(d.activeWorkout!.currentIndex).toBe(1);
     expect(A(d, 1)).toEqual({ kind: 'cardio', activityId: 'other', name: 'Boxing' });
-    d = finishWorkout(completeActivity(d, 1, { durationMin: 15 }, now));
+    d = finishWorkout(timed(d, 1, 700, 900));
     expect(d.sessions.at(-1)!.entries).toHaveLength(2);
   });
 
-  it('completeActivity / reopenActivity ignore strength entries', () => {
+  it('timer actions ignore strength entries', () => {
     const d = startWorkout(createStarterData(), routine);
-    expect(completeActivity(d, 1, { durationMin: 5 })).toBe(d);
-    expect(S(reopenActivity(d, 1).activeWorkout!.session.entries[1])).toEqual(d.activeWorkout!.session.entries[1]);
+    expect(startActivityTimer(d, 1)).toBe(d);
+    expect(stopActivityTimer(d, 1)).toBe(d);
+    expect(adjustActivityDuration(d, 1, 60)).toBe(d);
   });
 });
 
@@ -125,10 +163,10 @@ describe('warm-up sets', () => {
 describe('storage of activities', () => {
   const finished = () => {
     let d = startWorkout(createStarterData(), routine);
-    d = completeActivity(d, 0, { durationMin: 5 }, now);
+    d = timed(d, 0, 0, 300);
     d = logWarmupSet(d, 1, { reps: 10, weightKg: 20 }, now);
     d = logSet(d, 2, { reps: 8, weightKg: 60 });
-    d = completeActivity(d, 3, { durationMin: 20, inclinePct: 5 }, now);
+    d = timed(d, 3, 600, 1422);
     return finishWorkout(d);
   };
 
@@ -149,7 +187,9 @@ describe('storage of activities', () => {
     expect(bad({ activityId: 5 })).toThrow();
     expect(bad({ log: { durationMin: 'ten' } })).toThrow();
     expect(bad({ warmupSets: [{ reps: 'x' }] })).toThrow();
-    expect(bad({ log: { durationMin: 12 } })).not.toThrow();
+    expect(bad({ durationSec: -1 })).toThrow();
+    expect(bad({ startedAt: 'yesterday' })).toThrow();
+    expect(bad({ log: { durationMin: 12, speedKmh: 6.5 } })).not.toThrow(); // older workouts with metrics still load
   });
 
   it('deleting an activity from a finished workout; deleting the last item removes the workout', () => {

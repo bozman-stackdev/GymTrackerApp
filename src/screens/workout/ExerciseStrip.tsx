@@ -5,6 +5,8 @@ import { isEntryDone, isStrength } from '../../logic/entries';
 import type { WorkoutSession } from '../../types';
 import { Icon } from '../../components/Icon';
 import { entryTitle, KIND_ICON } from '../../components/activityUi';
+import { isRunning } from '../../logic/cardio';
+import { RunningClock } from './ActivityLogger';
 
 /** Every item of the workout, with progress. Tap to jump. Doubles as "what have I done". */
 export function ExerciseStrip({ session, currentIndex, onSelect }: { session: WorkoutSession; currentIndex: number; onSelect: (i: number) => void }) {
@@ -31,7 +33,8 @@ export function ExerciseStrip({ session, currentIndex, onSelect }: { session: Wo
             {!isStrength(e) && <Icon name={KIND_ICON[e.kind]} size={16} />}
             <span className="ex-chip-name">{entryTitle(e, getExercise)}</span>
             <span className="ex-chip-count">
-              {done ? <Icon name="check" size={16} label="done" /> : isStrength(e) ? `${e.sets.length}/${e.targetSets}` : null}
+              {done ? <Icon name="check" size={16} label="done" /> : isStrength(e) ? `${e.sets.length}/${e.targetSets}`
+                : isRunning(e) ? <RunningClock startedAt={e.startedAt!} small /> : null}
             </span>
           </button>
         );

@@ -85,8 +85,8 @@ export interface StrengthEntry {
 }
 
 /**
- * Cardio / warm-up / cool-down metrics. Everything optional: "Run, 20 minutes" is a complete entry.
- * Stored in metric units (km, km/h); shown in miles when the profile uses lb. Pace is derived, not stored.
+ * Cardio / warm-up / cool-down metrics. Today only a routine's planned `durationMin` is written. Older versions also
+ * recorded distance, speed, incline and more: those fields stay optional so old workouts load and display unchanged.
  */
 export interface CardioMetrics {
   durationMin?: number;
@@ -105,9 +105,15 @@ export interface ActivityEntry {
   /** Built-in activity id (logic/activities.ts), or 'other' with `name`. */
   activityId: string;
   name?: string;
-  /** Planned values (from the routine), shown as the target. */
+  /** Planned values (from the routine): only `durationMin` is used, shown as the target. */
   plan?: CardioMetrics;
-  /** What was done. */
+  /** Set by START (stopwatch), cleared by Restart. Elapsed time is always now - startedAt, so it survives a locked screen. */
+  startedAt?: string;
+  /** Set by STOP. */
+  endedAt?: string;
+  /** What was done: the stopwatch result in seconds (or the user's adjustment). */
+  durationSec?: number;
+  /** What older versions recorded (minutes, distance, speed...). Read-only now: kept so old workouts still show. */
   log?: CardioMetrics;
   /** Warm-up sets for a strength exercise ("light sets of the exercise being trained"). Never progression data. */
   warmupFor?: string;
