@@ -115,7 +115,7 @@ The last result is kept on the phone (instant display; *Updated 5 min ago*; the 
 
 ## Production setup
 
-1. **Database:** Supabase → SQL Editor → paste `supabase/schema.sql` → Run. It is additive and safe on the live
+1. **Database:** Supabase → SQL Editor → paste `supabase/upgrade-leaderboard.sql` (a project that already has accounts) or `supabase/schema.sql` (a new project) → Run. If the editor shows a warning dialog, choose *Run without RLS*: the file enables row-level security itself. It is additive and safe on the live
    project: existing accounts and data are kept, and existing users stay off the board until they join.
 2. **App:** nothing else to configure; the same `SUPABASE_URL` and `SUPABASE_KEY` variables are used.
 

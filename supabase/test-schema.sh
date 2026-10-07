@@ -26,8 +26,11 @@ if [ -n "${UPGRADE_FROM-}" ]; then
   $P -f "$UPGRADE_FROM" 2>/dev/null
   $P -c "insert into auth.users (email, raw_user_meta_data) values ('old@x.com', '{\"display_name\":\"Old\"}')" >/dev/null
 fi
-$P -f "$here/schema.sql" 2>/dev/null
-$P -f "$here/schema.sql" 2>/dev/null # must be safe to run again
+# SCHEMA_FILES: what to apply (default schema.sql), e.g. UPGRADE_FROM=old.sql SCHEMA_FILES=supabase/upgrade-leaderboard.sql.
+for f in ${SCHEMA_FILES:-$here/schema.sql}; do
+  $P -f "$f" 2>/dev/null
+  $P -f "$f" 2>/dev/null # must be safe to run again
+done
 
 P="psql -q -At"
 A=$($P -c "insert into auth.users (email, raw_user_meta_data) values ('a@x.com', '{\"display_name\":\"Alex\"}') returning id")
