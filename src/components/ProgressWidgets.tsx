@@ -1,6 +1,6 @@
 /** Small, calm building blocks for showing game progress (summary + profile). */
 import { useExerciseLookup } from '../data/store';
-import { ACHIEVEMENTS } from '../logic/game/achievements';
+import { ACHIEVEMENTS, COMMUNITY_ACHIEVEMENTS, type AchievementIcon } from '../logic/game/achievements';
 import type { LevelInfo } from '../logic/game/levels';
 import type { PersonalBest } from '../logic/game/progress';
 import { formatDate, formatWeight } from '../logic/history';
@@ -28,21 +28,29 @@ export function LevelBar({ level }: { level: LevelInfo }) {
   );
 }
 
-export function AchievementList({ unlocked }: { unlocked: string[] }) {
+/**
+ * @param community leaderboard achievements unlocked (accounts only); undefined hides that group, e.g. in a version
+ *                  of the app without accounts.
+ */
+export function AchievementList({ unlocked, community }: { unlocked: string[]; community?: string[] }) {
+  const item = (a: { id: string; icon: AchievementIcon; title: string; description: string }, done: boolean) => (
+    <div key={a.id} className={`achievement${done ? ' done' : ''}`} data-testid={done ? 'achievement-done' : 'achievement-locked'}>
+      <span className="achievement-icon" aria-hidden><Icon name={done ? a.icon : 'lock'} size={22} /></span>
+      <div>
+        <div className="title">{a.title}</div>
+        <div className="muted small">{a.description}</div>
+      </div>
+    </div>
+  );
   return (
     <div className="achievements">
-      {ACHIEVEMENTS.map((a) => {
-        const done = unlocked.includes(a.id);
-        return (
-          <div key={a.id} className={`achievement${done ? ' done' : ''}`} data-testid={done ? 'achievement-done' : 'achievement-locked'}>
-            <span className="achievement-icon" aria-hidden><Icon name={done ? a.icon : 'lock'} size={22} /></span>
-            <div>
-              <div className="title">{a.title}</div>
-              <div className="muted small">{a.description}</div>
-            </div>
-          </div>
-        );
-      })}
+      {ACHIEVEMENTS.map((a) => item(a, unlocked.includes(a.id)))}
+      {community && (
+        <>
+          <div className="caps small achievements-group">Community · no XP, just recognition</div>
+          {COMMUNITY_ACHIEVEMENTS.map((a) => item(a, community.includes(a.id)))}
+        </>
+      )}
     </div>
   );
 }

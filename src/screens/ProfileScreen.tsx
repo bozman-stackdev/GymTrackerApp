@@ -13,7 +13,10 @@ import { validateProfile } from '../data/validate';
 import { fromDisplay, toDisplay, type Units } from '../logic/units';
 import { useProgress } from '../data/useProgress';
 import { AchievementList, LevelBar, PersonalBestList, Streak } from '../components/ProgressWidgets';
-import { ACHIEVEMENTS } from '../logic/game/achievements';
+import { ACHIEVEMENTS, COMMUNITY_ACHIEVEMENTS } from '../logic/game/achievements';
+import { LeaderboardLine } from '../components/LeaderboardWidgets';
+import { displayNameProblem, DISPLAY_NAME_MAX, useLeaderboard } from '../data/leaderboard';
+import { VisibilityCard } from './LeaderboardScreen';
 import type { BodyType, Experience, Goal, Profile, Sex } from '../types';
 import { bodyTypeOf, usePlan } from '../data/useMuscles';
 import { PREMIUM_FEATURES } from '../logic/plan';
@@ -42,6 +45,9 @@ export function ProfileScreen() {
   const restoreInput = useRef<HTMLInputElement>(null);
   const [dataMessage, setDataMessage] = useState<string | null>(null);
   const { available: accountsOn, account, logOut } = useAccount();
+  const lb = useLeaderboard();
+  // Leaderboard achievements: shown once someone has an account (they need one to earn them).
+  const community = accountsOn && account ? COMMUNITY_ACHIEVEMENTS.filter((a) => a.test(lb.record)).map((a) => a.id) : undefined;
 
   const exportNow = () => {
     exportBackup(data, update);
@@ -75,14 +81,15 @@ export function ProfileScreen() {
       <h2>Progress</h2>
       <div className="card stack" data-testid="progress">
         <LevelBar level={progress.level} />
+        <LeaderboardLine />
         <div className="row small between">
           <Streak weeks={progress.streakWeeks} />
           <span data-testid="challenges-count" className="with-icon"><Icon name="target" size={15} /> {plural(progress.stats.challengesCompleted, 'challenge')}</span>
         </div>
       </div>
       <details className="card">
-        <summary><strong>Achievements</strong> <span className="muted small">{progress.achievements.length} / {ACHIEVEMENTS.length}</span></summary>
-        <div style={{ marginTop: 12 }}><AchievementList unlocked={progress.achievements.map((a) => a.id)} /></div>
+        <summary><strong>Achievements</strong> <span className="muted small">{progress.achievements.length + (community?.length ?? 0)} / {ACHIEVEMENTS.length + (community ? COMMUNITY_ACHIEVEMENTS.length : 0)}</span></summary>
+        <div style={{ marginTop: 12 }}><AchievementList unlocked={progress.achievements.map((a) => a.id)} community={community} /></div>
       </details>
       <details className="card">
         <summary><strong>Personal bests</strong> <span className="muted small">{progress.personalBests.length}</span></summary>
@@ -164,7 +171,7 @@ function PlanSection() {
           </label>
         </div>
         <p className="muted small flush">
-          Premium adds {PREMIUM_FEATURES.map((f) => f.title.toLowerCase()).join(', ')} to the muscle map. It isn't on sale yet:
+          Premium adds {PREMIUM_FEATURES.map((f) => f.title.toLowerCase()).join(', ')}. The leaderboard itself is free. It isn't on sale yet:
           while the app is being tested, the preview turns it on for free.
         </p>
       </div>
@@ -249,9 +256,42 @@ function AccountSection() {
           <button className="btn grow" onClick={() => void logOut().then(() => setMessage(null))}>Log out</button>
         </div>
       </div>
+      <PublicNameCard />
+      <VisibilityCard />
       <button className="btn ghost danger block" onClick={() => void remove()}>Delete account</button>
       {message && <p className="small center flush" role="status">{message}</p>}
     </>
+  );
+}
+
+/** The public display name (leaderboard). Never the email; the real name stays in "About you", on this phone. */
+function PublicNameCard() {
+  const lb = useLeaderboard();
+  const [name, setName] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const current = lb.profile?.displayName ?? '';
+  const value = name ?? current;
+  const problem = name !== null ? displayNameProblem(value) : null;
+  const save = async () => {
+    setBusy(true);
+    try { await lb.setDisplayName(value); setName(null); setMessage('Saved'); } catch (err) { setMessage(err instanceof Error ? err.message : "Couldn't save. Try again."); } finally { setBusy(false); }
+  };
+  if (!lb.profile) return null;
+  return (
+    <div className="card stack tight" data-testid="public-name">
+      <label className="field">
+        Display name
+        <input className="input" value={value} maxLength={DISPLAY_NAME_MAX} aria-invalid={!!problem} aria-describedby="public-name-hint"
+          onChange={(e) => { setName(e.target.value); setMessage(null); }} />
+      </label>
+      <span id="public-name-hint" className="muted small">Public: shown on the leaderboard. Not your real name or email.</span>
+      {problem && <span className="field-error">{problem}</span>}
+      {name !== null && name.trim() !== current && (
+        <button className="btn" disabled={busy || !!problem} onClick={() => void save()}>{busy ? 'Saving…' : 'Save display name'}</button>
+      )}
+      {message && <span className="small" role="status">{message}</span>}
+    </div>
   );
 }
 

@@ -1,7 +1,7 @@
 # Accounts and sync
 
 Optional accounts (email + password) that back up workouts and sync them between phones. They're the foundation
-for reminders (next) and friends/leaderboards (later). Without an account the app works exactly as before.
+for reminders (next) and the community leaderboard ([LEADERBOARD.md](LEADERBOARD.md)). Without an account the app works exactly as before.
 
 Code: `src/services/backend/` (contract, sync engine, Supabase adapter, fake backend) · `src/data/account.tsx`
 (React glue) · `src/components/AccountForm.tsx` · `src/screens/AccountScreen.tsx` · database: `supabase/schema.sql`.
@@ -58,7 +58,7 @@ Welcome → **Log in to my account** → your history appears.
   and the synced items listed above. This includes the optional profile details (age, height, weight).
 - **Never stored:** photos.
 - **Who can see what:** each user can read and write only their own rows (row-level security, tested in
-  `supabase/test-schema.sh`). The display name is in its own table, ready for leaderboards; for now only its owner can read it.
+  `supabase/test-schema.sh`). The display name and leaderboard points are private too; other users see a display name and leaderboard XP only through the leaderboard, and only if its owner turned visibility on ([LEADERBOARD.md](LEADERBOARD.md)).
 - **Where:** the Supabase region chosen in step 1 (London recommended).
 - **Before inviting testers:** add a short privacy note to the invite (what's stored, where, how to delete:
   Profile → Delete account).

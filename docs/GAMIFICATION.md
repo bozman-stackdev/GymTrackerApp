@@ -69,6 +69,10 @@ Exercise Mastered (a weight mastered) · 5 Successful Sessions (every challenge 
 Consistency (2+ workouts a week, 4 weeks in a row) · First Weight Increase · 25 Workouts.
 They're shown on the workout summary when unlocked and on the Profile tab, never mid-set. Add one by adding a line.
 
+**Community** (with an account, on the leaderboard): Top 100 · Top 50 · Top 10 · Top 3 · Leaderboard #1, from your
+best finish in a completed week. Recognition only: **0 XP**, so a leaderboard place never feeds back into the
+leaderboard. See [LEADERBOARD.md](LEADERBOARD.md).
+
 ## Safety rules (built in and tested)
 
 - Beating a challenge pays the same as hitting it; lifting heavier than the target earns nothing extra.

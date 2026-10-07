@@ -5,7 +5,9 @@
  * the database's row-level security: only their own rows. Passwords are handled by Supabase Auth, never by us.
  */
 import { createClient, isAuthError, type User } from '@supabase/supabase-js';
-import { BackendError, OFFLINE_MESSAGE, type Account, type Backend, type RemoteRecord } from './types';
+import { GAME_CONFIG } from '../../logic/game/config';
+import { EMPTY_RECORD } from '../../logic/leaderboard/rank';
+import { BackendError, OFFLINE_MESSAGE, type Account, type Backend, type LeaderboardRecord, type LeaderboardResult, type PublicProfile, type RemoteRecord } from './types';
 
 const PAGE = 1000;
 
@@ -52,6 +54,10 @@ export function normalizeSupabaseUrl(raw: string): string {
   }
 }
 
+const PROFILE_COLUMNS = 'display_name,leaderboard_visible';
+const toPublicProfile = (row: { display_name: unknown; leaderboard_visible: unknown }): PublicProfile =>
+  ({ displayName: String(row.display_name ?? ''), leaderboardVisible: row.leaderboard_visible === true });
+
 const toAccount = (u: User): Account => ({
   id: u.id,
   email: u.email ?? '',
@@ -78,6 +84,22 @@ export function supabaseBackend(rawUrl: string, key: string): Backend {
     return session.user.id;
   };
 
+  /** Updates the profile row, or creates it for an account from before profiles existed. */
+  const savePublicProfile = async (uid: string, change: Partial<PublicProfile>): Promise<PublicProfile> => {
+    const row: Record<string, unknown> = {};
+    if (change.displayName !== undefined) row.display_name = change.displayName.trim() || 'Gym member';
+    if (change.leaderboardVisible !== undefined) row.leaderboard_visible = change.leaderboardVisible;
+    if (Object.keys(row).length) {
+      const updated = await run(async () => await sb.from('profiles').update(row).eq('id', uid).select(PROFILE_COLUMNS).maybeSingle());
+      if (updated) return toPublicProfile(updated);
+    }
+    const { session } = await run(() => sb.auth.getSession());
+    const created = await run(async () => await sb.from('profiles')
+      .upsert({ id: uid, display_name: session ? toAccount(session.user).displayName.trim() || 'Gym member' : 'Gym member', ...row }, { onConflict: 'id' })
+      .select(PROFILE_COLUMNS).single());
+    return toPublicProfile(created!); // .single() errors instead of returning nothing
+  };
+
   return {
     async currentAccount() {
       const { session } = await run(() => sb.auth.getSession());
@@ -88,8 +110,8 @@ export function supabaseBackend(rawUrl: string, key: string): Backend {
       return () => data.subscription.unsubscribe();
     },
 
-    async signUp(email, password, displayName) {
-      const data = await run(() => sb.auth.signUp({ email: email.trim(), password, options: { data: { display_name: displayName } } }));
+    async signUp(email, password, displayName, leaderboard = false) {
+      const data = await run(() => sb.auth.signUp({ email: email.trim(), password, options: { data: { display_name: displayName, leaderboard } } }));
       if (data.session) return { status: 'signed-in', account: toAccount(data.session.user) };
       // With email confirmation on, Supabase answers the same whether or not the email is already registered
       // (so nobody can find out who has an account). Either way: "check your email".
@@ -150,6 +172,44 @@ export function supabaseBackend(rawUrl: string, key: string): Backend {
         const chunk = rows.slice(i, i + 500);
         await run(async () => await sb.from('records').upsert(chunk, { onConflict: 'user_id,kind,id' }));
       }
+    },
+
+    async getPublicProfile() {
+      const uid = await userId();
+      const row = await run(async () => await sb.from('profiles').select(PROFILE_COLUMNS).eq('id', uid).maybeSingle());
+      return row ? toPublicProfile(row) : savePublicProfile(uid, {});
+    },
+    async updatePublicProfile(change) {
+      const saved = await savePublicProfile(await userId(), change);
+      // Keep the login's copy of the name in step (it fills in "Hi Alex" on a new phone).
+      if (change.displayName !== undefined) await run(() => sb.auth.updateUser({ data: { display_name: saved.displayName } }));
+      return saved;
+    },
+    async publishLeaderboard(days, removeDays) {
+      const uid = await userId();
+      if (days.length) {
+        const rows = days.map((d) => ({ user_id: uid, day: d.day, points: d.points }));
+        for (let i = 0; i < rows.length; i += 500) {
+          const chunk = rows.slice(i, i + 500);
+          await run(async () => await sb.from('leaderboard_days').upsert(chunk, { onConflict: 'user_id,day' }));
+        }
+      }
+      for (let i = 0; i < removeDays.length; i += 200) {
+        const chunk = removeDays.slice(i, i + 200);
+        await run(async () => await sb.from('leaderboard_days').delete().eq('user_id', uid).in('day', chunk));
+      }
+    },
+    async clearLeaderboard() {
+      const uid = await userId();
+      await run(async () => await sb.from('leaderboard_days').delete().eq('user_id', uid));
+    },
+    async leaderboard(period, today) {
+      const r = await run(async () => await sb.rpc('leaderboard', { p_period: period, p_today: today, p_top: GAME_CONFIG.leaderboard.topRows }));
+      return { period, ...(r as Omit<LeaderboardResult, 'period'>) };
+    },
+    async leaderboardRecord(today) {
+      const r = (await run(async () => await sb.rpc('my_leaderboard_record', { p_today: today }))) as LeaderboardRecord | null;
+      return r ?? EMPTY_RECORD;
     },
   };
 }

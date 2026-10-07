@@ -591,3 +591,33 @@ span.with-icon { display: inline-flex; }
   border: 2px solid #c81e1e; }
 .running-bar-main { display: flex; align-items: center; gap: 8px; min-height: 44px; background: none; border: 0; color: inherit; font: inherit; font-weight: 600; text-align: left; cursor: pointer; }
 .running-bar .btn.small { min-height: 44px; padding: 0 16px; }
+
+/* ---------- Leaderboard: a calm extension of your own progress ---------- */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.lb-line { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 10px; margin: 0 -10px; border-radius: 12px; color: inherit; text-decoration: none; }
+.lb-line:active { background: var(--surface-2); }
+.lb-line .icon:first-child { color: var(--warn); flex: none; }
+.lb-line .icon:last-child { color: var(--text-2); flex: none; }
+.rank-change { display: inline-block; margin-left: 4px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rank-change.up { color: var(--accent-text); }
+.rank-change.down { color: var(--warn); }
+.rank-change.same { color: var(--text-2); }
+.lb-summary .lb-big { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; margin-top: 4px; }
+.lb-big [data-testid="lb-big-rank"] { font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.lb-big .rank-change { font-size: 18px; }
+.lb-of { flex-basis: 100%; }
+.lb-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.lb-row { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); font-size: 17px; }
+.lb-rank { flex: none; min-width: 44px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text-2); }
+.lb-rank [aria-hidden] { font-size: 22px; }
+.lb-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.lb-points { flex: none; font-variant-numeric: tabular-nums; color: var(--text-2); }
+.lb-me { border: 2px solid var(--accent); background: var(--surface-2); }
+.lb-me .lb-rank, .lb-me .lb-points { color: var(--text); }
+.lb-gap { text-align: center; color: var(--text-2); line-height: 1; font-size: 20px; letter-spacing: .2em; }
+.lb-medals { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.check-row { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; }
+.check-row input { width: 24px; height: 24px; margin: 2px 0 0; flex: none; accent-color: var(--accent); }
+.block { display: block; }
+.achievements-group { margin-top: 8px; }
+.dev-tools { margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--border); }

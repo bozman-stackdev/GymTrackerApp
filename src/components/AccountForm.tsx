@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useAccount } from '../data/account';
+import { displayNameProblem } from '../data/leaderboard';
 import { accountEmails, BackendError, type Account } from '../services/backend';
 
 export type AccountMode = 'signup' | 'login' | 'confirm' | 'forgot' | 'reset';
@@ -21,6 +22,7 @@ export function AccountForm({ initialMode = 'login', onSignedIn, note }: {
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [onLeaderboard, setOnLeaderboard] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -29,7 +31,7 @@ export function AccountForm({ initialMode = 'login', onSignedIn, note }: {
   const needsPassword = mode === 'signup' || mode === 'login' || mode === 'reset';
   const problem =
     (mode === 'signup' && !name.trim() && 'Add a display name') ||
-    (mode === 'signup' && name.trim().length > 30 && 'Keep the display name under 30 characters') ||
+    (mode === 'signup' && displayNameProblem(name) && `Display name: ${displayNameProblem(name)!.toLowerCase()}`) ||
     (!EMAIL.test(email.trim()) && 'Enter your email address') ||
     (needsPassword && password.length < PASSWORD_MIN && `Password: at least ${PASSWORD_MIN} characters`) ||
     ((mode === 'confirm' || mode === 'reset') && !/^\d{6,10}$/.test(code.trim()) && 'Enter the code from the email') ||
@@ -44,7 +46,7 @@ export function AccountForm({ initialMode = 'login', onSignedIn, note }: {
       const b = await backend();
       let account: Account | null = null;
       if (mode === 'signup') {
-        const r = await b.signUp(email, password, name.trim());
+        const r = await b.signUp(email, password, name.trim(), onLeaderboard);
         if (r.status === 'signed-in') account = r.account;
         else { go('confirm'); setInfo(`We emailed a code to ${email.trim()}. Enter it below.`); }
       } else if (mode === 'login') {
@@ -84,7 +86,7 @@ export function AccountForm({ initialMode = 'login', onSignedIn, note }: {
             {/* oxlint-disable-next-line jsx-a11y/autocomplete-valid */}
             <input className="input" value={name} maxLength={30} autoComplete="nickname" placeholder="e.g. Alex" aria-describedby="name-hint" onChange={(e) => setName(e.target.value)} />
           </label>
-          <span id="name-hint" className="muted small">Shown to friends in leaderboards later. Not your email.</span>
+          <span id="name-hint" className="muted small">Public: shown on the leaderboard. It doesn't have to be your real name, and it's never your email.</span>
         </div>
       )}
       {mode !== 'confirm' && mode !== 'reset' && (
@@ -114,6 +116,15 @@ export function AccountForm({ initialMode = 'login', onSignedIn, note }: {
         </div>
       )}
 
+      {mode === 'signup' && (
+        <div className="check-row" data-testid="leaderboard-choice">
+          <input id="leaderboard-choice" type="checkbox" checked={onLeaderboard} aria-describedby="leaderboard-choice-hint" onChange={(e) => setOnLeaderboard(e.target.checked)} />
+          <span>
+            <label htmlFor="leaderboard-choice">Show me on the leaderboard</label>
+            <span id="leaderboard-choice-hint" className="muted small block">Others see your display name and leaderboard XP only. You can change this any time.</span>
+          </span>
+        </div>
+      )}
       {mode === 'signup' && (
         <p className="muted small flush" data-testid="privacy-note">
           Your workouts, routines, machines and profile are saved to your account so you can use them on any phone.

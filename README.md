@@ -110,6 +110,9 @@ docs/                       ARCHITECTURE (decision log), ROADMAP (backend/native
 - **Cardio, warm-ups, cool-downs**: add them to routines or mid-workout, in any order. Pick the activity, **START**,
   **STOP**: the duration is saved (nothing to type; accurate when the screen locks). **Warm-up** sets never affect
   progression. Details: [docs/CARDIO.md](docs/CARDIO.md).
+- **Leaderboard** (with an account, opt-in): your weekly rank right under the level bar; week / month / all time;
+  ranked by XP with healthy limits (5 counted days a week), never by weight. Only your display name is public.
+  Details: [docs/LEADERBOARD.md](docs/LEADERBOARD.md).
 - **kg or lb** (Profile). **Send feedback** (Profile). A gentle **backup reminder** every couple of weeks.
 
 ## Today's Challenge, XP and streaks

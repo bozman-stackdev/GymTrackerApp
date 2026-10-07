@@ -1,5 +1,6 @@
 /** Achievements: a plain list. Add one by adding an entry - `test` sees running totals after each workout. */
 import type { MuscleGroup } from '../../types';
+import type { LeaderboardRecord } from '../leaderboard/rank';
 import { GAME_CONFIG } from './config';
 
 export interface GameStats {
@@ -35,6 +36,29 @@ export interface Achievement {
   description: string;
   test: (s: GameStats) => boolean;
 }
+
+/**
+ * Community achievements: where you finished a completed week on the leaderboard (accounts only). Recognition only:
+ * they give no XP, so a leaderboard place never feeds back into the leaderboard. Unlike the others they aren't
+ * derived from workout history but from the account's leaderboard record (logic/leaderboard/rank.ts).
+ */
+export interface CommunityAchievement {
+  id: string;
+  icon: AchievementIcon;
+  title: string;
+  description: string;
+  test: (r: LeaderboardRecord) => boolean;
+}
+
+const finishedIn = (n: number) => (r: LeaderboardRecord) => r.bestWeeklyRank !== null && r.bestWeeklyRank <= n;
+
+export const COMMUNITY_ACHIEVEMENTS: CommunityAchievement[] = [
+  { id: 'lb-top-100', icon: 'trendUp', title: 'Top 100', description: 'Finish a week in the leaderboard top 100', test: finishedIn(100) },
+  { id: 'lb-top-50', icon: 'trendUp', title: 'Top 50', description: 'Finish a week in the leaderboard top 50', test: finishedIn(50) },
+  { id: 'lb-top-10', icon: 'medal', title: 'Top 10', description: 'Finish a week in the leaderboard top 10', test: finishedIn(10) },
+  { id: 'lb-top-3', icon: 'medal', title: 'Top 3', description: 'Finish a week on the leaderboard podium', test: finishedIn(3) },
+  { id: 'lb-first', icon: 'trophy', title: 'Leaderboard #1', description: 'Finish a week at the top of the leaderboard', test: finishedIn(1) },
+];
 
 export const ACHIEVEMENTS: Achievement[] = [
   { id: 'first-workout', icon: 'flag', title: 'First Workout', description: 'Finish your first workout', test: (s) => s.workouts >= 1 },

@@ -7,13 +7,14 @@
  *
  * Rule for the muscle map: the body map, muscle activity and basic progress are always free.
  * Premium adds depth: longer history, the reasons behind progress, trends, comparisons and insights.
+ * The leaderboard is free for everyone with an account; Premium adds insights only, never a better position.
  */
 import type { AppData } from '../types';
 import type { MusclePeriod } from './muscles/analysis';
 
 export type Plan = 'free' | 'premium';
 
-export type PremiumFeature = 'long-periods' | 'progress-details' | 'trends' | 'comparisons' | 'insights';
+export type PremiumFeature = 'long-periods' | 'progress-details' | 'trends' | 'comparisons' | 'insights' | 'leaderboard-insights';
 
 export const PREMIUM_FEATURES: { id: PremiumFeature; title: string; description: string }[] = [
   { id: 'long-periods', title: 'Longer history', description: 'Last 12 weeks and all time on the muscle map' },
@@ -21,6 +22,8 @@ export const PREMIUM_FEATURES: { id: PremiumFeature; title: string; description:
   { id: 'trends', title: 'Training trends', description: 'Week-by-week training per muscle group' },
   { id: 'comparisons', title: 'Comparisons', description: 'Training volume compared with the period before' },
   { id: 'insights', title: 'Personal insights', description: 'Short observations about your training emphasis and progress' },
+  // The leaderboard itself is free; Premium only explains it more. Nothing paid changes anyone's position.
+  { id: 'leaderboard-insights', title: 'Leaderboard insights', description: 'XP to the next place, your top percentage and best weekly finish' },
 ];
 
 const PLANS: Record<Plan, PremiumFeature[]> = {

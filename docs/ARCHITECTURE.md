@@ -314,3 +314,14 @@ screen, a backgrounded browser, a reload or a killed tab. Old `log` metrics stay
 history, counted via `activityDurationSec`); nothing was migrated or deleted. Cardio XP is +10 once per workout for any
 completed cardio of 1+ minute. Duration-based coaching ("try 22 minutes") is deliberately not built yet. Details:
 [CARDIO.md](CARDIO.md).
+
+## Community leaderboard
+
+**D72. A global leaderboard, ranked by leaderboard XP, for people with an account who opt in.** Leaderboard XP is the
+XP earned in the period, counting only the first 5 training days a week and at most 300 a day, so training more often
+never climbs the board. It is never ranked by weight, body size, time or workout count. The phone derives points per
+day from the same replay as XP and publishes them after each sync. The server keeps them private (row-level
+security) and only a `security definer` function returns rank, display name and points of visible users. Places
+earn badges and medals, never XP (no feedback loop). Visibility is off for existing accounts until they join; turning
+it off deletes the rows. Points are computed on the phone and capped by the server; server-side recompute is the
+production hardening step. Details: [LEADERBOARD.md](LEADERBOARD.md).

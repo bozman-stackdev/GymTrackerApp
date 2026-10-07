@@ -7,6 +7,7 @@ import { useStore } from '../data/store';
 import { useAccount } from '../data/account';
 import { useProgress } from '../data/useProgress';
 import { Streak } from '../components/ProgressWidgets';
+import { useWeeklyRank } from '../components/LeaderboardWidgets';
 import { challengeFor } from '../logic/game/challenge';
 import { lastDoneAt, plural, relativeDay, routinesByNextUp } from '../logic/history';
 import type { Routine } from '../types';
@@ -21,6 +22,7 @@ export function HomeScreen() {
   const navigate = useNavigate();
   const active = data.activeWorkout;
   const progress = useProgress();
+  const rank = useWeeklyRank();
 
   const lastDone = (routineId: string) => lastDoneAt(data.sessions, routineId) || undefined;
   // "Next up" (done longest ago) first, so it's one tap away.
@@ -64,7 +66,7 @@ export function HomeScreen() {
       )}
 
       <Link to="/profile" className="muted small home-progress" data-testid="home-progress">
-        Level {progress.level.level} · <Streak weeks={progress.streakWeeks} />
+        Level {progress.level.level} · <Streak weeks={progress.streakWeeks} />{rank !== null && <span data-testid="home-rank"> · #{rank} this week</span>}
       </Link>
 
       <h2>Start a workout</h2>

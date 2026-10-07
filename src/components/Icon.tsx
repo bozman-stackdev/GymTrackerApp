@@ -54,6 +54,7 @@ const PATHS = {
   trendUp: <><path d="m3 17 6-6 4 4 8-8" /><path d="M15 7h6v6" /></>,
   balance: <><path d="M12 3.5v17" /><path d="M7.5 20.5h9" /><path d="M5 7.5h14" /><path d="m5 7.5-2.8 6.3a2.8 2.8 0 0 0 5.6 0Z" /><path d="m19 7.5-2.8 6.3a2.8 2.8 0 0 0 5.6 0Z" /></>,
   info: <><circle cx="12" cy="12" r="9" /><path d="M12 11v5.5" /><path d="M12 7.6h.01" /></>,
+  refresh: <><path d="M20 11a8 8 0 0 0-14.6-4.5L4 8" /><path d="M4 3v5h5" /><path d="M4 13a8 8 0 0 0 14.6 4.5L20 16" /><path d="M20 21v-5h-5" /></>,
   crown: <path d="m3 7.5 4.6 4.1L12 4.5l4.4 7.1L21 7.5l-2 11H5Z" />,
 } satisfies Record<string, ReactNode>;
 

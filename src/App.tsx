@@ -4,6 +4,8 @@ import { TabBar } from './components/TabBar';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { StoreProvider, useAppState, useStore } from './data/store';
 import { AccountProvider } from './data/account';
+import { LeaderboardProvider } from './data/leaderboard';
+import { LeaderboardScreen } from './screens/LeaderboardScreen';
 import { AccountScreen } from './screens/AccountScreen';
 import { WelcomeScreen } from './screens/WelcomeScreen';
 import { setUnits } from './logic/units';
@@ -28,11 +30,13 @@ export function App() {
     <ErrorBoundary>
       <StoreProvider>
         <AccountProvider>
-          <HashRouter>
-            <div className="app">
-              <Shell />
-            </div>
-          </HashRouter>
+          <LeaderboardProvider>
+            <HashRouter>
+              <div className="app">
+                <Shell />
+              </div>
+            </HashRouter>
+          </LeaderboardProvider>
         </AccountProvider>
       </StoreProvider>
     </ErrorBoundary>
@@ -66,6 +70,7 @@ function Shell() {
         <Route path="/muscles" element={<MusclesScreen />} />
         <Route path="/profile" element={<ProfileScreen />} />
         <Route path="/account" element={<AccountScreen />} />
+        <Route path="/leaderboard" element={<LeaderboardScreen />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <TabBarUnlessTraining />

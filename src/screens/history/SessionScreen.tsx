@@ -1,5 +1,6 @@
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { LevelBar, Streak } from '../../components/ProgressWidgets';
+import { LeaderboardLine } from '../../components/LeaderboardWidgets';
 import { Screen } from '../../components/Screen';
 import { formatDuration } from '../../components/useNow';
 import { useMemo, useState } from 'react';
@@ -211,6 +212,7 @@ function WorkoutRewards({ scored, session, progress }: { scored: SessionProgress
         {why && <div className="muted" data-testid="no-xp-reason">{why}</div>}
       </div>
       {progress && <LevelBar level={progress.level} />}
+      {progress && <LeaderboardLine />}
       <div className="small"><Streak weeks={progress?.streakWeeks ?? scored.streakWeeks} /></div>
       {scored.unlocked.map((id) => {
         const a = ACHIEVEMENTS.find((x) => x.id === id)!;

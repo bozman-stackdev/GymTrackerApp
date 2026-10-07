@@ -107,6 +107,9 @@ account by the server (not set by the phone), and "restore purchases".
 code, not a global board, ranked by effort (consistency, challenges completed, XP), never by weight lifted, so the
 safety principle holds (nobody is pushed to lift heavier to "win").
 
+**Done (leaderboard):** a global, opt-in community leaderboard (week / month / all time) ranked by leaderboard XP
+with healthy limits (D72, [LEADERBOARD.md](LEADERBOARD.md)). Invite-only groups remain a possible next step.
+
 ## 5. Photo storage plan (for when equipment photos are wanted)
 
 Not built yet; photos are currently never stored (D23). The plan, sized for thousands of photos:

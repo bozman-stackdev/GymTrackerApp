@@ -51,6 +51,21 @@ export const GAME_CONFIG = {
     balancedMinShare: 0.5,
     balancedMinSets: 3,
   },
+  /**
+   * Community leaderboard (logic/leaderboard). Its score is the XP earned in the period, with limits so that training
+   * more often than is sensible never climbs the board. XP and levels themselves are unaffected.
+   * Keep maxDailyPoints in step with the check in supabase/schema.sql (leaderboard_days.points).
+   */
+  leaderboard: {
+    /** Only the first N training days of each week (Mon–Sun) count. Rest days cost nothing. */
+    maxDaysPerWeek: 5,
+    /** A single day counts at most this much (a second workout the same day rarely adds anything). */
+    maxDailyPoints: 300,
+    /** Leaders shown before your own position. */
+    topRows: 5,
+    /** Leaderboard places give recognition (badges, medals), never XP: rank must not feed back into rank. */
+    rewardXp: 0,
+  },
   streak: {
     /** A week (Mon–Sun) counts towards the streak with at least this many workouts. More doesn't help. */
     minWorkoutsPerWeek: 2,
