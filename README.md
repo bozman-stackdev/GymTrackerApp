@@ -47,7 +47,7 @@ saves everything to a file (restore it on another phone from the welcome screen 
 3. After a set, **tap the number of reps you did**. That's it: one tap. Weight is pre-filled and stays the same for the next set.
    Change it with −/+, by typing, or with one-tap chips (*last set*, *last session*, *suggested*).
 4. After the last planned set, the app moves to the next exercise by itself. The strip at the top shows every exercise's
-   progress (`2/3`, `✓`); tap one to jump there. The bar under it shows your last set, rest time and **Undo**.
+   progress (`2/3`, `✓`); tap one to jump there. The bar under it shows your last set, the rest timer (starts when you log a set; tap it to stop, tap again to restart from 0:00) and **Undo**.
 5. When an exercise has all its sets, **✓ Finish Exercise** moves on to the next one (or offers **+ Add exercise**).
    Tap **Finish Session** at the top when you're done for the day.
 6. The screen stays on during a workout, where the browser supports it.

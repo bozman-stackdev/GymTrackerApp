@@ -4,6 +4,7 @@
  */
 import { preferredEquipmentId } from '../logic/equipment';
 import { elapsedSec, isRunning } from '../logic/cardio';
+import { toggledRestTimer } from '../logic/restTimer';
 import { hasContent, isEntryDone, isStrength, isStrengthItem } from '../logic/entries';
 import type { ActivityEntry, ActivityKind, AppData, CardioMetrics, Exercise, GymEquipment, Profile, Routine, SessionEntry, SetLog, StrengthEntry, WorkoutSession } from '../types';
 /** Longest duration an activity can be adjusted to (10 hours). */
@@ -34,7 +35,7 @@ function updateActive(data: AppData, fn: (s: WorkoutSession) => WorkoutSession, 
   if (!data.activeWorkout) return data;
   return {
     ...data,
-    activeWorkout: { session: fn(data.activeWorkout.session), currentIndex: currentIndex ?? data.activeWorkout.currentIndex },
+    activeWorkout: { ...data.activeWorkout, session: fn(data.activeWorkout.session), currentIndex: currentIndex ?? data.activeWorkout.currentIndex },
   };
 }
 
@@ -87,6 +88,13 @@ export function logSet(data: AppData, entryIndex: number, set: Omit<SetLog, 'log
   const entry = session.entries[entryIndex] as StrengthEntry;
   if (entry.sets.length !== entry.targetSets) return logged;
   return goToExercise(logged, nextUnfinished(session, entryIndex) ?? entryIndex);
+}
+
+/** Tapping the rest timer: running → stopped; stopped → restarted from 0:00 (logic/restTimer.ts). */
+export function toggleRestTimer(data: AppData, now = new Date()): AppData {
+  const a = data.activeWorkout;
+  if (!a) return data;
+  return { ...data, activeWorkout: { ...a, restTimer: toggledRestTimer(a.session, a.restTimer, now) } };
 }
 
 /** Removes the last set of an exercise and shows that exercise again. */

@@ -112,6 +112,9 @@ export function parseAppData(input: unknown): AppData {
     const a = input.activeWorkout;
     check(isObj(a) && isNum(a.currentIndex, 0), 'workout in progress');
     checkSession(a.session, 0, false);
+    // The rest timer is only a convenience: an odd one is dropped, never a reason to reject the data.
+    const t = a.restTimer;
+    if (t !== undefined && !(isObj(t) && isDate(t.startedAt) && (t.stoppedAt === undefined || isDate(t.stoppedAt)))) delete a.restTimer;
   }
   return migrate(input as unknown as AppData);
 }

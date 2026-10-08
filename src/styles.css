@@ -245,8 +245,9 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; 
 .reward .xp { color: var(--accent-text); }
 .reward .reward-next, .reward .muted { color: var(--text); }
 .xp { color: var(--accent); }
-.reward-side { display: flex; flex-direction: column; align-items: center; }
-.reward-side .btn { min-height: 40px; }
+.reward-side { display: flex; align-items: center; } /* rest timer and Undo side by side: keeps the bar short */
+.reward-side .btn { min-height: 44px; padding: 0 12px; }
+.reward-side .rest-timer { min-height: 44px; min-width: 56px; padding: 0 6px; }
 /* Supportive result (not today / matched): calm, neutral - never red. */
 .last-bar.result { padding: 8px 0 8px 14px; background: var(--surface-2); }
 .last-bar.result .reward-title { color: var(--text); }
@@ -266,7 +267,9 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; 
   .challenge-target { font-size: 19px; }
   .reward-next { display: none; } /* shown on the workout summary instead */
   .last-bar.reward { padding: 4px 0 4px 14px; }
-  .reward-title { font-size: 15px; }
+  .reward-title { font-size: 14px; letter-spacing: 0; }
+  .reward-side .rest-timer { font-size: 19px; min-width: 48px; padding: 0 4px; }
+  .reward-side .btn { padding: 0 10px; }
   .challenge { padding: 0; margin-top: 2px; }
   .slot { padding: 3px 4px; }
   .quick-weights { margin-top: 4px; }
@@ -621,3 +624,13 @@ span.with-icon { display: inline-flex; }
 .block { display: block; }
 .achievements-group { margin-top: 8px; }
 .dev-tools { margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--border); }
+
+/* Rest timer between strength sets: the time itself is the button (tap: stop / restart from 0:00). */
+.rest-timer {
+  flex: none; min-height: 48px; min-width: 72px; padding: 0 10px; border: 0; border-radius: 12px; background: transparent;
+  color: var(--text); font: inherit; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; cursor: pointer;
+  touch-action: manipulation;
+}
+.rest-timer.stopped { color: var(--text-2); }
+.rest-timer:active { background: var(--surface-2); }
+.rest-timer:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

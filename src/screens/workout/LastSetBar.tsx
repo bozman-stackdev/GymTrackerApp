@@ -1,12 +1,13 @@
 import { formatDuration, useNow } from '../../components/useNow';
+import { toggleRestTimer } from '../../data/actions';
 import { useExerciseLookup, useStore } from '../../data/store';
+import { latestStrengthSet, restTimerState } from '../../logic/restTimer';
 import { challengeFor, isSuccess, type ExerciseResult } from '../../logic/game/challenge';
 import { GAME_CONFIG } from '../../logic/game/config';
 import { challengeXp, type LiveSession } from '../../logic/game/progress';
 import { formatWeight, formatTarget } from '../../logic/history';
 import type { StrengthEntry, WorkoutSession } from '../../types';
 import { Icon, type IconName } from '../../components/Icon';
-import { isStrength } from '../../logic/entries';
 
 type Feedback = 'personal-best' | 'mastered' | 'comeback' | 'hit' | 'matched' | 'not-today';
 
@@ -47,20 +48,14 @@ function feedbackFor(r: ExerciseResult | undefined, setIndex: number, targetSets
 export function LastSetBar({ session, live, onUndo }: { session: WorkoutSession; live: LiveSession; onUndo: (entryIndex: number) => void }) {
   const { data } = useStore();
   const getExercise = useExerciseLookup();
-  const now = useNow();
-  let latest: { entryIndex: number; setIndex: number; loggedAt: string } | undefined;
-  session.entries.forEach((e, i) => {
-    if (!isStrength(e)) return; // the bar (and its rewards) is about working sets only
-    const s = e.sets.at(-1);
-    if (s && (!latest || s.loggedAt > latest.loggedAt)) latest = { entryIndex: i, setIndex: e.sets.length - 1, loggedAt: s.loggedAt };
-  });
+  const latest = latestStrengthSet(session); // the bar (and its rewards) is about working sets only
   if (!latest) return null;
   const { entryIndex, setIndex, loggedAt } = latest;
   const entry = session.entries[entryIndex] as StrengthEntry;
   const exercise = getExercise(entry.exerciseId);
   const set = entry.sets[setIndex];
   const text = `${set.weightKg > 0 ? `${formatWeight(set.weightKg)} × ` : ''}${set.reps}`;
-  const rest = <span className="muted small" aria-label="Rest time">{formatDuration(now - Date.parse(loggedAt))}</span>;
+  const rest = <RestTimerButton session={session} />;
   const undo = <button className="btn ghost" onClick={() => onUndo(entryIndex)}>Undo</button>;
 
   const result = live.results.find((r) => r.exerciseId === entry.exerciseId);
@@ -100,5 +95,23 @@ export function LastSetBar({ session, live, onUndo }: { session: WorkoutSession;
       </div>
       <div className="reward-side">{rest}{undo}</div>
     </div>
+  );
+}
+
+/**
+ * The rest timer is its own control: tap to stop it, tap again to restart from 0:00. No labels - the time is the
+ * button. Re-renders every second, but the time is always worked out from timestamps (logic/restTimer.ts).
+ */
+function RestTimerButton({ session }: { session: WorkoutSession }) {
+  const { data, update } = useStore();
+  const now = useNow();
+  const state = restTimerState(session, data.activeWorkout?.restTimer, now);
+  if (!state) return null;
+  const time = formatDuration(state.elapsedMs);
+  return (
+    <button className={`rest-timer${state.running ? '' : ' stopped'}`} data-testid="rest-timer" data-state={state.running ? 'running' : 'stopped'}
+      aria-label={`Rest timer ${time}, ${state.running ? 'running' : 'stopped'}`} onClick={() => update((d) => toggleRestTimer(d))}>
+      {time}
+    </button>
   );
 }

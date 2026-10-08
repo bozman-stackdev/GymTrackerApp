@@ -162,6 +162,11 @@ export interface WorkoutSession {
 export interface ActiveWorkout {
   session: WorkoutSession;
   currentIndex: number;
+  /**
+   * The rest timer after a tap (logic/restTimer.ts). Unset: it runs from the latest strength set. On this phone only,
+   * gone when the workout ends.
+   */
+  restTimer?: { startedAt: string; stoppedAt?: string };
 }
 
 export type Sex = 'male' | 'female' | 'other' | '';
