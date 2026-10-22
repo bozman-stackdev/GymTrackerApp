@@ -650,3 +650,12 @@ span.with-icon { display: inline-flex; }
 /* Plain bar: a little room around the timer chip so it reads as its own button. */
 .last-bar:not(.reward):not(.result) { padding-top: 4px; padding-bottom: 4px; }
 .last-bar:not(.reward):not(.result) .rest-timer { min-height: 44px; }
+
+/* Workout header: name, "+ Add" (always reachable) and Finish Session on one line, even on a small phone. */
+.header-add { min-height: 44px; padding: 0 12px; gap: 4px; flex: none; }
+.workout .header > .grow { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workout .header .finish-btn { flex: none; }
+@media (max-width: 380px) { .header-add { padding: 0; width: 44px; } .header-add-text { display: none; } } /* keep room for the workout name */
+/* Home: "Scan machine" and "Freestyle Workout" side by side, or stacked when the phone is too narrow. */
+.home-actions { flex-wrap: wrap; }
+.home-actions .btn { flex: 1 1 auto; white-space: nowrap; }

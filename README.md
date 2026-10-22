@@ -103,7 +103,8 @@ docs/                       ARCHITECTURE (decision log), ROADMAP (backend/native
 - **Missed?** "NOT TODAY", never "failed". The next challenge adapts: same target after a near miss, adjusted after a bigger one.
 - **Rewards**: target hit, back on track, weight mastered, personal best, consistency. XP → levels → achievements.
 - **My Gym**: your machines with settings, last weights and previous session. Shown during the workout.
-- **Fix mistakes**: tap any logged set (or *Edit sets* on a workout summary) to change or delete it.
+- **Freestyle Workout** (Home): no routine, add exercises or cardio as you go. **+ Add** is always in the workout header.
+- **Fix mistakes**: tap any logged set (or *Edit sets* on a workout summary) to change or delete it; *Remove from workout* takes out an item added by mistake.
 - **Muscle map** (Muscles tab): *what am I training?* (a heat map of activity) and *where am I progressing?* (training
   performance per muscle), front and back, male or female figure, any period; tap a muscle for its exercises and
   performance. Shows recorded training and performance, never muscle growth. Details: [docs/MUSCLES.md](docs/MUSCLES.md).

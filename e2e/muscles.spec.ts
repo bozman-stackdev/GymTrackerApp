@@ -167,7 +167,7 @@ test('body type: chosen in Profile, the map shows the female figure (front and b
 });
 
 test('this workout: strength counts, warm-up sets and cardio do not; the summary links to the map', async ({ page }) => {
-  await page.getByRole('button', { name: 'Empty workout' }).click();
+  await page.getByRole('button', { name: 'Freestyle Workout' }).click();
   await page.getByRole('button', { name: /Leg Press/ }).click();
   await page.getByRole('button', { name: 'Warm-up', exact: true }).click();
   await page.locator('.rep-btn').first().click(); // a warm-up set

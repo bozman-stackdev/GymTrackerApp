@@ -18,10 +18,11 @@ export function newId(): string {
 
 // ---------- Workout in progress ----------
 
-export function startWorkout(data: AppData, routine?: Routine, now = new Date()): AppData {
+/** `name`: for a workout without a routine (e.g. "Freestyle Workout" from Home); a routine's workout takes its name. */
+export function startWorkout(data: AppData, routine?: Routine, now = new Date(), name?: string): AppData {
   const session: WorkoutSession = {
     id: newId(),
-    name: routine?.name ?? 'Workout',
+    name: routine?.name ?? name ?? 'Workout',
     routineId: routine?.id,
     startedAt: now.toISOString(),
     entries: (routine?.items ?? []).map((i): SessionEntry => (isStrengthItem(i)
@@ -270,6 +271,26 @@ export function undoWarmupSet(data: AppData, exerciseId: string): AppData {
     (s) => ({ ...s, entries: s.entries.filter((_, i) => i !== index) }),
     active.currentIndex > index ? active.currentIndex - 1 : active.currentIndex,
   );
+}
+
+/**
+ * Takes an item added by mistake out of the workout in progress (with its warm-up sets, for an exercise; a running
+ * timer on it goes too). If it was the current item, the next one at that position becomes current, or the
+ * "add the next one" state when it was the last.
+ */
+export function removeEntryFromWorkout(data: AppData, entryIndex: number): AppData {
+  const active = data.activeWorkout;
+  const target = active?.session.entries[entryIndex];
+  if (!active || !target) return data;
+  const drop = new Set([entryIndex]);
+  if (isStrength(target)) {
+    const others = active.session.entries.some((e, i) => i !== entryIndex && isStrength(e) && e.exerciseId === target.exerciseId);
+    if (!others) active.session.entries.forEach((e, i) => { if (!isStrength(e) && e.warmupFor === target.exerciseId) drop.add(i); });
+  }
+  const entries = active.session.entries.filter((_, i) => !drop.has(i));
+  const before = [...drop].filter((i) => i < active.currentIndex).length;
+  const current = Math.min(active.currentIndex - before, entries.length);
+  return updateActive(data, (s) => ({ ...s, entries }), current);
 }
 
 /** Removes one item from a finished workout (e.g. a cardio entry recorded by mistake). An empty workout is removed. */

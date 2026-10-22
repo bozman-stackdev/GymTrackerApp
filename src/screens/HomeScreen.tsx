@@ -38,7 +38,7 @@ export function HomeScreen() {
 
   const start = (routine?: Routine) => {
     if (active && !confirm('A workout is already in progress. Discard it and start a new one?')) return;
-    update((d) => startWorkout(d, routine));
+    update((d) => startWorkout(d, routine, new Date(), routine ? undefined : 'Freestyle Workout'));
     navigate(routine ? '/workout' : '/workout/add');
   };
 
@@ -98,7 +98,7 @@ export function HomeScreen() {
 
       <div className="row home-actions">
         <Link to="/scan" className="btn grow scan-btn"><Icon name="camera" /> Scan machine</Link>
-        <button className="btn grow" onClick={() => start()}><Icon name="plus" /> Empty workout</button>
+        <button className="btn grow" onClick={() => start()}><Icon name="plus" /> Freestyle Workout</button>
       </div>
       <Link to="/routines/new" className="btn block ghost"><Icon name="plus" /> New routine</Link>
     </Screen>

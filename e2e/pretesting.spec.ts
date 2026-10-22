@@ -86,7 +86,7 @@ test('feedback link carries app/device basics only; backup reminder appears and 
 });
 
 test('on the go: Finish Exercise → add the next one; only "Finish Session" ends the workout', async ({ page }) => {
-  await page.getByRole('button', { name: 'Empty workout' }).click();
+  await page.getByRole('button', { name: 'Freestyle Workout' }).click();
   await expect(page.getByRole('heading', { name: 'Add exercise' })).toBeVisible(); // straight to the list
   await page.getByRole('button', { name: /Cable Face Pull/ }).click();
   await expect(page.getByRole('button', { name: 'Finish Session' })).toBeVisible();

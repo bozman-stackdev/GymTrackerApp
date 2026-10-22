@@ -20,13 +20,13 @@ const later = async (page: Page, time: string) => {
   await page.clock.runFor(1000);
 };
 async function addCardio(page: Page, name: string) {
-  await page.getByRole('button', { name: 'Empty workout' }).click();
+  await page.getByRole('button', { name: 'Freestyle Workout' }).click();
   await page.getByRole('tab', { name: 'Cardio' }).click();
   await page.getByTestId('activity-picker').getByRole('button', { name, exact: true }).click();
 }
 
 test('select cardio → START → train → STOP → saved: no typing, duration only, +10 XP', async ({ page }) => {
-  await page.getByRole('button', { name: 'Empty workout' }).click();
+  await page.getByRole('button', { name: 'Freestyle Workout' }).click();
   await page.getByRole('tab', { name: 'Cardio' }).click();
   await expect(page.getByTestId('activity-picker').getByRole('button')).toHaveText(
     ['Treadmill', 'Cycling', 'Rowing', 'Cross Trainer', 'Stair Climber', 'Walking', 'Running', 'Swimming', 'Stationary Bike', 'Ski Erg', 'Assault Bike',

@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useWakeLock } from '../../components/useWakeLock';
-import { discardWorkout, finishExercise, finishWorkout, goToExercise, stopActivityTimer, undoLastSet } from '../../data/actions';
+import { discardWorkout, finishExercise, finishWorkout, goToExercise, removeEntryFromWorkout, stopActivityTimer, undoLastSet } from '../../data/actions';
 import { useExerciseLookup, useStore } from '../../data/store';
 import { useLiveSession } from '../../data/useProgress';
 import { ExerciseStrip } from './ExerciseStrip';
@@ -52,6 +52,12 @@ export function WorkoutScreen() {
     update((d) => finishWorkout(d));
     navigate(hasSets ? `/history/${session.id}` : '/', { replace: true });
   };
+  // An item added by mistake: gone at once if nothing is logged on it; otherwise ask first.
+  const remove = () => {
+    const logged = hasContent(entry) || (!isStrength(entry) && isRunning(entry));
+    if (logged && !confirm(`Remove ${isStrength(entry) ? getExercise(entry.exerciseId).name : activityName(entry)} and what you logged on it from this workout?`)) return;
+    update((d) => removeEntryFromWorkout(d, currentIndex));
+  };
   const discard = () => {
     if (!confirm('Discard this workout? Logged sets will be lost.')) return;
     update(discardWorkout);
@@ -62,6 +68,8 @@ export function WorkoutScreen() {
     <main className="screen full workout">
       <header className="header">
         <span className="muted grow">{session.name}</span>
+        {/* Always one tap away, even when the exercise strip is scrolled. */}
+        <Link to="/workout/add" className="btn header-add" aria-label="Add to workout"><Icon name="plus" size={18} /><span className="header-add-text"> Add</span></Link>
         <button className="btn finish-btn" onClick={finish}>Finish Session</button>
       </header>
 
@@ -93,6 +101,7 @@ export function WorkoutScreen() {
         </>
       )}
 
+      {entry && <button className="btn ghost small" data-testid="remove-entry" onClick={remove}>Remove from workout</button>}
       <button className="btn ghost danger small" onClick={discard}>Discard workout</button>
     </main>
   );
