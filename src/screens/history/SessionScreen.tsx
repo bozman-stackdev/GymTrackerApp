@@ -50,16 +50,25 @@ export function SessionScreen() {
   };
 
   return (
-    <Screen title={session.name} back action={
-      <button className="btn ghost" aria-pressed={editMode} onClick={() => setEditMode(!editMode)}>{editMode ? 'Done editing' : 'Edit sets'}</button>
+    <Screen title={session.name} back action={session.manual
+      ? <Link to={`/history/add?edit=${session.id}`} className="btn ghost">Edit</Link>
+      : <button className="btn ghost" aria-pressed={editMode} onClick={() => setEditMode(!editMode)}>{editMode ? 'Done editing' : 'Edit sets'}</button>
     }>
       <p className="muted flush">
         {formatDate(session.startedAt)}
-        {session.finishedAt && ` · ${formatDuration(Date.parse(session.finishedAt) - Date.parse(session.startedAt))}`}
+        {session.manual ? (session.manual.durationMin ? ` · ${session.manual.durationMin} min` : '')
+          : session.finishedAt && ` · ${formatDuration(Date.parse(session.finishedAt) - Date.parse(session.startedAt))}`}
         {sessionVolumeKg(session) > 0 && ` · ${Math.round(toDisplay(sessionVolumeKg(session))).toLocaleString()} ${getUnits()} lifted`}
         {cardioMinutes(session) > 0 && ` · ${cardioMinutes(session)} min cardio`}
       </p>
 
+      {session.manual && (
+        <div className="card stack tight" data-testid="manual-info">
+          <span className="manual-tag">Manually added</span>
+          {session.manual.note && <p className="flush">{session.manual.note}</p>}
+          <p className="muted small flush">Added after the workout, so it earns no XP. It counts in your history and streak, and its sets help your next suggestions.</p>
+        </div>
+      )}
       {scored && <WorkoutRewards scored={scored} session={session} progress={isLatest ? progress : undefined} />}
       {!editMode && <MusclesTrained session={session} />}
 
@@ -128,7 +137,7 @@ export function SessionScreen() {
             <Link key={`s${ei}`} to={`/exercises/${e.exerciseId}`} className="list-item">
               <div className="grow">
                 <div className="title">{getExercise(e.exerciseId).name}</div>
-                <div className="muted small">{formatSets(e.sets)}</div>
+                <div className="muted small">{e.sets.length ? formatSets(e.sets) : 'Done, no details'}</div>
                 {r?.challenge && r.outcome && <OutcomeLine outcome={r.outcome} target={formatTarget(r.challenge)} comeback={r.comeback} />}
                 {r?.weightMastered ? <div className="outcome good with-icon" data-testid="mastered"><Icon name="star" size={14} /> Weight mastered: {formatTarget(r.weightMastered)} - next weight unlocked</div>
                   : r?.newlyMastered && <div className="outcome muted with-icon" data-testid="mastered"><Icon name="check" size={14} /> {formatTarget(r.newlyMastered)} mastered</div>}

@@ -659,3 +659,19 @@ span.with-icon { display: inline-flex; }
 /* Home: "Scan machine" and "Freestyle Workout" side by side, or stacked when the phone is too narrow. */
 .home-actions { flex-wrap: wrap; }
 .home-actions .btn { flex: 1 1 auto; white-space: nowrap; }
+
+/* Missed workouts (added afterwards from History). */
+.manual-tag { display: inline-block; margin-right: 6px; padding: 1px 8px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); font-size: 12px; font-weight: 600; }
+.saved-note { color: var(--text); }
+.warn-note { color: var(--warn); }
+.duration-row { flex-wrap: wrap; align-items: center; }
+.duration-input { width: 96px; flex: none; }
+.missed-set { align-items: center; }
+.missed-set .input { flex: 1; min-width: 0; }
+.missed-set .set-no { width: 18px; flex: none; text-align: center; }
+.inline-field { flex-direction: row; align-items: center; gap: 12px; }
+.inline-field .input { max-width: 140px; }
+.note-input { min-height: 64px; resize: vertical; font: inherit; padding: 10px 14px; }
+.missed-set-head { min-height: 0; padding-left: 2px; }
+.missed-set-head .grow { flex: 1; padding-left: 14px; }
+.icon-btn-space { width: 44px; flex: none; }

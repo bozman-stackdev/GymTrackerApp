@@ -325,3 +325,15 @@ security) and only a `security definer` function returns rank, display name and 
 earn badges and medals, never XP (no feedback loop). Visibility is off for existing accounts until they join; turning
 it off deletes the rows. Points are computed on the phone and capped by the server; server-side recompute is the
 production hardening step. Details: [LEADERBOARD.md](LEADERBOARD.md).
+
+## Missed workouts
+
+**D73. A workout added afterwards is a record, not a live workout.** `WorkoutSession.manual = { addedAt, durationMin?, note? }`
+marks it. `startedAt` is the real date and `addedAt` when it was entered. It shows in history on its date ("Manually added") and
+counts for the displayed streak and weekly counts. It earns nothing: the XP replay skips it (no XP, results, achievements,
+streak milestones), so leaderboard points don't change either. Only complete sets (reps, and a weight for weighted exercises)
+are saved, and nothing is filled in from earlier workouts. Those sets join an exercise's history, but in the replay only for
+workouts started after `addedAt` (`priorFor` in `logic/game/progress.ts`). Adding or editing one therefore never re-scores
+workouts that already happened, while future suggestions and challenges use it. Code: `src/data/manual.ts`,
+`screens/history/MissedWorkoutScreen.tsx`.
+

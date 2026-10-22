@@ -16,6 +16,7 @@ import { ExerciseScreen } from './screens/exercises/ExerciseScreen';
 import { ExercisesScreen } from './screens/exercises/ExercisesScreen';
 import { HistoryScreen } from './screens/history/HistoryScreen';
 import { SessionScreen } from './screens/history/SessionScreen';
+import { MissedWorkoutScreen } from './screens/history/MissedWorkoutScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
 import { RoutineScreen } from './screens/RoutineScreen';
@@ -58,6 +59,7 @@ function Shell() {
         <Route path="/workout/add" element={<AddExerciseScreen />} />
         <Route path="/scan" element={<ScanScreen />} />
         <Route path="/history" element={<HistoryScreen />} />
+        <Route path="/history/add" element={<MissedWorkoutScreen />} />
         <Route path="/history/:id" element={<SessionScreen />} />
         <Route path="/exercises" element={<ExercisesScreen />} />
         <Route path="/exercises/new" element={<ExerciseFormScreen />} />

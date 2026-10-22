@@ -87,6 +87,11 @@ export function activityEvents(session: WorkoutSession, config: GameConfig = GAM
   return events;
 }
 
+/** Earlier workouts as they were known when a workout started: a missed workout counts from the moment it was added. */
+export function priorFor(prior: WorkoutSession[], startedAt: string): WorkoutSession[] {
+  return prior.some((p) => p.manual) ? prior.filter((p) => !p.manual || p.manual.addedAt <= startedAt) : prior;
+}
+
 /**
  * @param sessions finished workouts; may also include the workout in progress (pass it with a `finishedAt`) to
  *                 preview what it has earned so far.
@@ -108,6 +113,9 @@ export function buildProgress(
   const trackers = new Map<string, MasteryTracker>();
   const sessionsPerExercise = new Map<string, number>();
   const streak = new WeeklyStreak(config);
+  // The streak shown to the user also counts workouts added afterwards ("missed workouts"); the one that pays
+  // milestone XP doesn't.
+  const shownStreak = new WeeklyStreak(config);
   const bySession = new Map<string, SessionProgress>();
   const achievements: Progress['achievements'] = [];
   // Earlier workouts per exercise: each exercise is scored against its own history only (keeps the replay fast).
@@ -116,6 +124,17 @@ export function buildProgress(
   let lastWorkoutXpDay = '';
 
   for (const session of ordered) {
+    shownStreak.add(session.startedAt);
+    if (session.manual) {
+      // A missed workout added afterwards is a record: no XP, results, achievements or streak rewards. Its sets join
+      // the exercise history - but only for workouts started after it was added (see priorFor), so adding one never
+      // re-scores workouts that already happened.
+      for (const e of strengthEntries(session)) {
+        if (!priorByExercise.has(e.exerciseId)) priorByExercise.set(e.exerciseId, []);
+        priorByExercise.get(e.exerciseId)!.push(session);
+      }
+      continue;
+    }
     const events: XpEvent[] = [];
     const setCount = strengthEntries(session).reduce((n, e) => n + e.sets.length, 0);
 
@@ -133,7 +152,7 @@ export function buildProgress(
       .map((e) => {
         const ex = byId.get(e.exerciseId)!;
         if (!trackers.has(ex.id)) trackers.set(ex.id, new MasteryTracker(ex));
-        return scoreExercise(ex, e.sets, priorByExercise.get(e.exerciseId) ?? [], trackers.get(ex.id));
+        return scoreExercise(ex, e.sets, priorFor(priorByExercise.get(e.exerciseId) ?? [], session.startedAt), trackers.get(ex.id));
       });
 
     for (const r of results) {
@@ -174,7 +193,7 @@ export function buildProgress(
   return {
     totalXp,
     level: levelFor(totalXp, config),
-    streakWeeks: streak.current(now),
+    streakWeeks: shownStreak.current(now),
     stats,
     personalBests: bestSets(ordered, exercises),
     achievements,
@@ -275,7 +294,7 @@ export function scoreLiveSession(
   const byId = new Map(exercises.map((e) => [e.id, e]));
   const results = strengthEntries(session)
     .filter((e) => byId.has(e.exerciseId) && e.sets.length > 0)
-    .map((e) => scoreExercise(byId.get(e.exerciseId)!, e.sets, finished));
+    .map((e) => scoreExercise(byId.get(e.exerciseId)!, e.sets, priorFor(finished, session.startedAt)));
   const streak = new WeeklyStreak(config);
   for (const s of finished) if (s.finishedAt) streak.add(s.startedAt);
   if (session.entries.some(hasContent)) streak.add(session.startedAt); // cardio-only workouts count too

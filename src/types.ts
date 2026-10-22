@@ -156,6 +156,19 @@ export interface WorkoutSession {
   startedAt: string;
   finishedAt?: string;
   entries: SessionEntry[];
+  /**
+   * Added afterwards from History ("missed workout"), not tracked live. A record: it earns no XP, challenges,
+   * achievements or streak rewards (logic/game/progress.ts). `startedAt` is the workout's real date; `addedAt` when it
+   * was entered.
+   */
+  manual?: ManualInfo;
+}
+
+export interface ManualInfo {
+  addedAt: string;
+  /** Approximate duration, if the user gave one. */
+  durationMin?: number;
+  note?: string;
 }
 
 /** The workout currently in progress (persisted so a page refresh doesn't lose it). */

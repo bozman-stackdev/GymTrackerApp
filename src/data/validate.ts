@@ -93,6 +93,8 @@ export function parseAppData(input: unknown): AppData {
   check(Array.isArray(input.exercises) && Array.isArray(input.routines) && Array.isArray(input.sessions), 'missing lists');
   input.exercises.forEach(checkExercise);
   input.sessions.forEach((s, i) => checkSession(s, i, true));
+  // "Manually added" info is metadata: an odd one is dropped (the workout itself is kept), never a reason to reject.
+  for (const s of input.sessions as unknown as Record<string, unknown>[]) if (s.manual !== undefined && !isManualInfo(s.manual)) delete s.manual;
   for (const [i, r] of (input.routines as unknown[]).entries()) {
     check(isObj(r) && isStr(r.id) && typeof r.name === 'string' && Array.isArray(r.items), `routine #${i + 1}`);
     for (const item of r.items as unknown[]) {
@@ -185,4 +187,10 @@ export function validateEquipment(item: GymEquipment, all: GymEquipment[]): Fiel
   if ((item.settings ?? '').length > 200) e.settings = 'Keep it under 200 characters';
   if ((item.notes ?? '').length > 500) e.notes = 'Keep it under 500 characters';
   return e;
+}
+
+function isManualInfo(m: unknown): boolean {
+  return isObj(m) && isDate(m.addedAt)
+    && (m.durationMin === undefined || isNum(m.durationMin, 1, 600))
+    && (m.note === undefined || (typeof m.note === 'string' && m.note.length <= 200));
 }

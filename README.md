@@ -104,6 +104,7 @@ docs/                       ARCHITECTURE (decision log), ROADMAP (backend/native
 - **Rewards**: target hit, back on track, weight mastered, personal best, consistency. XP → levels → achievements.
 - **My Gym**: your machines with settings, last weights and previous session. Shown during the workout.
 - **Freestyle Workout** (Home): no routine, add exercises or cardio as you go. **+ Add** is always in the workout header.
+- **Missed workout** (History → *+ Missed workout*): add a workout you did but didn't track, with its date and type, and optionally its duration, exercises, sets, cardio minutes and a note. It's labelled *Manually added*, counts in history and streaks, and earns no XP.
 - **Fix mistakes**: tap any logged set (or *Edit sets* on a workout summary) to change or delete it; *Remove from workout* takes out an item added by mistake.
 - **Muscle map** (Muscles tab): *what am I training?* (a heat map of activity) and *where am I progressing?* (training
   performance per muscle), front and back, male or female figure, any period; tap a muscle for its exercises and
