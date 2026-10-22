@@ -1,3 +1,4 @@
+import { skipGuide } from './guide-helper';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Browser, type Page } from '@playwright/test';
 
@@ -13,6 +14,7 @@ test.beforeEach(async ({ page }) => {
 async function startOwn(page: Page) {
   await page.goto('/');
   await page.getByRole('button', { name: 'Start my own' }).click();
+  await skipGuide(page);
 }
 
 /** A real workout (3 sets, earns XP) on this phone. */
@@ -67,6 +69,7 @@ async function secondPhone(browser: Browser, page: Page, email: string) {
   await other.goto('/');
   await other.evaluate(([k, v]) => localStorage.setItem(k, v), [SERVER, server] as const);
   await other.getByRole('button', { name: 'Start my own' }).click();
+  await skipGuide(other);
   await other.getByRole('link', { name: 'Profile' }).click();
   await other.getByRole('link', { name: 'Log in' }).first().click();
   await other.getByLabel('Email').fill(email);

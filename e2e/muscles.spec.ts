@@ -1,3 +1,4 @@
+import { skipGuide } from './guide-helper';
 /** The muscle map: activity and training progress per muscle, front/back, periods, details, balance, Free vs Premium. */
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
@@ -7,6 +8,7 @@ test.beforeEach(async ({ page }) => {
   page.on('pageerror', (e) => { throw e; });
   await page.goto('/');
   await page.getByRole('button', { name: 'Try with sample data' }).click();
+  await skipGuide(page);
 });
 
 const muscle = (page: Page, id: string) => page.locator(`.map-figure [data-muscle="${id}"]`);

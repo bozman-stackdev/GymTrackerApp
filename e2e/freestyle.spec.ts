@@ -1,3 +1,4 @@
+import { skipGuide } from './guide-helper';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 
@@ -9,6 +10,7 @@ test.beforeEach(async ({ page }) => {
   page.on('pageerror', (e) => { throw e; });
   await page.goto('/');
   await page.getByRole('button', { name: 'Try with sample data' }).click();
+  await skipGuide(page);
 });
 
 const pick = (page: Page, name: string) => page.getByRole('button', { name: new RegExp(`^${name}`) }).first().click();

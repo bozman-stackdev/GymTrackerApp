@@ -73,7 +73,7 @@ export function MissedWorkoutScreen() {
   };
 
   return (
-    <Screen title={editing ? 'Edit missed workout' : 'Add missed workout'} back>
+    <Screen title={editing ? 'Edit missed workout' : 'Add missed workout'} back help="missed-workout">
       <p className="muted small flush">For a workout you did but didn't track. It's saved to your history on its date. Added workouts don't earn XP.</p>
 
       <label className="field">

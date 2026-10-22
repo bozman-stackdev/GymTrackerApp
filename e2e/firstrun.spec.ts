@@ -1,3 +1,4 @@
+import { skipGuide } from './guide-helper';
 import { expect, test } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
@@ -10,6 +11,7 @@ test('first run: "Start my own" gives starter routines and no history', async ({
   await expect(page.getByRole('heading', { name: 'Gym Tracker' })).toBeVisible();
   await page.screenshot({ path: 'test-results/screens/0-welcome.png' });
   await page.getByRole('button', { name: 'Start my own' }).click();
+  await skipGuide(page);
 
   await expect(page.getByRole('heading', { name: 'Train' })).toBeVisible();
   await expect(page.getByTestId('sample-banner')).toHaveCount(0);
@@ -33,6 +35,7 @@ test('first run: "Start my own" gives starter routines and no history', async ({
 test('sample data can be swapped for your own from the banner', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Try with sample data' }).click();
+  await skipGuide(page);
   await expect(page.getByRole('heading', { name: 'Hi Alex' })).toBeVisible();
   await page.getByTestId('sample-banner').getByRole('button', { name: 'Start my own' }).click();
   await expect(page.getByRole('heading', { name: 'Train' })).toBeVisible();
@@ -42,6 +45,7 @@ test('sample data can be swapped for your own from the banner', async ({ page })
 test('backup: export, then restore it on a "new phone" from the welcome screen', async ({ page, context }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Try with sample data' }).click();
+  await skipGuide(page);
   await page.getByRole('link', { name: 'Profile' }).click();
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Export backup' }).click();
@@ -80,6 +84,7 @@ test('corrupted saved data: welcome screen explains, and a copy is kept', async 
 test('two tabs stay in sync instead of overwriting each other', async ({ page, context }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Start my own' }).click();
+  await skipGuide(page);
   const other = await context.newPage();
   await other.goto('/#/profile');
   await other.getByRole('textbox', { name: 'Name' }).fill('Sam');
@@ -90,6 +95,7 @@ test('two tabs stay in sync instead of overwriting each other', async ({ page, c
 test('storage failure shows a warning instead of silently losing data', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Start my own' }).click();
+  await skipGuide(page);
   await page.evaluate(() => { Storage.prototype.setItem = () => { throw new DOMException('full', 'QuotaExceededError'); }; });
   await page.getByRole('button', { name: /Push/ }).click();
   await expect(page.getByRole('alert')).toContainText('Not saved');

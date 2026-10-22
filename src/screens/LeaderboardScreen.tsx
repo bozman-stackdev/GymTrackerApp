@@ -27,7 +27,7 @@ export function LeaderboardScreen() {
   const period: LeaderboardPeriod = isPeriod(wanted) ? wanted : 'week';
 
   return (
-    <Screen title="Leaderboard" back>
+    <Screen title="Leaderboard" back help="leaderboard">
       <div className="card"><LevelBar level={progress.level} /></div>
       {!lb.available ? <p className="muted">The leaderboard needs accounts, which this version of the app doesn't have.</p>
         : lb.state === 'signed-out' ? <SignedOut />

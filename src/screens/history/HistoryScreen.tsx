@@ -9,6 +9,7 @@ import { weekIndex } from '../../logic/game/streak';
 import { formatDate, plural } from '../../logic/history';
 import type { WorkoutSession } from '../../types';
 import { Icon } from '../../components/Icon';
+import { FirstTip } from '../../components/Help';
 import { historyLine } from '../../logic/cardio';
 
 /** Workouts grouped by week (the same weeks the streak uses), newest first. One line of useful detail each. */
@@ -30,8 +31,9 @@ export function HistoryScreen() {
     week === thisWeek ? 'This week' : week === thisWeek - 1 ? 'Last week' : `Week of ${formatDate(mondayOf(first.startedAt))}`;
 
   return (
-    <Screen title="History" action={<Link to="/history/add" className="btn ghost small" data-testid="add-missed"><Icon name="plus" size={16} /> Missed workout</Link>}>
+    <Screen title="History" action={<Link to="/history/add" className="btn ghost small" data-testid="add-missed" aria-label="Add missed workout"><Icon name="plus" size={16} /> Missed<span className="hide-narrow"> workout</span></Link>} help="history">
       {addedSession && <p className="saved-note small flush with-icon" role="status"><Icon name="check" size={16} className="accent" /> Added {addedSession.name} · {formatDate(addedSession.startedAt)}</p>}
+      <FirstTip id="history" topic="missed-workout">Tap a workout to see its sets and rewards. Forgot to track one? Tap <strong>+ Missed workout</strong>.</FirstTip>
       {sessions.length === 0 && <p className="muted center">No workouts yet. Finished workouts show up here.</p>}
       {weeks.map(({ week, sessions: inWeek }) => {
         const counts = inWeek.length >= GAME_CONFIG.streak.minWorkoutsPerWeek;

@@ -1,3 +1,4 @@
+import { skipGuide } from './guide-helper';
 /**
  * Cardio, warm-ups and cool-downs: START → do it → STOP → saved. Nothing to type; duration is the only metric.
  * The clock is controlled (page.clock), so "23 minutes later" is instant and timers can be paused like on a locked phone.
@@ -11,6 +12,7 @@ test.beforeEach(async ({ page }) => {
   await page.clock.install();
   await page.goto('/');
   await page.getByRole('button', { name: 'Try with sample data' }).click();
+  await skipGuide(page);
 });
 
 const activity = (page: Page) => page.getByTestId('activity');

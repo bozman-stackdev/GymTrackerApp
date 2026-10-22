@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Icon } from '../../components/Icon';
+import { HelpTip } from '../../components/Help';
 import { KindLabel } from '../../components/activityUi';
 import { Stepper } from '../../components/Stepper';
 import { useNow } from '../../components/useNow';
@@ -33,7 +34,7 @@ function ActivityTimer({ entry, entryIndex }: { entry: ActivityEntry; entryIndex
   return (
     <section className="stack logger activity-timer" data-testid="activity" data-state={done ? 'done' : running ? 'running' : 'ready'}>
       <div>
-        <KindLabel kind={entry.kind} />
+        <div className="heading-row"><KindLabel kind={entry.kind} /><HelpTip topic={entry.kind === 'cardio' ? 'cardio' : 'warmup-cooldown'} /></div>
         <h1 className="ex-name">{activityName(entry)}</h1>
         {!done && hint && <p className="muted last-session" data-testid="last-time">{hint}</p>}
       </div>

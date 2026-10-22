@@ -12,7 +12,7 @@ export function ExercisesScreen() {
   const gyms = [...new Set(data.equipment.map((e) => e.gym.trim()))];
 
   return (
-    <Screen title="My Gym">
+    <Screen title="My Gym" help="my-gym">
       <h2>Equipment</h2>
       {data.equipment.length === 0 && (
         <p className="muted small flush">Save the machines you use: the app remembers your settings and last weights.</p>

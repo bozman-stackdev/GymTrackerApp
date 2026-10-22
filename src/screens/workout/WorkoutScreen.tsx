@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { FirstTip, HelpSheet } from '../../components/Help';
+import { challengeFor } from '../../logic/game/challenge';
 import { useWakeLock } from '../../components/useWakeLock';
 import { discardWorkout, finishExercise, finishWorkout, goToExercise, removeEntryFromWorkout, stopActivityTimer, undoLastSet } from '../../data/actions';
 import { useExerciseLookup, useStore } from '../../data/store';
@@ -13,7 +16,7 @@ import { isRunning } from '../../logic/cardio';
 import { activityName } from '../../logic/activities';
 import { AddActivityRow } from '../../components/AddItemChoices';
 import { KIND_LABEL } from '../../logic/activities';
-import type { ActivityEntry, WorkoutSession } from '../../types';
+import type { ActivityEntry, SessionEntry, WorkoutSession } from '../../types';
 
 /**
  * The in-gym screen, built for a tired user with a few seconds between sets:
@@ -26,6 +29,7 @@ export function WorkoutScreen() {
   const navigate = useNavigate();
   const getExercise = useExerciseLookup();
   const live = useLiveSession(); // instant feedback for this workout
+  const [helpOpen, setHelpOpen] = useState(false);
   useWakeLock();
 
   const active = data.activeWorkout;
@@ -101,7 +105,10 @@ export function WorkoutScreen() {
         </>
       )}
 
+      <WorkoutTips session={session} entry={entry} />
       {entry && <button className="btn ghost small" data-testid="remove-entry" onClick={remove}>Remove from workout</button>}
+      <button className="btn ghost small" onClick={() => setHelpOpen(true)}><Icon name="help" size={16} /> How this screen works</button>
+      {helpOpen && <HelpSheet topic="workout-screen" onClose={() => setHelpOpen(false)} />}
       <button className="btn ghost danger small" onClick={discard}>Discard workout</button>
     </main>
   );
@@ -111,4 +118,27 @@ export function WorkoutScreen() {
 function lastDoneLabel(session: WorkoutSession): string {
   const last = [...session.entries].reverse().find(hasContent);
   return !last || isStrength(last) ? 'Exercise' : KIND_LABEL[last.kind];
+}
+
+/**
+ * First-use tips, below the controls (they never push the rep pad down), one at a time, never while a timer runs:
+ * logging basics on the first exercise, then Today's Challenge the first time there is one.
+ */
+function WorkoutTips({ session, entry }: { session: WorkoutSession; entry: SessionEntry | undefined }) {
+  const { data } = useStore();
+  const getExercise = useExerciseLookup();
+  if (!entry || !isStrength(entry) || session.entries.some((e) => !isStrength(e) && isRunning(e))) return null;
+  if (!(data.guide?.tips ?? []).includes('log')) {
+    return (
+      <FirstTip id="log" topic="log-set">
+        The weight is filled in: after your set, tap the reps you did. Tap an item in the strip to switch exercise; <strong>+ Add</strong> adds more.
+      </FirstTip>
+    );
+  }
+  if (!challengeFor(getExercise(entry.exerciseId), data.sessions)) return null;
+  return (
+    <FirstTip id="challenge" topic="challenge">
+      <strong>Today's challenge</strong> is one small target for this exercise. Hit it in any set; missing it costs nothing.
+    </FirstTip>
+  );
 }

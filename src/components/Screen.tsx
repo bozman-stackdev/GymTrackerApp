@@ -1,12 +1,15 @@
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { HelpButton } from './Help';
 import { Icon } from './Icon';
 
 /** Standard page wrapper: optional back arrow, title, and a slot for a right-hand action. */
-export function Screen({ title, back, action, full, children }: {
+export function Screen({ title, back, action, help, full, children }: {
   title: string;
   back?: boolean;
   action?: ReactNode;
+  /** Help topic for this screen (help/content.ts): a "?" in the header opens it. */
+  help?: string;
   /** No space reserved for the tab bar (used on the workout screen). */
   full?: boolean;
   children: ReactNode;
@@ -22,6 +25,7 @@ export function Screen({ title, back, action, full, children }: {
         )}
         <h1>{title}</h1>
         {action}
+        {help && <HelpButton topic={help} />}
       </header>
       {children}
     </main>

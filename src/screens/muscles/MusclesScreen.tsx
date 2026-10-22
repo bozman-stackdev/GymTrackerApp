@@ -2,6 +2,7 @@ import { useMemo, useRef, useState, type PointerEvent, type ReactNode } from 're
 import { useSearchParams } from 'react-router-dom';
 import { BodyMap } from '../../components/body/BodyMap';
 import { Icon } from '../../components/Icon';
+import { HelpTip } from '../../components/Help';
 import { Screen } from '../../components/Screen';
 import { Sheet } from '../../components/Sheet';
 import { saveProfile } from '../../data/actions';
@@ -52,17 +53,20 @@ export function MusclesScreen() {
   const live = workout && data.activeWorkout?.session.id === workout.id;
 
   return (
-    <Screen title="Muscles">
+    <Screen title="Muscles" help="muscle-map">
       {!data.profile.bodyMap && data.profile.sex !== 'male' && data.profile.sex !== 'female' && (
         <BodyChoice onPick={(b) => update((d) => saveProfile(d, { ...d.profile, bodyMap: b }))} />
       )}
 
+      <div className="seg-row">
       <div className="seg" role="tablist" aria-label="Map mode">
         {(['activity', 'progress'] as const).map((m) => (
           <button key={m} role="tab" aria-selected={mode === m} className={`seg-btn${mode === m ? ' on' : ''}`} onClick={() => set({ mode: m === 'activity' ? null : m })}>
             <Icon name={m === 'activity' ? 'flame' : 'trendUp'} size={18} /> {m === 'activity' ? 'Activity' : 'Progress'}
           </button>
         ))}
+      </div>
+      <HelpTip topic="muscle-map" />
       </div>
 
       <div className="seg period-seg" role="group" aria-label="Period">

@@ -3,9 +3,12 @@ import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate, useNavig
 import { TabBar } from './components/TabBar';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { StoreProvider, useAppState, useStore } from './data/store';
+import { guidePending } from './data/guide';
 import { AccountProvider } from './data/account';
 import { LeaderboardProvider } from './data/leaderboard';
 import { LeaderboardScreen } from './screens/LeaderboardScreen';
+import { GuideScreen } from './screens/GuideScreen';
+import { HelpScreen } from './screens/HelpScreen';
 import { AccountScreen } from './screens/AccountScreen';
 import { WelcomeScreen } from './screens/WelcomeScreen';
 import { setUnits } from './logic/units';
@@ -52,6 +55,7 @@ function Shell() {
     <>
       {saveError && <div className="alert save-alert with-icon" role="alert"><Icon name="alert" size={18} /> Not saved: {saveError}</div>}
       <ResumeWorkoutOnLaunch />
+      <GuideOnFirstRun />
       <ScrollToTopOnNewScreen />
       <Routes>
         <Route path="/" element={<HomeScreen />} />
@@ -73,6 +77,8 @@ function Shell() {
         <Route path="/profile" element={<ProfileScreen />} />
         <Route path="/account" element={<AccountScreen />} />
         <Route path="/leaderboard" element={<LeaderboardScreen />} />
+        <Route path="/help" element={<HelpScreen />} />
+        <Route path="/guide" element={<GuideScreen />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <TabBarUnlessTraining />
@@ -95,7 +101,15 @@ function ScrollToTopOnNewScreen() {
 /** The workout screens are distraction-free: no tab bar. */
 function TabBarUnlessTraining() {
   const { pathname } = useLocation();
-  return pathname.startsWith('/workout') || pathname === '/scan' ? null : <TabBar />;
+  return pathname.startsWith('/workout') || pathname === '/scan' || pathname === '/guide' ? null : <TabBar />;
+}
+
+/** A new user sees the short guide first (once; skippable). Never during a workout. */
+function GuideOnFirstRun() {
+  const { data } = useStore();
+  const { pathname } = useLocation();
+  if (!guidePending(data) || pathname === '/guide' || pathname.startsWith('/workout') || data.activeWorkout) return null;
+  return <Navigate to="/guide" replace />;
 }
 
 /** Opening the app during a workout goes straight back to it - no hunting for "resume". */

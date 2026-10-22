@@ -1,3 +1,4 @@
+import { skipGuide } from './guide-helper';
 import { expect, test } from '@playwright/test';
 
 // Runs against the production build, where the service worker is active.
@@ -18,6 +19,7 @@ test('works with no internet connection after the first visit, and is installabl
   await context.setOffline(true);
   await page.reload();
   await page.getByRole('button', { name: 'Try with sample data' }).click();
+  await skipGuide(page);
   await page.getByRole('button', { name: /^Push/ }).click();
   await page.locator('.rep-btn.target').click();
   await expect(page.getByTestId('sets-today').locator('.slot.done')).toHaveCount(1);
@@ -35,6 +37,7 @@ test('built without a backend (as published until Supabase is set up): no accoun
   await expect(page.getByRole('button', { name: 'Start my own' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Log in to my account' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Start my own' }).click();
+  await skipGuide(page);
   await page.getByRole('link', { name: 'Profile' }).click();
   await expect(page.getByRole('heading', { name: 'Data' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Account' })).toHaveCount(0);

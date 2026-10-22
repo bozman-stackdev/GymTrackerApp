@@ -337,3 +337,15 @@ workouts started after `addedAt` (`priorFor` in `logic/game/progress.ts`). Addin
 workouts that already happened, while future suggestions and challenges use it. Code: `src/data/manual.ts`,
 `screens/history/MissedWorkoutScreen.tsx`.
 
+## Help
+
+**D74. Help content is data; the guide and tips are local, one-time and never in the way.** Articles (what it does / how to
+use it / what happens) live in `src/help/content.ts` and the guide steps in `src/help/guide.ts`, apart from workout logic.
+Numbers are read from `GAME_CONFIG`, and a unit test checks that every `help` / `topic` id used in the UI exists. Help opens
+only on a tap: the header **?** (`Screen help`), the inline `HelpTip`, or the workout screen's "How this screen works", all as a
+bottom sheet rendered to `<body>` that never changes workout state. `AppData.guide` (on this phone, not synced) is set only by
+the welcome screen's Start my own / Try with sample data: `pending` opens `/guide` once (not during a workout), and Finish or
+Skip ends it. First-use tips only show for those users, one at a time, below the workout controls and never while a timer
+runs, and are remembered once dismissed. Existing data has no `guide` field, so long-time users never see the guide or tips
+unexpectedly.
+

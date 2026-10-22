@@ -21,6 +21,7 @@ import type { BodyType, Experience, Goal, Profile, Sex } from '../types';
 import { bodyTypeOf, usePlan } from '../data/useMuscles';
 import { PREMIUM_FEATURES } from '../logic/plan';
 import { Icon } from '../components/Icon';
+import { HelpTip } from '../components/Help';
 import { plural } from '../logic/history';
 import { cardioStats, formatDurationWords } from '../logic/cardio';
 
@@ -77,8 +78,8 @@ export function ProfileScreen() {
   };
 
   return (
-    <Screen title="Profile">
-      <h2>Progress</h2>
+    <Screen title="Profile" help="profile-setup">
+      <div className="heading-row"><h2>Progress</h2><HelpTip topic="xp" /></div>
       <div className="card stack" data-testid="progress">
         <LevelBar level={progress.level} />
         <LeaderboardLine />
@@ -126,6 +127,12 @@ export function ProfileScreen() {
 
       <PlanSection />
 
+      <h2>Help</h2>
+      <div className="row">
+        <Link to="/help" className="btn grow"><Icon name="help" /> Help centre</Link>
+        <Link to="/guide" className="btn grow"><Icon name="play" /> Replay the guide</Link>
+      </div>
+
       <h2>Feedback</h2>
       <a className="btn block" href={feedbackUrl()} target="_blank" rel="noopener noreferrer" data-testid="feedback"><Icon name="message" /> Send feedback</a>
       <p className="muted small flush">Includes the app version and device type only - never your workouts.</p>
@@ -160,7 +167,7 @@ function PlanSection() {
   const plan = usePlan();
   return (
     <>
-      <h2>Plan</h2>
+      <div className="heading-row"><h2>Plan</h2><HelpTip topic="premium" /></div>
       <div className="card stack tight" data-testid="plan">
         <div className="row between">
           <strong>{plan === 'premium' ? 'Premium preview' : 'Free'}</strong>

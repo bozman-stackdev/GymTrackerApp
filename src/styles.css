@@ -675,3 +675,42 @@ span.with-icon { display: inline-flex; }
 .missed-set-head { min-height: 0; padding-left: 2px; }
 .missed-set-head .grow { flex: 1; padding-left: 14px; }
 .icon-btn-space { width: 44px; flex: none; }
+
+/* ---------- Help: "?" buttons, articles, tips, the first-time guide ---------- */
+.help-btn { color: var(--text-2); margin-left: auto; }
+.header .help-btn:not(:only-child) { margin-left: 0; }
+.help-tip {
+  flex: none; display: inline-grid; place-items: center; width: 44px; height: 44px; margin: -10px -8px; padding: 0;
+  border: 0; background: transparent; color: var(--text-2); border-radius: 999px; cursor: pointer;
+}
+.help-tip:active { background: var(--surface-2); }
+.help-tip:focus-visible, .help-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.heading-row { display: flex; align-items: center; gap: 4px; }
+.heading-row h2 { margin-bottom: 0; }
+.challenge-row { display: flex; align-items: flex-start; gap: 4px; }
+.challenge-row .challenge { flex: 1; min-width: 0; }
+.challenge-row .help-tip { margin: 0 -8px 0 0; }
+.seg-row { display: flex; align-items: center; gap: 4px; }
+.seg-row .seg { flex: 1; }
+.seg-row .help-tip { margin: 0 -6px 0 0; }
+.help-article { margin: 0; display: grid; gap: 4px; }
+.help-article dt { font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); margin-top: 10px; }
+.help-article dt:first-child { margin-top: 0; }
+.help-article dd { margin: 0; line-height: 1.45; }
+.help-item.open { border-radius: var(--radius); background: var(--surface); }
+.help-item-body { padding: 4px 16px 16px; }
+.first-tip { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 10px; padding: 12px 14px; border-radius: var(--radius);
+  background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--accent); }
+.first-tip > .grow { flex: 1 1 200px; }
+.first-tip-actions { display: flex; gap: 8px; margin-left: auto; }
+.first-tip-actions .btn { min-height: 44px; }
+.guide { display: flex; flex-direction: column; min-height: 100dvh; }
+.guide-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 12px; padding: 0 8px; }
+.guide-body h1 { margin: 4px 0; outline: none; }
+.guide-icon { display: grid; place-items: center; width: 88px; height: 88px; border-radius: 50%; background: var(--surface-2); color: var(--accent-text); }
+.guide-line { margin: 0; max-width: 34ch; font-size: 18px; line-height: 1.45; color: var(--text); }
+.guide-dots { display: flex; justify-content: center; gap: 8px; margin: 16px 0; }
+.guide-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
+.guide-dot.on { background: var(--accent); width: 22px; border-radius: 999px; }
+.guide-nav { padding-bottom: 16px; }
+@media (max-width: 380px) { .hide-narrow { display: none; } }

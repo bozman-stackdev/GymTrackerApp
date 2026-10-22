@@ -13,6 +13,7 @@ import { PROGRESSION_DISCLAIMER, plannedSet, recommend } from '../../logic/progr
 import type { ActivityEntry, Exercise, StrengthEntry } from '../../types';
 import { RepPad } from './RepPad';
 import { Icon } from '../../components/Icon';
+import { HelpTip } from '../../components/Help';
 import { useMuscleInput } from '../../data/useMuscles';
 import { analyseMuscles } from '../../logic/muscles/analysis';
 import { muscleName, musclesFor } from '../../logic/muscles/catalog';
@@ -98,7 +99,10 @@ export function SetLogger({ exercise, entryIndex, live }: { exercise: Exercise; 
           Last session: <strong>{last ? formatSets(last.sets) : '—'}</strong>
         </p>
         {challenge ? (
-          <ChallengeLine challenge={challenge} done={challengeDone} showWhy={showWhy} onWhy={() => setShowWhy(!showWhy)} />
+          <div className="challenge-row">
+            <ChallengeLine challenge={challenge} done={challengeDone} showWhy={showWhy} onWhy={() => setShowWhy(!showWhy)} />
+            <HelpTip topic="challenge" />
+          </div>
         ) : (
           <button className={`rec-line${waiting ? ' wait' : ''}`} data-testid="recommendation" aria-expanded={showWhy} onClick={() => setShowWhy(!showWhy)}>
             {hint} <span className="why">{showWhy ? 'Hide' : 'Why?'}</span>

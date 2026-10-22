@@ -4,6 +4,7 @@ import { useAccount } from '../data/account';
 import { useAppState } from '../data/store';
 import { readBackupFile } from '../data/backup';
 import { createSampleData, createStarterData } from '../data/seed';
+import { withGuidePending } from '../data/guide';
 import { Icon } from '../components/Icon';
 
 /** First run (or unreadable data): start your own, explore the sample, or restore a backup. */
@@ -49,10 +50,10 @@ export function WelcomeScreen() {
         </div>
       )}
 
-      <button className="btn primary huge" onClick={() => replace(createStarterData())}>Start my own</button>
+      <button className="btn primary huge" onClick={() => replace(withGuidePending(createStarterData()))}>Start my own</button>
       <p className="muted small center welcome-note">Includes 3 starter routines (Push, Pull, Legs) you can edit.</p>
 
-      <button className="btn block" onClick={() => replace(createSampleData())}>Try with sample data</button>
+      <button className="btn block" onClick={() => replace(withGuidePending(createSampleData()))}>Try with sample data</button>
       <p className="muted small center welcome-note">5 weeks of example workouts, to see challenges and progress.</p>
 
       {available && <button className="btn block" onClick={() => setLoggingIn(true)}>Log in to my account</button>}

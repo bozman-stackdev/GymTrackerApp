@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 /**
  * A bottom sheet: slides up over the screen, closes with Close, Escape or a tap outside. Focus moves to Close when it
@@ -14,7 +15,9 @@ export function Sheet({ title, onClose, children, testId }: { title: string; onC
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
-  return (
+  // Rendered at the end of <body>, so it's above everything (a sheet opened from the sticky header would otherwise
+  // stay under the tab bar).
+  return createPortal(
     <div className="sheet-layer">
       <button type="button" className="sheet-backdrop" aria-label="Close" tabIndex={-1} onClick={onClose} />
       <div className="sheet sheet-scroll" role="dialog" aria-modal="true" aria-label={title} data-testid={testId}>
@@ -24,6 +27,7 @@ export function Sheet({ title, onClose, children, testId }: { title: string; onC
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

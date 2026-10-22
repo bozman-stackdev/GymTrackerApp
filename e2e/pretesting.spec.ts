@@ -1,3 +1,4 @@
+import { skipGuide } from './guide-helper';
 import { expect, test } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
@@ -5,6 +6,7 @@ test.beforeEach(async ({ page }) => {
   page.on('pageerror', (e) => { throw e; });
   await page.goto('/');
   await page.getByRole('button', { name: 'Try with sample data' }).click();
+  await skipGuide(page);
 });
 
 test('fix a mis-tapped set during the workout (tap the set box)', async ({ page }) => {

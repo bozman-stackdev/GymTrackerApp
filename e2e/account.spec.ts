@@ -1,3 +1,4 @@
+import { skipGuide } from './guide-helper';
 import { expect, test, type Page } from '@playwright/test';
 
 // Accounts against the fake backend (VITE_BACKEND=fake): its "server" lives in localStorage, codes are always 123456.
@@ -12,6 +13,7 @@ test.beforeEach(async ({ page }) => {
 async function startOwn(page: Page) {
   await page.goto('/');
   await page.getByRole('button', { name: 'Start my own' }).click();
+  await skipGuide(page);
 }
 
 async function signUp(page: Page, email = 'alex@example.com', password = 'secret-pass') {

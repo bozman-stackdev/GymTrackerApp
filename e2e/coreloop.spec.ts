@@ -1,3 +1,4 @@
+import { skipGuide } from './guide-helper';
 import { expect, test } from '@playwright/test';
 
 // The core loop: previous performance → challenge → set → result → reward → journey → next challenge. Sample data.
@@ -6,6 +7,7 @@ test.beforeEach(async ({ page }) => {
   page.on('pageerror', (e) => { throw e; });
   await page.goto('/');
   await page.getByRole('button', { name: 'Try with sample data' }).click();
+  await skipGuide(page);
 });
 
 const finishPushWith = async (page: import('@playwright/test').Page, reps: string[]) => {

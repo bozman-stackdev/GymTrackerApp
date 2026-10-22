@@ -1,3 +1,4 @@
+import { skipGuide } from './guide-helper';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 
@@ -16,6 +17,7 @@ for (const scheme of ['light', 'dark'] as const) {
     await page.goto('/');
     await checkA11y(page, 'welcome');
     await page.getByRole('button', { name: 'Try with sample data' }).click();
+    await skipGuide(page);
     await checkA11y(page, 'home');
 
     await page.getByRole('button', { name: /^Push/ }).click();

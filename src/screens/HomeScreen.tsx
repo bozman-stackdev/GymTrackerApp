@@ -43,7 +43,7 @@ export function HomeScreen() {
   };
 
   return (
-    <Screen title={data.profile.name ? `Hi ${data.profile.name}` : 'Train'}>
+    <Screen title={data.profile.name ? `Hi ${data.profile.name}` : 'Train'} help="home">
       {data.isSample && (
         <div className="sample-banner" data-testid="sample-banner">
           <span className="grow">You're exploring sample data.</span>

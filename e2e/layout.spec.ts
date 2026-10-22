@@ -1,3 +1,4 @@
+import { skipGuide } from './guide-helper';
 import { expect, test, type Locator } from '@playwright/test';
 
 /*
@@ -14,6 +15,7 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/');
   await page.addStyleTag({ content: `:root { --safe-top: ${NOTCH.top}px !important; --safe-bottom: ${NOTCH.bottom}px !important; }` });
   await page.getByRole('button', { name: 'Try with sample data' }).click();
+  await skipGuide(page);
   await expect(page.getByTestId('sample-banner')).toBeVisible();
 });
 

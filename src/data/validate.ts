@@ -93,6 +93,12 @@ export function parseAppData(input: unknown): AppData {
   check(Array.isArray(input.exercises) && Array.isArray(input.routines) && Array.isArray(input.sessions), 'missing lists');
   input.exercises.forEach(checkExercise);
   input.sessions.forEach((s, i) => checkSession(s, i, true));
+  // Guide/tips state is a convenience: an odd value is dropped, never a reason to reject the data.
+  const g = (input as Record<string, unknown>).guide;
+  if (g !== undefined && !(isObj(g) && (g.pending === undefined || typeof g.pending === 'boolean')
+    && (g.doneAt === undefined || isDate(g.doneAt)) && (g.tips === undefined || (Array.isArray(g.tips) && g.tips.every(isStr))))) {
+    delete (input as Record<string, unknown>).guide;
+  }
   // "Manually added" info is metadata: an odd one is dropped (the workout itself is kept), never a reason to reject.
   for (const s of input.sessions as unknown as Record<string, unknown>[]) if (s.manual !== undefined && !isManualInfo(s.manual)) delete s.manual;
   for (const [i, r] of (input.routines as unknown[]).entries()) {
@@ -142,6 +148,7 @@ function migrate(data: AppData): AppData {
     ...(data.isSample ? { isSample: true } : {}),
     ...(isObj(data.backup) ? { backup: { lastExportAt: str(data.backup.lastExportAt), remindAfter: str(data.backup.remindAfter) } } : {}),
     ...(data.premiumPreview === true ? { premiumPreview: true } : {}),
+    ...(isObj(data.guide) ? { guide: data.guide } : {}), // checked in parseAppData
   };
 }
 

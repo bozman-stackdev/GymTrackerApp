@@ -1,3 +1,4 @@
+import { skipGuide } from './guide-helper';
 import { expect, test, type Page } from '@playwright/test';
 
 // Every test starts from the sample data (fresh browser context = empty storage → welcome screen → sample).
@@ -6,6 +7,7 @@ test.beforeEach(async ({ page }) => {
   page.on('pageerror', (e) => { throw e; });
   await page.goto('/');
   await page.getByRole('button', { name: 'Try with sample data' }).click();
+  await skipGuide(page);
   await expect(page.getByTestId('sample-banner')).toBeVisible();
 });
 

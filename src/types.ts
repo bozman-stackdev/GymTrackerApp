@@ -221,4 +221,16 @@ export interface AppData {
    * subscription, which will come from the account instead. Kept on this phone only (not synced). See logic/plan.ts.
    */
   premiumPreview?: boolean;
+  /**
+   * First-time guide and tips (help/). Only set for people who started on this version: `pending` shows the guide,
+   * `tips` are first-use tips already dismissed. Absent for existing users, so nothing appears unexpectedly.
+   * On this phone only (not synced).
+   */
+  guide?: GuideState;
+}
+
+export interface GuideState {
+  pending?: boolean;
+  doneAt?: string;
+  tips?: string[];
 }
