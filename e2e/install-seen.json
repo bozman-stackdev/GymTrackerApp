@@ -1,0 +1,7 @@
+{
+  "cookies": [],
+  "origins": [
+    { "origin": "http://localhost:5173", "localStorage": [{ "name": "gymtracker:install-guide-seen", "value": "test" }] },
+    { "origin": "http://localhost:4173", "localStorage": [{ "name": "gymtracker:install-guide-seen", "value": "test" }] }
+  ]
+}

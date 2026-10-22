@@ -16,6 +16,7 @@ export default defineConfig({
       registerType: 'autoUpdate', // new versions install themselves; data is in localStorage, so a reload is safe
       includeAssets: ['icon.svg', 'apple-touch-icon.png'],
       manifest: {
+        id: './', // stable identity for the installed app
         name: 'Gym Tracker',
         short_name: 'Gym Tracker',
         description: 'Spend less time tracking your workout and more time doing it.',

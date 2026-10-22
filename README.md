@@ -104,6 +104,7 @@ docs/                       ARCHITECTURE (decision log), ROADMAP (backend/native
 - **Rewards**: target hit, back on track, weight mastered, personal best, consistency. XP → levels → achievements.
 - **My Gym**: your machines with settings, last weights and previous session. Shown during the workout.
 - **Freestyle Workout** (Home): no routine, add exercises or cardio as you go. **+ Add** is always in the workout header.
+- **Install on your phone**: on a first visit, a short guide shows how to add the app to the home screen (Safari → Share → Add to Home Screen on iPhone/iPad; Chrome ⋮ → Install app on Android, with the browser's own Install button when offered). Reopen it from Help or Profile.
 - **Help**: a short first-time guide (skippable, replay from Help or Profile), a searchable Help centre, a **?** on each main screen and beside key features (challenge, cardio timer, muscle map, XP, Premium), and a few one-time tips for new users.
 - **Missed workout** (History → *+ Missed workout*): add a workout you did but didn't track, with its date and type, and optionally its duration, exercises, sets, cardio minutes and a note. It's labelled *Manually added*, counts in history and streaks, and earns no XP.
 - **Fix mistakes**: tap any logged set (or *Edit sets* on a workout summary) to change or delete it; *Remove from workout* takes out an item added by mistake.

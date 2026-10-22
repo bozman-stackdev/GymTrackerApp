@@ -22,6 +22,7 @@ import { bodyTypeOf, usePlan } from '../data/useMuscles';
 import { PREMIUM_FEATURES } from '../logic/plan';
 import { Icon } from '../components/Icon';
 import { HelpTip } from '../components/Help';
+import { InstallGuideButton } from '../components/InstallGuide';
 import { plural } from '../logic/history';
 import { cardioStats, formatDurationWords } from '../logic/cardio';
 
@@ -132,6 +133,7 @@ export function ProfileScreen() {
         <Link to="/help" className="btn grow"><Icon name="help" /> Help centre</Link>
         <Link to="/guide" className="btn grow"><Icon name="play" /> Replay the guide</Link>
       </div>
+      <InstallGuideButton />
 
       <h2>Feedback</h2>
       <a className="btn block" href={feedbackUrl()} target="_blank" rel="noopener noreferrer" data-testid="feedback"><Icon name="message" /> Send feedback</a>

@@ -10,6 +10,8 @@ export default defineConfig({
     ...devices['Pixel 7'],
     baseURL: 'http://localhost:5173',
     launchOptions: existsSync(localChromium) ? { executablePath: localChromium } : {},
+    // The first-visit install guide is covered by e2e/install.spec.ts; elsewhere it's already been seen.
+    storageState: 'e2e/install-seen.json',
   },
   webServer: [
     // Accounts use the fake backend here (e2e/account.spec.ts); the published app uses Supabase or none.

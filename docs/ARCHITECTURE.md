@@ -349,3 +349,15 @@ Skip ends it. First-use tips only show for those users, one at a time, below the
 runs, and are remembered once dismissed. Existing data has no `guide` field, so long-time users never see the guide or tips
 unexpectedly.
 
+## Install guide
+
+**D75. The app is a PWA already; the first-visit guide only shows people how to install it.** The manifest (name, icons
+192/512/maskable, standalone, theme, and now `id`) plus the `autoUpdate` service worker were already in place, and no new
+caching was added. `src/help/install.ts` detects iPhone/iPad (Safari or another browser), Android or other, and checks
+whether the app already runs installed (`display-mode: standalone`). It keeps the browser's `beforeinstallprompt`, so the
+guide can offer a real Install button on Android only when the browser makes one available. The guide
+(`components/InstallGuide.tsx`) opens by itself once, on the welcome screen of a first visit, and never inside the
+installed app or during a workout. That comes before the 7-step guide, so they never stack. It is marked seen in
+localStorage (`gymtracker:install-guide-seen`), and can be reopened from the welcome screen, Help and Profile. iOS can't
+install web apps automatically; the guide says so.
+

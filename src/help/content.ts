@@ -58,6 +58,13 @@ export const HELP_ARTICLES: HelpArticle[] = [
     keywords: 'settings name units kg lb body weight height age',
   },
   {
+    id: 'install', category: 'Getting Started', title: 'Install the app on your phone',
+    what: 'Puts Gym Tracker on your home screen, so it opens full-screen like a normal app and works offline.',
+    how: 'iPhone/iPad: in Safari, tap Share → Add to Home Screen → Add. Android: in Chrome, tap the ⋮ menu → Install app (or Add to Home screen). Help → "Add to Home Screen" shows the steps with pictures.',
+    result: 'A Gym Tracker icon appears on your home screen. Your workouts stay as they are. On iPhone this also stops Safari clearing the app\'s data.',
+    keywords: 'install home screen add app pwa download icon',
+  },
+  {
     id: 'guide', category: 'Getting Started', title: 'Replay the introduction',
     what: 'The short first-time guide: starting a workout, logging, challenges and progress.',
     how: 'Tap "Replay the guide" at the top of Help, or in Profile → Help.',

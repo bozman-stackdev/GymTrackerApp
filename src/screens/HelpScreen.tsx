@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArticleBody } from '../components/Help';
 import { Icon } from '../components/Icon';
+import { InstallGuideButton } from '../components/InstallGuide';
 import { Screen } from '../components/Screen';
 import { HELP_CATEGORIES, searchHelp } from '../help/content';
 
@@ -16,6 +17,7 @@ export function HelpScreen() {
   return (
     <Screen title="Help" back>
       <Link to="/guide" className="btn block"><Icon name="play" size={18} /> Replay the guide</Link>
+      <InstallGuideButton />
       <input className="input" type="search" placeholder="Search help" aria-label="Search help" value={query} onChange={(e) => setQuery(e.target.value)} />
       {results.length === 0 && <p className="muted center flush" role="status">Nothing found. Try another word, like "timer" or "XP".</p>}
       {/* Browsing: by category. Searching: one list, best matches first. */}

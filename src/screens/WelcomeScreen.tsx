@@ -6,6 +6,8 @@ import { readBackupFile } from '../data/backup';
 import { createSampleData, createStarterData } from '../data/seed';
 import { withGuidePending } from '../data/guide';
 import { Icon } from '../components/Icon';
+import { InstallGuideSheet } from '../components/InstallGuide';
+import { shouldAutoShowInstallGuide } from '../help/install';
 
 /** First run (or unreadable data): start your own, explore the sample, or restore a backup. */
 export function WelcomeScreen() {
@@ -14,6 +16,8 @@ export function WelcomeScreen() {
   const [importError, setImportError] = useState<string | null>(null);
   const { available, connect } = useAccount();
   const [loggingIn, setLoggingIn] = useState(false);
+  // First visit (and not opened from the home screen already): how to add the app to the phone, once.
+  const [installOpen, setInstallOpen] = useState(shouldAutoShowInstallGuide);
 
   const restore = async (f: File | undefined) => {
     if (!f) return;
@@ -64,8 +68,9 @@ export function WelcomeScreen() {
 
       <p className="muted small center">
         {available ? 'Everything stays on this phone unless you create an account. No account needed.' : 'Everything stays on this phone. No account needed.'}
-        <br />Tip: add the app to your Home Screen, so your phone keeps your data (and it opens like an app).
+        <br />Tip: <button type="button" className="link-btn" onClick={() => setInstallOpen(true)}>add the app to your Home Screen</button>, so your phone keeps your data (and it opens like an app).
       </p>
+      {installOpen && <InstallGuideSheet onClose={() => setInstallOpen(false)} />}
     </main>
   );
 }
